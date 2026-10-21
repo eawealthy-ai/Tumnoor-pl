@@ -1,0 +1,461 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ตำนัว บันทึกรายวัน</title>
+<meta name="theme-color" content="#2f6b3a">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600&family=Mitr:wght@500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: one column daily sheet — sticky date bar, summary strip, then Sales → Petty cash → Market bills */
+:root{
+  --bg:#f4f6f1; --surface:#ffffff; --fg:#1d2a1f; --muted:#5f6d61; --line:#dde3d7;
+  --leaf:#2f6b3a; --leaf-soft:#e3eee2; --chili:#c8341f; --chili-soft:#fbe6e2;
+  --display:"Mitr","Anuphan",system-ui,sans-serif;
+  --body:"Anuphan",system-ui,sans-serif;
+  --num:"IBM Plex Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#141a15; --surface:#1c241d; --fg:#e7ede5; --muted:#9aa89b; --line:#2e3a30;
+  --leaf:#7cc28a; --leaf-soft:#22362a; --chili:#ff7a63; --chili-soft:#3a2420; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#141a15; --surface:#1c241d; --fg:#e7ede5; --muted:#9aa89b; --line:#2e3a30;
+  --leaf:#7cc28a; --leaf-soft:#22362a; --chili:#ff7a63; --chili-soft:#3a2420; color-scheme:dark}
+*{box-sizing:border-box}
+html{padding-block:env(safe-area-inset-top,0px) env(safe-area-inset-bottom,0px)}
+body{margin:0}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.5}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--leaf)}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--leaf);color:#fff;
+  padding-block:12px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.bar-in{max-width:880px;margin:0 auto;display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between}
+.brand{font-family:var(--display);font-size:22px;font-weight:600;letter-spacing:.01em}
+.brand small{display:block;font-family:var(--body);font-size:12px;font-weight:500;opacity:.8;letter-spacing:.04em}
+.bar-ctl{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.bar input[type=date]{font:inherit;font-family:var(--num);padding:7px 10px;border-radius:8px;border:0;background:#fff;color:#1d2a1f}
+.btn{font:inherit;font-weight:600;border-radius:8px;padding:8px 14px;cursor:pointer;border:1px solid transparent}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-save{background:var(--chili);color:#fff}
+.btn-ghost{background:transparent;color:inherit;border-color:currentColor;opacity:.9}
+.btn-add{background:var(--leaf-soft);color:var(--leaf);border-color:transparent;font-size:14px}
+.btn:focus-visible,input:focus-visible{outline:2px solid var(--chili);outline-offset:2px}
+main{max-width:880px;margin:0 auto;display:grid;gap:22px;
+  padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.status{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);flex-wrap:wrap}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--muted);flex:none}
+.status[data-s="saved"] .dot{background:var(--leaf)}
+.status[data-s="new"] .dot{background:#d79a1c}
+.status[data-s="dirty"] .dot,.status[data-s="err"] .dot{background:var(--chili)}
+.status[data-s="err"]{color:var(--chili)}
+.status button{font:inherit;font-size:13px;color:var(--chili);background:none;border:0;text-decoration:underline;cursor:pointer;padding:0}
+.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.summary div{background:var(--surface);padding:12px 14px;min-width:0}
+.summary span{display:block;font-size:12px;color:var(--muted);letter-spacing:.03em}
+.summary strong{font-family:var(--num);font-size:19px;font-variant-numeric:tabular-nums}
+.summary em{font-style:normal;font-size:12px;color:var(--muted);font-family:var(--num)}
+@media (max-width:640px){.summary{grid-template-columns:repeat(2,1fr)}}
+section{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px;min-width:0}
+h2{font-family:var(--display);font-weight:500;font-size:19px;margin:0 0 4px;text-wrap:balance}
+.sub{margin:0 0 14px;font-size:13px;color:var(--muted)}
+.sales{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+label.f{display:grid;gap:4px;font-size:13px;font-weight:500;color:var(--muted)}
+input.n,input.t{font:inherit;width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg)}
+input.n{font-family:var(--num);text-align:right;font-variant-numeric:tabular-nums}
+input:disabled{opacity:.7}
+.totrow{display:flex;flex-wrap:wrap;gap:6px 24px;justify-content:flex-end;margin-top:14px;padding-top:12px;border-top:1px dashed var(--line);font-size:14px}
+.totrow b{font-family:var(--num);font-size:17px;font-variant-numeric:tabular-nums;color:var(--leaf)}
+.scroll{overflow-x:auto;margin:0 -4px;padding:0 4px}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+th{font-size:12px;font-weight:600;color:var(--muted);text-align:left;padding:6px 6px;border-bottom:1px solid var(--line);white-space:nowrap;letter-spacing:.02em}
+th.r{text-align:right}
+td{padding:5px 6px;border-bottom:1px solid var(--line);vertical-align:middle}
+tfoot td{font-family:var(--num);font-weight:500;text-align:right;border-bottom:0;padding-top:10px}
+tfoot td.lbl{font-family:var(--body);text-align:left;font-weight:600}
+.market{min-width:620px}
+.idx{width:48px}
+.market input.n{min-width:92px}
+.del{background:none;border:0;color:var(--muted);font-size:18px;cursor:pointer;padding:4px 8px;border-radius:6px}
+.del:hover{color:var(--chili);background:var(--chili-soft)}
+.grand{color:var(--chili)}
+.toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:12px;flex-wrap:wrap}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:10px 18px;border-radius:999px;font-weight:500;z-index:20;max-width:calc(100% - 32px);text-align:center}
+.chk{display:flex;gap:6px;align-items:center;font-size:13px;color:var(--muted)}
+.range{display:flex;flex-wrap:wrap;gap:12px;align-items:end;margin-bottom:14px}
+.range label.f{width:170px;max-width:100%}
+.dl{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto}
+.btn-dl{background:var(--leaf);color:#fff}
+.sum{min-width:820px}
+.sum td{text-align:right;font-family:var(--num);font-size:14px}
+.sum td:first-child{text-align:left}
+.sum tfoot td{font-weight:600}
+/* PDF page: fixed print look, rendered off-screen */
+.rep{position:absolute;left:-10000px;top:0;width:794px;min-height:1123px;padding:44px 44px;background:#ffffff;color:#1d2a1f;font-family:var(--body);font-size:12px;line-height:1.45;color-scheme:light}
+.rep header{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #2f6b3a;padding-bottom:10px;margin-bottom:16px}
+.rep h1{font-family:var(--display);font-size:24px;font-weight:600;margin:0;color:#2f6b3a}
+.rep .rs{font-size:13px;color:#5f6d61}
+.rep h3{font-family:var(--display);font-weight:500;font-size:15px;margin:0 0 8px}
+.rep table{width:100%;border-collapse:collapse}
+.rep th{background:#2f6b3a;color:#ffffff;font-size:11px;padding:6px 6px;text-align:right;border:0}
+.rep th:first-child,.rep td:first-child{text-align:left}
+.rep td{padding:4px 6px;border-bottom:1px solid #dde3d7;text-align:right;font-variant-numeric:tabular-nums}
+.rep td.tx{text-align:left}
+.rep tr.tot td{font-weight:600;background:#e3eee2;border-bottom:0}
+.rep footer{position:absolute;bottom:28px;left:44px;right:44px;font-size:10px;color:#5f6d61;display:flex;justify-content:space-between}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+</head>
+<body>
+
+<div class="bar"><div class="bar-in">
+  <div class="brand">ร้านตำนัว<small>บันทึกยอดประจำวัน · Daily P&amp;L input</small></div>
+  <div class="bar-ctl">
+    <input type="date" id="day" aria-label="วันที่">
+    <button class="btn btn-ghost" id="clear" type="button">ล้างฟอร์ม</button>
+    <button class="btn btn-save" id="save" type="button" disabled>บันทึก</button>
+  </div>
+</div></div>
+
+<main>
+  <div class="status" id="status" data-s="load"><span class="dot"></span><span id="statusText">กำลังเชื่อมต่อฐานข้อมูล…</span><button id="reload" type="button" hidden>โหลดข้อมูลล่าสุด</button></div>
+
+  <div class="summary">
+    <div><span>ยอดขายรวม</span><strong id="sSales">0</strong><em id="sSalesEx"></em></div>
+    <div><span>บิลตลาดรวม</span><strong id="sMarket">0</strong><em id="sMarketPct"></em></div>
+    <div><span>เงินสดย่อยรวม</span><strong id="sPetty">0</strong><em id="sPettyPct"></em></div>
+    <div><span>ยอดเฉลี่ย/บิล</span><strong id="sAvg">–</strong><em id="sBills"></em></div>
+  </div>
+
+  <section>
+    <h2>ยอดขาย</h2>
+    <p class="sub">แยกตามช่องทางชำระเงิน (บาท)</p>
+    <div class="sales">
+      <label class="f">เงินสด<input class="n" id="cash" inputmode="decimal"></label>
+      <label class="f">LINE MAN<input class="n" id="lineman" inputmode="decimal"></label>
+      <label class="f">Grab Food<input class="n" id="grab" inputmode="decimal"></label>
+      <label class="f">Credit<input class="n" id="credit" inputmode="decimal"></label>
+      <label class="f">จำนวนบิล<input class="n" id="bills" inputmode="numeric"></label>
+    </div>
+    <div class="totrow">
+      <label class="chk"><input type="checkbox" id="vat" checked> ยอดรวม VAT 7%</label>
+      <span id="exWrap">ก่อน VAT <b id="salesEx">0.00</b></span>
+      <span>ยอดขายรวม <b id="salesTot">0.00</b> บาท</span>
+    </div>
+  </section>
+
+  <section>
+    <h2>เงินสดย่อย</h2>
+    <p class="sub">กรอกทีละรายการ เพิ่มบรรทัดได้ตามต้องการ</p>
+    <div class="scroll"><table>
+      <thead><tr><th style="width:60%">รายการ</th><th class="r">ยอดเงิน (บาท)</th><th></th></tr></thead>
+      <tbody id="pettyBody"></tbody>
+      <tfoot><tr><td class="lbl">รวม</td><td id="pettyTot" class="grand">0.00</td><td></td></tr></tfoot>
+    </table></div>
+    <div class="toolbar"><button class="btn btn-add" id="addPetty" type="button">+ เพิ่มรายการ</button></div>
+  </section>
+
+  <section>
+    <h2>บิลตลาด</h2>
+    <p class="sub">1 แถว = 1 บิล · ใส่ยอดเงินตามประเภท ระบบรวมให้อัตโนมัติ</p>
+    <div class="scroll"><table class="market">
+      <thead><tr>
+        <th></th><th class="r">ของสด</th><th class="r">ของแห้ง-ปรุงรส</th><th class="r">สิ้นเปลือง</th>
+        <th class="r">อาหารพนักงาน</th><th class="r">ค่าขนส่ง</th><th class="r">รวมบิล</th>
+      </tr></thead>
+      <tbody id="mktBody"></tbody>
+      <tfoot><tr><td class="lbl">รวม</td>
+        <td id="m0">0.00</td><td id="m1">0.00</td><td id="m2">0.00</td><td id="m3">0.00</td><td id="m4">0.00</td>
+        <td id="mTot" class="grand">0.00</td></tr></tfoot>
+    </table></div>
+    <div class="toolbar"><button class="btn btn-add" id="addMkt" type="button">+ เพิ่มบิล</button></div>
+  </section>
+
+  <section id="exportSec">
+    <h2>สรุปบิลตลาดและเงินสดย่อย</h2>
+    <p class="sub">เลือกช่วงวันที่ แล้วดาวน์โหลดเป็น Excel หรือ PDF</p>
+    <div class="range">
+      <label class="f">ตั้งแต่<input type="date" id="from" class="t"></label>
+      <label class="f">ถึง<input type="date" id="to" class="t"></label>
+      <div class="dl">
+        <button class="btn btn-dl" id="xlsBtn" type="button" disabled>ดาวน์โหลด Excel</button>
+        <button class="btn btn-dl" id="pdfBtn" type="button" disabled>ดาวน์โหลด PDF</button>
+      </div>
+    </div>
+    <div class="scroll"><table class="sum">
+      <thead><tr><th>วันที่</th><th class="r">ของสด</th><th class="r">ของแห้ง-ปรุงรส</th><th class="r">สิ้นเปลือง</th><th class="r">อาหารพนักงาน</th><th class="r">ค่าขนส่ง</th><th class="r">รวมบิลตลาด</th><th class="r">เงินสดย่อย</th><th class="r">รวมทั้งหมด</th></tr></thead>
+      <tbody id="sumBody"></tbody>
+      <tfoot id="sumFoot"></tfoot>
+    </table></div>
+    <p class="sub" id="sumNote" style="margin:10px 0 0">กำลังโหลด…</p>
+  </section>
+</main>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+const CATS=["fresh","dry","supplies","staffMeal","transport"];
+const $=id=>document.getElementById(id);
+const num=v=>{const x=parseFloat(String(v??'').replace(/,/g,''));return isFinite(x)?x:0};
+const fmt=v=>v.toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmt0=v=>v.toLocaleString('th-TH',{maximumFractionDigits:0});
+const today=()=>{const d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,10)};
+const blank=v=>v===0||v==null?'':v;
+
+let db=null, unsub=null, dirty=false, latest=null, canWrite=true;
+
+function pettyRow(r={item:'',amount:''}){
+  const tr=document.createElement('tr');
+  tr.innerHTML=`<td><input class="t" placeholder="เช่น น้ำแข็ง" aria-label="รายการ"></td>
+  <td><input class="n" inputmode="decimal" aria-label="ยอดเงิน"></td>
+  <td><button class="del" type="button" aria-label="ลบ">×</button></td>`;
+  const i=tr.querySelectorAll('input');i[0].value=r.item??'';i[1].value=blank(r.amount);
+  $('pettyBody').appendChild(tr);
+}
+function mktRow(r={}){
+  const tr=document.createElement('tr');
+  let h=`<td class="idx"><button class="del" type="button" aria-label="ลบบิล">×</button></td>`;
+  CATS.forEach(c=>h+=`<td><input class="n" inputmode="decimal"></td>`);
+  h+=`<td class="rowtot" style="text-align:right;font-family:var(--num)">0.00</td>`;
+  tr.innerHTML=h;tr.querySelectorAll('input').forEach((el,k)=>el.value=blank(r[CATS[k]]));
+  $('mktBody').appendChild(tr);
+}
+
+function collect(){
+  const sales={cash:num($('cash').value),lineman:num($('lineman').value),grab:num($('grab').value),credit:num($('credit').value)};
+  const bills=num($('bills').value), vat=$('vat').checked;
+  const petty=[...$('pettyBody').rows].map(tr=>{const i=tr.querySelectorAll('input');return{item:i[0].value.trim(),amount:num(i[1].value)}})
+    .filter(r=>r.item||r.amount);
+  const market=[...$('mktBody').rows].map(tr=>{const o={};tr.querySelectorAll('input').forEach((el,k)=>o[CATS[k]]=num(el.value));return o})
+    .filter(o=>CATS.some(c=>o[c]));
+  const salesTotal=Object.values(sales).reduce((a,b)=>a+b,0);
+  const marketByCat={};CATS.forEach(c=>marketByCat[c]=market.reduce((a,o)=>a+o[c],0));
+  return {date:$('day').value,vat,sales,bills,petty,market,
+    totals:{sales:salesTotal,salesExVat:vat?+(salesTotal/1.07).toFixed(2):salesTotal,
+      petty:petty.reduce((a,r)=>a+r.amount,0),market:Object.values(marketByCat).reduce((a,b)=>a+b,0),marketByCat},
+    updatedAt:new Date().toISOString()};
+}
+function load(d){
+  d=d||{};
+  $('vat').checked=d.vat!==false;
+  const s=d.sales||{};['cash','lineman','grab','credit'].forEach(k=>$(k).value=blank(s[k]));
+  $('bills').value=blank(d.bills);
+  $('pettyBody').innerHTML='';(d.petty&&d.petty.length?d.petty:[{}]).forEach(pettyRow);
+  $('mktBody').innerHTML='';(d.market&&d.market.length?d.market:[{}]).forEach(mktRow);
+  dirty=false;$('reload').hidden=true;
+  calc();lockInputs();
+}
+function calc(){
+  const s=['cash','lineman','grab','credit'].reduce((a,k)=>a+num($(k).value),0);
+  const bills=num($('bills').value), vat=$('vat').checked, ex=vat?s/1.07:s;
+  $('salesTot').textContent=fmt(s);$('salesEx').textContent=fmt(ex);$('exWrap').hidden=!vat;
+  let p=0;[...$('pettyBody').rows].forEach(tr=>p+=num(tr.querySelectorAll('input')[1].value));
+  $('pettyTot').textContent=fmt(p);
+  const col=Array(CATS.length).fill(0);let m=0;
+  [...$('mktBody').rows].forEach(tr=>{let r=0;tr.querySelectorAll('input.n').forEach((el,c)=>{const v=num(el.value);col[c]+=v;r+=v});
+    tr.querySelector('.rowtot').textContent=fmt(r);m+=r});
+  col.forEach((v,c)=>$('m'+c).textContent=fmt(v));$('mTot').textContent=fmt(m);
+  const pct=v=>ex?(v/ex*100).toFixed(1)+'% ของยอดขาย'+(vat?' (ก่อน VAT)':''):'';
+  $('sSales').textContent=fmt0(s);$('sSalesEx').textContent=vat&&s?'ก่อน VAT '+fmt0(ex):'';
+  $('sMarket').textContent=fmt0(m);$('sMarketPct').textContent=pct(m);
+  $('sPetty').textContent=fmt0(p);$('sPettyPct').textContent=pct(p);
+  $('sAvg').textContent=bills?fmt0(s/bills):'–';$('sBills').textContent=bills?fmt0(bills)+' บิล':'';
+}
+function setStatus(state,text){$('status').dataset.s=state;$('statusText').textContent=text}
+function timeOf(iso){try{return new Date(iso).toLocaleString('th-TH',{dateStyle:'medium',timeStyle:'short'})}catch(e){return ''}}
+function showSaved(){
+  if(latest)setStatus('saved','บันทึกในระบบแล้ว · อัปเดตล่าสุด '+timeOf(latest.updatedAt));
+  else setStatus('new','ยังไม่มีข้อมูลของวันนี้ในระบบ');
+}
+function lockInputs(){
+  document.querySelectorAll('main section:not(#exportSec) input, main .btn-add, main .del').forEach(el=>el.disabled=!canWrite||!db);
+  $('save').disabled=!canWrite||!db;$('clear').disabled=!canWrite||!db;
+}
+function toast(t){const el=$('toast');el.textContent=t;el.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>el.hidden=true,2600)}
+
+const TABLE='tamnua_days';
+async function fetchDay(day){
+  const {data,error}=await db.from(TABLE).select('data').eq('date',day).maybeSingle();
+  if(error)throw error;return data?data.data:null;
+}
+function watchDay(day){
+  if(unsub&&db){db.removeChannel(unsub);unsub=null}
+  latest=null;load(null);
+  if(!db){return}
+  setStatus('load','กำลังโหลดข้อมูลวันที่ '+day+'…');
+  fetchDay(day).then(d=>{if($('day').value!==day)return;latest=d;if(!dirty)load(d);showSaved()})
+    .catch(()=>setStatus('err','โหลดข้อมูลไม่ได้ ตรวจสอบอินเทอร์เน็ตแล้วรีเฟรชหน้านี้'));
+  unsub=db.channel('day-'+day).on('postgres_changes',{event:'*',schema:'public',table:TABLE,filter:'date=eq.'+day},p=>{
+    const d=p.new&&p.new.data;if(!d||(latest&&d.updatedAt===latest.updatedAt))return;
+    latest=d;
+    if(dirty){setStatus('dirty','มีคนอัปเดตข้อมูลวันนี้จากเครื่องอื่น');$('reload').hidden=false;return}
+    load(d);showSaved();
+  }).subscribe();
+}
+
+document.addEventListener('input',e=>{if(e.target.closest('main')&&!e.target.closest('#exportSec')&&e.target.matches('input')){calc();if(!dirty){dirty=true;setStatus('dirty','มีการแก้ไขที่ยังไม่ได้บันทึก')}}});
+document.addEventListener('click',e=>{if(e.target.classList.contains('del')){
+  const tb=e.target.closest('tbody');e.target.closest('tr').remove();
+  if(!tb.rows.length)(tb.id==='pettyBody'?pettyRow:mktRow)();
+  calc();dirty=true;setStatus('dirty','มีการแก้ไขที่ยังไม่ได้บันทึก')}});
+$('addPetty').onclick=()=>{pettyRow();$('pettyBody').lastElementChild.querySelector('input').focus()};
+$('addMkt').onclick=()=>{mktRow();$('mktBody').lastElementChild.querySelector('input').focus()};
+$('reload').onclick=()=>{load(latest);showSaved()};
+$('clear').onclick=()=>{load(null);dirty=true;setStatus('dirty','ล้างฟอร์มแล้ว ยังไม่ได้บันทึก')};
+$('day').onchange=()=>{if($('day').value)watchDay($('day').value)};
+$('save').onclick=async()=>{
+  if(!db)return;const day=$('day').value;if(!day){toast('เลือกวันที่ก่อนบันทึก');return}
+  const btn=$('save');btn.disabled=true;btn.textContent='กำลังบันทึก…';
+  try{const data=collect();const {error}=await db.from(TABLE).upsert({date:day,data,updated_at:data.updatedAt});if(error)throw error;latest=data;dirty=false;$('reload').hidden=true;showSaved();toast('บันทึกวันที่ '+day+' แล้ว');refreshSummary()}
+  catch(e){
+    if(e&&e.code==='invalid_argument'){canWrite=false;lockInputs();setStatus('err','บัญชีนี้ดูได้อย่างเดียว ต้องได้สิทธิ์ Contributor ขึ้นไปจึงจะบันทึกได้')}
+    else toast('บันทึกไม่สำเร็จ ลองกดบันทึกอีกครั้ง');
+  }
+  finally{btn.textContent='บันทึก';btn.disabled=!canWrite}
+};
+
+$('day').value=today();
+$('from').value=today().slice(0,8)+'01';$('to').value=today();
+load(null);lockInputs();
+function initDb(){
+  const cfg=window.TAMNUA_CONFIG||{};
+  if(!window.supabase||!cfg.supabaseUrl||!cfg.supabaseAnonKey||/YOUR_/.test(cfg.supabaseUrl+cfg.supabaseAnonKey)){
+    setStatus('err','ยังไม่ได้ตั้งค่าฐานข้อมูล (ไฟล์ config.js)');$('sumNote').textContent='ยังไม่ได้ตั้งค่าฐานข้อมูล';return}
+  db=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey);
+  lockInputs();watchDay($('day').value);refreshSummary();
+}
+/* ---------- สรุป + ดาวน์โหลด Excel / PDF ---------- */
+const CAT_TH=["ของสด","ของแห้ง-ปรุงรส","สิ้นเปลือง","อาหารพนักงาน","ค่าขนส่ง"];
+let rangeDocs=[];
+const dmy=iso=>{const [y,m,d]=String(iso).split('-');return d&&m&&y?`${d}/${m}/${y}`:iso};
+function dayRow(d){
+  const mk=CATS.map(c=>(d.market||[]).reduce((a,o)=>a+num(o[c]),0));
+  const mt=mk.reduce((a,b)=>a+b,0), p=(d.petty||[]).reduce((a,r)=>a+num(r.amount),0);
+  return {date:d.date,mk,mt,p,all:mt+p};
+}
+async function refreshSummary(){
+  if(!db)return;
+  const f=$('from').value,t=$('to').value;
+  if(!f||!t){$('sumNote').textContent='เลือกช่วงวันที่ให้ครบ';return}
+  $('sumNote').textContent='กำลังโหลด…';
+  try{
+    const {data,error}=await db.from(TABLE).select('date,data').gte('date',f).lte('date',t).order('date').limit(400);
+    if(error)throw error;
+    rangeDocs=(data||[]).map(r=>({...r.data,date:r.date})).filter(d=>d&&d.date);
+  }catch(e){rangeDocs=[];$('sumNote').textContent='โหลดสรุปไม่ได้ ลองรีเฟรชหน้านี้';renderSummary(true);return}
+  renderSummary();
+}
+function renderSummary(failed){
+  const rows=rangeDocs.map(dayRow);
+  $('sumBody').innerHTML=rows.map(r=>`<tr><td>${dmy(r.date)}</td>${r.mk.map(v=>`<td>${fmt(v)}</td>`).join('')}<td>${fmt(r.mt)}</td><td>${fmt(r.p)}</td><td class="grand">${fmt(r.all)}</td></tr>`).join('');
+  if(rows.length){
+    const tot=k=>rows.reduce((a,r)=>a+r[k],0);
+    const mk=CATS.map((_,i)=>rows.reduce((a,r)=>a+r.mk[i],0));
+    $('sumFoot').innerHTML=`<tr><td class="lbl">รวม</td>${mk.map(v=>`<td>${fmt(v)}</td>`).join('')}<td>${fmt(tot('mt'))}</td><td>${fmt(tot('p'))}</td><td class="grand">${fmt(tot('all'))}</td></tr>`;
+  } else $('sumFoot').innerHTML='';
+  if(!failed)$('sumNote').textContent=rows.length?`มีข้อมูล ${rows.length} วัน`:'ยังไม่มีข้อมูลที่บันทึกในช่วงวันที่นี้';
+  $('xlsBtn').disabled=$('pdfBtn').disabled=!rows.length;
+}
+$('from').onchange=$('to').onchange=refreshSummary;
+
+function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=()=>rej(new Error('load'));document.head.appendChild(s)})}
+async function saveFile(name,data){
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([data]));a.download=name;
+  document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000);
+  toast('ดาวน์โหลด '+name+' แล้ว');
+}
+const rangeLabel=()=>`${dmy($('from').value)} – ${dmy($('to').value)}`;
+const fileBase=()=>`ตำนัว_สรุปบิลตลาด-เงินสดย่อย_${$('from').value}_${$('to').value}`;
+function detailRows(){
+  const mkt=[],pet=[];
+  rangeDocs.forEach(d=>{
+    (d.market||[]).forEach((o,i)=>{const v=CATS.map(c=>num(o[c]));mkt.push([dmy(d.date),i+1,...v,v.reduce((a,b)=>a+b,0)])});
+    (d.petty||[]).forEach(r=>pet.push([dmy(d.date),r.item||'',num(r.amount)]));
+  });
+  return {mkt,pet};
+}
+async function withBusy(btn,label,fn){
+  const old=btn.textContent;btn.disabled=true;btn.textContent=label;
+  try{await fn()}catch(e){toast('สร้างไฟล์ไม่สำเร็จ ลองใหม่อีกครั้ง')}
+  finally{btn.textContent=old;btn.disabled=!rangeDocs.length}
+}
+
+/* Excel */
+$('xlsBtn').onclick=()=>withBusy($('xlsBtn'),'กำลังสร้าง…',async()=>{
+  if(!window.XLSX)await loadScript('https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js');
+  const X=window.XLSX;
+  const H={font:{bold:true,color:{rgb:"FFFFFF"}},fill:{fgColor:{rgb:"2F6B3A"}},alignment:{horizontal:"center",vertical:"center",wrapText:true}};
+  const N={numFmt:"#,##0.00"};
+  const T={font:{bold:true},numFmt:"#,##0.00",fill:{fgColor:{rgb:"E3EEE2"}}};
+  function makeSheet(title,headers,rows,numFrom,sumCols,widths){
+    const ws=X.utils.aoa_to_sheet([[title],headers,...rows]);
+    const n=rows.length,last=n+2,cell=(r,c)=>X.utils.encode_cell({r,c});
+    ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:headers.length-1}}];
+    ws['A1'].s={font:{bold:true,sz:14,color:{rgb:"2F6B3A"}}};
+    headers.forEach((_,c)=>ws[cell(1,c)].s=H);
+    for(let r=2;r<2+n;r++)for(let c=numFrom;c<headers.length;c++){const a=cell(r,c);if(ws[a])ws[a].s=N}
+    ws[cell(last,0)]={t:'s',v:'รวม',s:T};
+    for(let c=1;c<headers.length;c++){
+      if(sumCols.includes(c)){const col=X.utils.encode_col(c);
+        ws[cell(last,c)]={t:'n',v:rows.reduce((a,row)=>a+(+row[c]||0),0),f:`SUM(${col}3:${col}${n+2})`,s:T};}
+      else ws[cell(last,c)]={t:'s',v:'',s:T};
+    }
+    ws['!ref']=X.utils.encode_range({s:{r:0,c:0},e:{r:last,c:headers.length-1}});
+    ws['!cols']=widths.map(w=>({wch:w}));ws['!rows']=[{hpt:24},{hpt:32}];
+    return ws;
+  }
+  const sum=rangeDocs.map(dayRow).map(r=>[dmy(r.date),...r.mk,r.mt,r.p,r.all]);
+  const {mkt,pet}=detailRows();
+  const wb=X.utils.book_new();
+  X.utils.book_append_sheet(wb,makeSheet(`ร้านตำนัว · สรุปบิลตลาดและเงินสดย่อย ${rangeLabel()}`,
+    ['วันที่',...CAT_TH,'รวมบิลตลาด','เงินสดย่อย','รวมทั้งหมด'],sum,1,[1,2,3,4,5,6,7,8],[12,12,14,12,13,12,14,13,14]),'สรุปรายวัน');
+  X.utils.book_append_sheet(wb,makeSheet(`บิลตลาด ${rangeLabel()}`,
+    ['วันที่','บิลที่',...CAT_TH,'รวมบิล'],mkt,2,[2,3,4,5,6,7],[12,8,12,14,12,13,12,13]),'บิลตลาด');
+  X.utils.book_append_sheet(wb,makeSheet(`เงินสดย่อย ${rangeLabel()}`,
+    ['วันที่','รายการ','ยอดเงิน (บาท)'],pet,2,[2],[12,36,16]),'เงินสดย่อย');
+  const buf=X.write(wb,{bookType:'xlsx',type:'array'});
+  await saveFile(fileBase()+'.xlsx',buf);
+});
+
+/* PDF: each page is drawn from HTML so Thai text renders correctly */
+$('pdfBtn').onclick=()=>withBusy($('pdfBtn'),'กำลังสร้าง…',async()=>{
+  if(!window.html2canvas)await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
+  if(!window.jspdf)await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+  try{await document.fonts.ready}catch(e){}
+  const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const f2=v=>typeof v==='number'?fmt(v):esc(v);
+  const sumRows=rangeDocs.map(dayRow).map(r=>[dmy(r.date),...r.mk,r.mt,r.p,r.all]);
+  const {mkt,pet}=detailRows();
+  const total=(rows,from)=>rows[0]?rows[0].map((_,c)=>c===0?'รวม':c<from?'':rows.reduce((a,r)=>a+(+r[c]||0),0)):[];
+  const tables=[
+    {title:'สรุปรายวัน',head:['วันที่',...CAT_TH,'รวมบิลตลาด','เงินสดย่อย','รวมทั้งหมด'],rows:sumRows,tot:total(sumRows,1),tx:[0]},
+    {title:'รายละเอียดบิลตลาด',head:['วันที่','บิลที่',...CAT_TH,'รวมบิล'],rows:mkt,tot:total(mkt,2),tx:[0,1]},
+    {title:'รายละเอียดเงินสดย่อย',head:['วันที่','รายการ','ยอดเงิน (บาท)'],rows:pet,tot:total(pet,2),tx:[0,1]},
+  ].filter(t=>t.rows.length);
+  const PER=36,pages=[];
+  tables.forEach(t=>{for(let i=0;i<t.rows.length;i+=PER){const part=t.rows.slice(i,i+PER),lastPart=i+PER>=t.rows.length;
+    pages.push({t,part,lastPart,cont:i>0})}});
+  const pdf=new window.jspdf.jsPDF({unit:'mm',format:'a4',orientation:'portrait'});
+  const printed=new Date().toLocaleString('th-TH',{dateStyle:'medium',timeStyle:'short'});
+  for(let i=0;i<pages.length;i++){
+    const {t,part,lastPart,cont}=pages[i];
+    const row=(r,cls)=>`<tr${cls?` class="${cls}"`:''}>${r.map((v,c)=>`<td${t.tx.includes(c)?' class="tx"':''}>${c===1&&t.tx.includes(1)&&typeof v==='number'?v:f2(v)}</td>`).join('')}</tr>`;
+    const el=document.createElement('div');el.className='rep';
+    el.innerHTML=`<header><div><h1>ร้านตำนัว</h1><div class="rs">สรุปบิลตลาดและเงินสดย่อย</div></div><div class="rs">${rangeLabel()}</div></header>
+      <h3>${t.title}${cont?' (ต่อ)':''}</h3>
+      <table><thead><tr>${t.head.map(h=>`<th>${h}</th>`).join('')}</tr></thead>
+      <tbody>${part.map(r=>row(r)).join('')}${lastPart?row(t.tot,'tot'):''}</tbody></table>
+      <footer><span>พิมพ์เมื่อ ${printed}</span><span>หน้า ${i+1}/${pages.length}</span></footer>`;
+    document.body.appendChild(el);
+    try{
+      const cv=await window.html2canvas(el,{scale:2,backgroundColor:'#ffffff',logging:false});
+      if(i)pdf.addPage();
+      pdf.addImage(cv.toDataURL('image/jpeg',0.92),'JPEG',0,0,210,cv.height*210/cv.width);
+    }finally{el.remove()}
+  }
+  await saveFile(fileBase()+'.pdf',pdf.output('arraybuffer'));
+});
+
+initDb();
+</script>
+</body>
+</html>
