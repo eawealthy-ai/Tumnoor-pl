@@ -96,6 +96,33 @@ tfoot td.lbl{font-family:var(--body);text-align:left;font-weight:600}
 .tlist td.amt{text-align:right;font-family:var(--num);font-variant-numeric:tabular-nums;white-space:nowrap}
 .tlist td.det{color:var(--muted);font-size:13px;max-width:280px}
 .tlist tr.isPaid td{color:var(--muted)}
+.kpis{grid-template-columns:repeat(5,1fr)}
+@media (max-width:900px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.warnnum{color:var(--chili)}
+.dhead{margin:0}
+.chartbox{position:relative;height:260px;min-width:0}
+.chartbox.tall{height:320px}
+.chartbox.donut{height:200px;width:200px;flex:none}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+@media (max-width:760px){.grid2{grid-template-columns:1fr}}
+.mixwrap{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.mix{flex:1 1 180px;width:auto}
+.mix td{font-size:14px;border-bottom:1px solid var(--line);padding:6px 4px}
+.mix td.r{text-align:right;font-family:var(--num);font-variant-numeric:tabular-nums}
+.sw{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:8px;vertical-align:middle}
+.ebars{display:grid;gap:10px}
+.ebar{display:grid;grid-template-columns:1fr auto 64px;gap:2px 12px;align-items:baseline;font-size:14px}
+.ebar .ev,.ebar .ep{font-family:var(--num);font-variant-numeric:tabular-nums;text-align:right}
+.ebar .ep{color:var(--muted);font-size:13px}
+.ebar .et{grid-column:1/-1;height:8px;background:var(--leaf-soft);border-radius:4px;overflow:hidden}
+.ebar .et i{display:block;height:100%;background:var(--leaf);border-radius:4px}
+.ebar.tot{border-top:1px dashed var(--line);padding-top:10px;font-weight:600}
+.ebar.tot .ev{color:var(--chili)}
+.dtable{min-width:760px}
+.dtable td{text-align:right;font-family:var(--num);font-size:14px;font-variant-numeric:tabular-nums}
+.dtable td:first-child{text-align:left;font-family:var(--body)}
+.dtable tfoot td{font-weight:600}
+.tabs{flex-wrap:wrap}
 .nowrap{white-space:nowrap}
 .tcontent{display:grid;gap:22px}
 .tcontent[hidden]{display:none}
@@ -152,7 +179,7 @@ tfoot td.lbl{font-family:var(--body);text-align:left;font-weight:600}
 
 <div class="bar"><div class="bar-in">
   <div class="brand">ร้านตำนัว<small>บันทึกยอดประจำวัน · Daily P&amp;L input</small></div>
-  <nav class="tabs" aria-label="เลือกหน้า"><button type="button" data-view="daily" aria-current="page">บันทึกรายวัน</button><button type="button" data-view="transfer" aria-current="false">รายการโอน</button></nav>
+  <nav class="tabs" aria-label="เลือกหน้า"><button type="button" data-view="daily" aria-current="page">บันทึกรายวัน</button><button type="button" data-view="transfer" aria-current="false">รายการโอน</button><button type="button" data-view="dash" aria-current="false">Dashboard</button></nav>
   <div class="bar-ctl" id="dailyCtl">
     <input type="date" id="day" aria-label="วันที่">
     <button class="btn btn-ghost" id="clear" type="button">ล้างฟอร์ม</button>
@@ -237,18 +264,8 @@ tfoot td.lbl{font-family:var(--body);text-align:left;font-weight:600}
 </main>
 
 <main id="transferView" hidden>
-  <section id="tLogin" class="login">
-    <h2>รายการโอน</h2>
-    <p class="sub">หน้านี้เปิดได้เฉพาะเจ้าของร้าน กรุณาเข้าสู่ระบบ</p>
-    <form id="tLoginForm" class="loginf">
-      <label class="f">อีเมล<input type="email" id="tEmail" class="t" autocomplete="username" required></label>
-      <label class="f">รหัสผ่าน<input type="password" id="tPass" class="t" autocomplete="current-password" required></label>
-      <button class="btn btn-save" id="tLoginBtn" type="submit">เข้าสู่ระบบ</button>
-      <p class="sub" id="tLoginErr" style="color:var(--chili);margin:0"></p>
-    </form>
-  </section>
-  <div id="tContent" class="tcontent" hidden>
-  <div class="tuser">เข้าสู่ระบบเป็น <b id="tWho"></b> · <button type="button" class="linkbtn" id="tLogout">ออกจากระบบ</button></div>
+  <div id="tContent" class="tcontent">
+  <div class="tuser">เข้าสู่ระบบเป็น <b class="who"></b> · <button type="button" class="linkbtn logout">ออกจากระบบ</button></div>
   <div class="summary three">
     <div><span>ค้างโอน</span><strong id="tPend">0</strong><em id="tPendN"></em></div>
     <div><span>โอนแล้ว</span><strong id="tDone">0</strong><em id="tDoneN"></em></div>
@@ -275,6 +292,69 @@ tfoot td.lbl{font-family:var(--body);text-align:left;font-weight:600}
       <button class="btn btn-save" id="tMark" type="button" disabled>ทำเครื่องหมายโอนแล้ว</button></div>
   </section>
   </div>
+</main>
+
+<main id="loginView" hidden>
+  <section class="login">
+    <h2>เข้าสู่ระบบเจ้าของร้าน</h2>
+    <p class="sub">หน้ารายการโอนและ Dashboard เปิดได้เฉพาะเจ้าของร้าน</p>
+    <form id="tLoginForm" class="loginf">
+      <label class="f">อีเมล<input type="email" id="tEmail" class="t" autocomplete="username" required></label>
+      <label class="f">รหัสผ่าน<input type="password" id="tPass" class="t" autocomplete="current-password" required></label>
+      <button class="btn btn-save" id="tLoginBtn" type="submit">เข้าสู่ระบบ</button>
+      <p class="sub" id="tLoginErr" style="color:var(--chili);margin:0"></p>
+    </form>
+  </section>
+</main>
+
+<main id="dashView" hidden>
+  <div class="tuser">เข้าสู่ระบบเป็น <b class="who"></b> · <button type="button" class="linkbtn logout">ออกจากระบบ</button></div>
+  <div class="range dhead">
+    <label class="f">ตั้งแต่<input type="date" id="dFrom" class="t"></label>
+    <label class="f">ถึง<input type="date" id="dTo" class="t"></label>
+    <div class="seg" id="dPreset" role="group" aria-label="ช่วงเวลา">
+      <button type="button" data-p="thisMonth" aria-pressed="true">เดือนนี้</button>
+      <button type="button" data-p="lastMonth" aria-pressed="false">เดือนก่อน</button>
+      <button type="button" data-p="last7" aria-pressed="false">7 วันล่าสุด</button>
+    </div>
+  </div>
+  <p class="sub" id="dNote" style="margin:-10px 0 0">กำลังโหลด…</p>
+  <div class="summary kpis">
+    <div><span>ยอดขายรวม</span><strong id="kSales">0</strong><em id="kSalesEx"></em></div>
+    <div><span>ค่าใช้จ่าย (บิลตลาด + เงินสดย่อย)</span><strong id="kExp">0</strong><em id="kExpPct"></em></div>
+    <div><span>ยอดขายหักค่าใช้จ่าย</span><strong id="kNet">0</strong><em id="kNetPct"></em></div>
+    <div><span>ยอดเฉลี่ย/บิล</span><strong id="kAvg">–</strong><em id="kBills"></em></div>
+    <div><span>ค้างโอน</span><strong id="kPend" class="warnnum">0</strong><em id="kPendN"></em></div>
+  </div>
+  <section>
+    <h2>ยอดขายรายวัน</h2>
+    <p class="sub">แท่ง = ยอดขายแยกช่องทาง (รวม VAT) · เส้น = ค่าใช้จ่ายของวันนั้น</p>
+    <div class="chartbox tall"><canvas id="cDaily" aria-label="กราฟยอดขายรายวัน"></canvas></div>
+  </section>
+  <div class="grid2">
+    <section>
+      <h2>สัดส่วนช่องทางขาย</h2>
+      <div class="mixwrap"><div class="chartbox donut"><canvas id="cMix" aria-label="สัดส่วนช่องทางขาย"></canvas></div>
+      <table class="mix"><tbody id="mixTable"></tbody></table></div>
+    </section>
+    <section>
+      <h2>ค่าใช้จ่ายแยกประเภท</h2>
+      <p class="sub">% เทียบยอดขายก่อน VAT</p>
+      <div id="expBars" class="ebars"></div>
+    </section>
+  </div>
+  <section>
+    <h2>ยอดขายเฉลี่ยตามวันในสัปดาห์</h2>
+    <p class="sub">เฉลี่ยจากวันที่บันทึกในช่วงที่เลือก</p>
+    <div class="chartbox"><canvas id="cDow" aria-label="ยอดขายเฉลี่ยตามวัน"></canvas></div>
+  </section>
+  <section>
+    <h2>รายละเอียดรายวัน</h2>
+    <div class="scroll"><table class="dtable">
+      <thead><tr><th>วันที่</th><th class="r">ยอดขาย</th><th class="r">ก่อน VAT</th><th class="r">บิล</th><th class="r">เฉลี่ย/บิล</th><th class="r">บิลตลาด</th><th class="r">เงินสดย่อย</th><th class="r">ค่าใช้จ่าย %</th></tr></thead>
+      <tbody id="dBody"></tbody><tfoot id="dFoot"></tfoot>
+    </table></div>
+  </section>
 </main>
 <div class="toast" id="toast" hidden></div>
 
@@ -449,6 +529,7 @@ function initDb(){
   db=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey);
   lockInputs();watchDay($('day').value);refreshSummary();
   if(location.hash==='#transfer')showView('transfer');
+  else if(location.hash==='#dashboard')showView('dash');
   db.auth.onAuthStateChange&&db.auth.onAuthStateChange(()=>{});
 }
 /* ---------- สรุป + ดาวน์โหลด Excel / PDF ---------- */
@@ -612,21 +693,27 @@ let tRows=[],tFilter='pending';const tSel=new Set();
 function firstOfPrevMonth(){const d=new Date();d.setDate(1);d.setMonth(d.getMonth()-1);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-01'}
 $('tFrom').value=firstOfPrevMonth();$('tTo').value=today();
 
+let curView='daily';
+const VIEWS={daily:'dailyView',transfer:'transferView',dash:'dashView'};
 function showView(v){
-  const t=v==='transfer';
-  $('dailyView').hidden=t;$('transferView').hidden=!t;$('dailyCtl').hidden=t;
-  document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-current',b.dataset.view===v?'page':'false'));
-  try{history.replaceState(null,'',t?'#transfer':location.pathname)}catch(e){}
-  if(t)checkOwner();
+  curView=VIEWS[v]?v:'daily';
+  document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-current',b.dataset.view===curView?'page':'false'));
+  try{history.replaceState(null,'',curView==='transfer'?'#transfer':curView==='dash'?'#dashboard':location.pathname)}catch(e){}
+  $('dailyCtl').hidden=curView!=='daily';
+  Object.values(VIEWS).forEach(id=>$(id).hidden=true);$('loginView').hidden=true;
+  if(curView==='daily'){$('dailyView').hidden=false;return}
+  checkOwner();
 }
 let owner=null;
 async function checkOwner(){
-  if(!db){$('tLogin').hidden=false;$('tContent').hidden=true;$('tLoginErr').textContent='ยังไม่ได้เชื่อมฐานข้อมูล';return}
+  const v=curView;if(v==='daily')return;
+  if(!db){$('loginView').hidden=false;$('tLoginErr').textContent='ยังไม่ได้เชื่อมฐานข้อมูล';return}
   let email=null;try{const {data}=await db.auth.getSession();email=data&&data.session&&data.session.user&&data.session.user.email}catch(e){}
   const allowed=(window.TAMNUA_CONFIG&&window.TAMNUA_CONFIG.ownerEmail||'').toLowerCase();
   owner=email&&(!allowed||email.toLowerCase()===allowed)?email:null;
-  $('tLogin').hidden=!!owner;$('tContent').hidden=!owner;
-  if(owner){$('tWho').textContent=owner;loadTransfers()}
+  if(curView!==v)return;
+  $('loginView').hidden=!!owner;$(VIEWS[v]).hidden=!owner;
+  if(owner){document.querySelectorAll('.who').forEach(el=>el.textContent=owner);v==='transfer'?loadTransfers():loadDash()}
   else if(email){$('tLoginErr').textContent='บัญชี '+email+' ไม่มีสิทธิ์เปิดหน้านี้';try{await db.auth.signOut()}catch(e){}}
 }
 $('tLoginForm').addEventListener('submit',async e=>{
@@ -637,7 +724,7 @@ $('tLoginForm').addEventListener('submit',async e=>{
   }catch(err){$('tLoginErr').textContent='เข้าสู่ระบบไม่สำเร็จ ลองใหม่อีกครั้ง'}
   finally{btn.disabled=false}
 });
-$('tLogout').onclick=async()=>{try{await db.auth.signOut()}catch(e){}owner=null;tSel.clear();checkOwner()};
+document.querySelectorAll('.logout').forEach(b=>b.onclick=async()=>{try{await db.auth.signOut()}catch(e){}owner=null;tSel.clear();checkOwner()});
 async function markPaidChips(day){
   if(!db)return;
   const {data}=await db.from(PAID).select('bill_key,paid_at').eq('date',day);
@@ -718,6 +805,98 @@ $('tMark').onclick=async()=>{
   catch(err){toast('บันทึกไม่สำเร็จ ลองใหม่อีกครั้ง')}
   finally{btn.textContent='ทำเครื่องหมายโอนแล้ว';btn.disabled=!tSel.size}
 };
+
+
+/* ---------- Dashboard ---------- */
+const CH=[['cash','เงินสด','#2f6b3a'],['lineman','LINE MAN','#7cc28a'],['grab','Grab Food','#d79a1c'],['credit','Credit','#3b6ea8'],['kplus','KPlus','#8a5bb5']];
+const DOW=['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
+const isoOf=d=>{const x=new Date(d);x.setMinutes(x.getMinutes()-x.getTimezoneOffset());return x.toISOString().slice(0,10)};
+const charts={};let dashRows=[];
+function setPreset(p){
+  const now=new Date();let f,t;
+  if(p==='lastMonth'){f=new Date(now.getFullYear(),now.getMonth()-1,1);t=new Date(now.getFullYear(),now.getMonth(),0)}
+  else if(p==='last7'){t=now;f=new Date(now);f.setDate(f.getDate()-6)}
+  else{f=new Date(now.getFullYear(),now.getMonth(),1);t=now}
+  $('dFrom').value=isoOf(f);$('dTo').value=isoOf(t);
+  document.querySelectorAll('#dPreset button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.p===p?'true':'false'));
+}
+setPreset('thisMonth');
+document.querySelectorAll('#dPreset button').forEach(b=>b.onclick=()=>{setPreset(b.dataset.p);loadDash()});
+$('dFrom').onchange=$('dTo').onchange=()=>{document.querySelectorAll('#dPreset button').forEach(b=>b.setAttribute('aria-pressed','false'));loadDash()};
+
+function dayMetrics(raw){
+  const d=ensureIds(raw),s=d.sales||{};
+  const ch={};CH.forEach(([k])=>ch[k]=num(s[k]));
+  const sales=Object.values(ch).reduce((a,b)=>a+b,0),ex=d.vat===false?sales:sales/1.07;
+  const mk=CATS.map(c=>d.market.reduce((a,m)=>a+num(m[c]),0)),mt=mk.reduce((a,b)=>a+b,0);
+  const pt=d.petty.reduce((a,b)=>a+(b.items||[]).reduce((x,r)=>x+num(r.amount),0),0);
+  return {date:d.date,ch,sales,ex,bills:num(d.bills),mk,mt,pt,exp:mt+pt,d};
+}
+async function loadDash(){
+  if(!db||!owner)return;
+  const f=$('dFrom').value,t=$('dTo').value;if(!f||!t){$('dNote').textContent='เลือกช่วงวันที่ให้ครบ';return}
+  $('dNote').textContent='กำลังโหลด…';
+  const [days,paid]=await Promise.all([
+    db.from(TABLE).select('date,data').gte('date',f).lte('date',t).order('date').limit(400),
+    db.from(PAID).select('bill_key').gte('date',f).lte('date',t)]);
+  if(days.error||paid.error){$('dNote').textContent='โหลดข้อมูลไม่ได้ ตรวจสอบอินเทอร์เน็ตแล้วลองใหม่';return}
+  dashRows=(days.data||[]).filter(r=>r.data&&!r.data.deleted).map(r=>dayMetrics({...r.data,date:r.date}));
+  const paidKeys=new Set((paid.data||[]).map(r=>r.bill_key));
+  let pend=0,pendN=0;
+  dashRows.forEach(r=>{
+    r.d.petty.forEach(b=>{const a=(b.items||[]).reduce((x,i)=>x+num(i.amount),0);if(a&&!paidKeys.has(r.date+'|'+b.id)){pend+=a;pendN++}});
+    r.d.market.forEach(m=>{const a=CATS.reduce((x,c)=>x+num(m[c]),0);if(a&&!paidKeys.has(r.date+'|'+m.id)){pend+=a;pendN++}});
+  });
+  $('dNote').textContent=dashRows.length?`${dmy(f)} – ${dmy(t)} · บันทึกแล้ว ${dashRows.length} วัน`:'ยังไม่มีข้อมูลที่บันทึกในช่วงวันที่นี้';
+  renderDash(pend,pendN);
+}
+function tok(name){return getComputedStyle(document.documentElement).getPropertyValue(name).trim()||'#888'}
+async function renderDash(pend,pendN){
+  const R=dashRows,S=k=>R.reduce((a,r)=>a+r[k],0);
+  const sales=S('sales'),ex=S('ex'),exp=S('exp'),mt=S('mt'),pt=S('pt'),bills=S('bills');
+  const pct=v=>ex?(v/ex*100).toFixed(1)+'%':'–';
+  $('kSales').textContent=fmt0(sales);$('kSalesEx').textContent='ก่อน VAT '+fmt0(ex);
+  $('kExp').textContent=fmt0(exp);$('kExpPct').textContent=pct(exp)+' ของยอดขายก่อน VAT';
+  $('kNet').textContent=fmt0(ex-exp);$('kNetPct').textContent=pct(ex-exp)+' ของยอดขายก่อน VAT';
+  $('kAvg').textContent=bills?fmt0(sales/bills):'–';$('kBills').textContent=bills?fmt0(bills)+' บิล · เฉลี่ย '+fmt0(R.length?sales/R.length:0)+'/วัน':'ยังไม่มีจำนวนบิล';
+  $('kPend').textContent=fmt0(pend||0);$('kPendN').textContent=(pendN||0)+' บิล';
+
+  // expense breakdown (HTML bars)
+  const items=[...CAT_TH.map((n,i)=>[n,R.reduce((a,r)=>a+r.mk[i],0)]),['เงินสดย่อย',pt]];
+  const max=Math.max(1,...items.map(x=>x[1]));
+  $('expBars').innerHTML=items.map(([n,v])=>`<div class="ebar"><span class="en">${n}</span><span class="ev">${fmt0(v)}</span><span class="ep">${pct(v)}</span><span class="et"><i style="width:${(v/max*100).toFixed(1)}%"></i></span></div>`).join('')
+    +`<div class="ebar tot"><span class="en">รวมค่าใช้จ่าย</span><span class="ev">${fmt0(exp)}</span><span class="ep">${pct(exp)}</span><span></span></div>`;
+
+  // channel mix table
+  const mix=CH.map(([k,n,c])=>[n,c,R.reduce((a,r)=>a+r.ch[k],0)]);
+  $('mixTable').innerHTML=mix.map(([n,c,v])=>`<tr><td><i class="sw" style="background:${c}"></i>${n}</td><td class="r">${fmt0(v)}</td><td class="r">${sales?(v/sales*100).toFixed(1)+'%':'–'}</td></tr>`).join('');
+
+  // daily table
+  $('dBody').innerHTML=R.map(r=>`<tr><td>${dmy(r.date)} <span class="muted">${DOW[new Date(r.date+'T00:00:00').getDay()].slice(0,2)}</span></td><td>${fmt0(r.sales)}</td><td>${fmt0(r.ex)}</td><td>${r.bills?fmt0(r.bills):'–'}</td><td>${r.bills?fmt0(r.sales/r.bills):'–'}</td><td>${fmt0(r.mt)}</td><td>${fmt0(r.pt)}</td><td>${r.ex?(r.exp/r.ex*100).toFixed(1)+'%':'–'}</td></tr>`).join('');
+  $('dFoot').innerHTML=R.length?`<tr><td class="lbl">รวม</td><td>${fmt0(sales)}</td><td>${fmt0(ex)}</td><td>${bills?fmt0(bills):'–'}</td><td>${bills?fmt0(sales/bills):'–'}</td><td>${fmt0(mt)}</td><td>${fmt0(pt)}</td><td>${pct(exp)}</td></tr>`:'';
+
+  // charts
+  try{if(!window.Chart)await loadScript('https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js')}
+  catch(e){$('dNote').textContent+=' · โหลดกราฟไม่ได้';return}
+  const C=window.Chart,muted=tok('--muted'),line=tok('--line'),fg=tok('--fg');
+  C.defaults.font.family=getComputedStyle(document.body).fontFamily;C.defaults.color=muted;
+  const money=v=>Number(v).toLocaleString('th-TH',{maximumFractionDigits:0});
+  const mk=(id,cfg)=>{if(charts[id])charts[id].destroy();charts[id]=new C($(id),cfg)};
+  const grid={color:line},ticks={color:muted};
+  mk('cDaily',{type:'bar',data:{labels:R.map(r=>dmyS(r.date)),datasets:[
+      ...CH.map(([k,n,c])=>({type:'bar',label:n,data:R.map(r=>r.ch[k]),backgroundColor:c,stack:'s',borderRadius:2,order:2})),
+      {type:'line',label:'ค่าใช้จ่าย',data:R.map(r=>r.exp),borderColor:tok('--chili'),backgroundColor:tok('--chili'),pointRadius:3,tension:.25,order:1}]},
+    options:{maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+      scales:{x:{stacked:true,grid:{display:false},ticks},y:{stacked:true,grid,ticks:{...ticks,callback:money}}},
+      plugins:{legend:{position:'bottom',labels:{boxWidth:12,color:fg}},tooltip:{callbacks:{label:c=>c.dataset.label+': '+money(c.parsed.y)}}}}});
+  mk('cMix',{type:'doughnut',data:{labels:mix.map(m=>m[0]),datasets:[{data:mix.map(m=>m[2]),backgroundColor:mix.map(m=>m[1]),borderColor:tok('--surface'),borderWidth:2}]},
+    options:{maintainAspectRatio:false,cutout:'62%',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.label+': '+money(c.parsed)}}}}});
+  const dow=[1,2,3,4,5,6,0].map(i=>{const ds=R.filter(r=>new Date(r.date+'T00:00:00').getDay()===i);return{n:DOW[i],v:ds.length?ds.reduce((a,r)=>a+r.sales,0)/ds.length:0,c:ds.length}});
+  mk('cDow',{type:'bar',data:{labels:dow.map(d=>d.n),datasets:[{label:'ยอดขายเฉลี่ย',data:dow.map(d=>d.v),backgroundColor:tok('--leaf'),borderRadius:4}]},
+    options:{maintainAspectRatio:false,scales:{x:{grid:{display:false},ticks},y:{grid,ticks:{...ticks,callback:money}}},
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'เฉลี่ย '+money(c.parsed.y)+' ('+dow[c.dataIndex].c+' วัน)'}}}}});
+}
+try{window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{if(!$('dashView').hidden&&dashRows.length)loadDash()})}catch(e){}
 
 function dmyS(iso){const p=String(iso).split('-');return p.length===3?p[2]+'/'+p[1]:iso}
 initDb();
