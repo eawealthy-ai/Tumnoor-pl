@@ -135,6 +135,7 @@ tfoot td.lbl{font-family:var(--body);text-align:left;font-weight:600}
       <label class="f">LINE MAN<input class="n" id="lineman" inputmode="decimal"></label>
       <label class="f">Grab Food<input class="n" id="grab" inputmode="decimal"></label>
       <label class="f">Credit<input class="n" id="credit" inputmode="decimal"></label>
+      <label class="f">KPlus<input class="n" id="kplus" inputmode="decimal"></label>
       <label class="f">จำนวนบิล<input class="n" id="bills" inputmode="numeric"></label>
     </div>
     <div class="totrow">
@@ -221,7 +222,7 @@ function mktRow(r={}){
 }
 
 function collect(){
-  const sales={cash:num($('cash').value),lineman:num($('lineman').value),grab:num($('grab').value),credit:num($('credit').value)};
+  const sales={cash:num($('cash').value),lineman:num($('lineman').value),grab:num($('grab').value),credit:num($('credit').value),kplus:num($('kplus').value)};
   const bills=num($('bills').value), vat=$('vat').checked;
   const petty=[...$('pettyBody').rows].map(tr=>{const i=tr.querySelectorAll('input');return{item:i[0].value.trim(),amount:num(i[1].value)}})
     .filter(r=>r.item||r.amount);
@@ -237,7 +238,7 @@ function collect(){
 function load(d){
   d=d||{};
   $('vat').checked=d.vat!==false;
-  const s=d.sales||{};['cash','lineman','grab','credit'].forEach(k=>$(k).value=blank(s[k]));
+  const s=d.sales||{};['cash','lineman','grab','credit','kplus'].forEach(k=>$(k).value=blank(s[k]));
   $('bills').value=blank(d.bills);
   $('pettyBody').innerHTML='';(d.petty&&d.petty.length?d.petty:[{}]).forEach(pettyRow);
   $('mktBody').innerHTML='';(d.market&&d.market.length?d.market:[{}]).forEach(mktRow);
@@ -245,7 +246,7 @@ function load(d){
   calc();lockInputs();
 }
 function calc(){
-  const s=['cash','lineman','grab','credit'].reduce((a,k)=>a+num($(k).value),0);
+  const s=['cash','lineman','grab','credit','kplus'].reduce((a,k)=>a+num($(k).value),0);
   const bills=num($('bills').value), vat=$('vat').checked, ex=vat?s/1.07:s;
   $('salesTot').textContent=fmt(s);$('salesEx').textContent=fmt(ex);$('exWrap').hidden=!vat;
   let p=0;[...$('pettyBody').rows].forEach(tr=>p+=num(tr.querySelectorAll('input')[1].value));
