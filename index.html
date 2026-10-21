@@ -137,6 +137,25 @@ select.t{font:inherit;width:100%;padding:9px 10px;border:1px solid var(--line);b
 @media (max-width:420px){.rform .wide{grid-column:auto}}
 .rform .btn{justify-self:start}
 .chip.warnc{background:var(--leaf-soft);color:var(--fg)}
+.kp4{grid-template-columns:repeat(4,1fr)}
+@media (max-width:760px){.kp4{grid-template-columns:repeat(2,1fr)}}
+.uncnote{color:var(--chili);margin:0}
+.pltable{min-width:720px}
+.pltable td{font-size:14px;text-align:right;font-family:var(--num);font-variant-numeric:tabular-nums;padding:4px 6px}
+.pltable td:first-child{text-align:left;font-family:var(--body)}
+.pltable td.ind{padding-left:22px}
+.pltable input.n{width:120px;padding:5px 8px;font-size:14px}
+.pltable input.t{padding:5px 8px;font-size:14px}
+.pltable tr.hd td{font-family:var(--display);font-weight:500;font-size:15px;padding-top:14px;border-bottom:1px solid var(--line)}
+.pltable tr.rev td{font-weight:600}
+.pltable tr.sub td{font-weight:600;border-top:1px solid var(--fg)}
+.pltable tr.key td{font-weight:700;background:var(--leaf-soft)}
+.pltable tr.net td{font-weight:700;font-size:16px;background:var(--leaf-soft);border-top:2px solid var(--fg)}
+.pltable tr.net.neg td.tv,.pltable tr.net.neg td.pc{color:var(--chili)}
+.pltable td.pc{color:var(--muted);white-space:nowrap}
+.pltable .del{font-size:15px;padding:0 4px}
+.pitems select.cat{font:inherit;font-size:13px;width:100%;min-width:150px;padding:8px 6px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg)}
+.pitems select.cat.need{border-color:var(--chili)}
 .nowrap{white-space:nowrap}
 .tcontent{display:grid;gap:22px}
 .tcontent[hidden]{display:none}
@@ -194,7 +213,7 @@ select.t{font:inherit;width:100%;padding:9px 10px;border:1px solid var(--line);b
 
 <div class="bar"><div class="bar-in">
   <div class="brand">ร้านตำนัว<small>บันทึกยอดประจำวัน · Daily P&amp;L input</small></div>
-  <nav class="tabs" aria-label="เลือกหน้า"><button type="button" data-view="daily" aria-current="page">บันทึกรายวัน</button><button type="button" data-view="transfer" aria-current="false">รายการโอน</button><button type="button" data-view="dash" aria-current="false">Dashboard</button><button type="button" data-view="recon" aria-current="false">กระทบยอด</button></nav>
+  <nav class="tabs" aria-label="เลือกหน้า"><button type="button" data-view="daily" aria-current="page">บันทึกรายวัน</button><button type="button" data-view="transfer" aria-current="false">รายการโอน</button><button type="button" data-view="dash" aria-current="false">Dashboard</button><button type="button" data-view="recon" aria-current="false">กระทบยอด</button><button type="button" data-view="pl" aria-current="false">P&amp;L</button></nav>
   <div class="bar-ctl" id="dailyCtl">
     <input type="date" id="day" aria-label="วันที่">
     <button class="btn btn-ghost" id="clear" type="button">ล้างฟอร์ม</button>
@@ -312,7 +331,7 @@ select.t{font:inherit;width:100%;padding:9px 10px;border:1px solid var(--line);b
 <main id="loginView" hidden>
   <section class="login">
     <h2>เข้าสู่ระบบเจ้าของร้าน</h2>
-    <p class="sub">หน้ารายการโอน Dashboard และกระทบยอด เปิดได้เฉพาะเจ้าของร้าน</p>
+    <p class="sub">หน้ารายการโอน Dashboard กระทบยอด และ P&L เปิดได้เฉพาะเจ้าของร้าน</p>
     <form id="tLoginForm" class="loginf">
       <label class="f">อีเมล<input type="email" id="tEmail" class="t" autocomplete="username" required></label>
       <label class="f">รหัสผ่าน<input type="password" id="tPass" class="t" autocomplete="current-password" required></label>
@@ -414,6 +433,29 @@ select.t{font:inherit;width:100%;padding:9px 10px;border:1px solid var(--line);b
     <p class="sub" id="rListNote" style="margin:10px 0 0"></p>
   </section>
 </main>
+<main id="plView" hidden>
+  <div class="tuser">เข้าสู่ระบบเป็น <b class="who"></b> · <button type="button" class="linkbtn logout">ออกจากระบบ</button></div>
+  <div class="range dhead">
+    <label class="f">เดือน<select id="plMonth" class="t"></select></label>
+    <div class="dl"><button class="btn btn-dl" id="plXls" type="button">ดาวน์โหลด Excel</button><button class="btn btn-save" id="plSave" type="button" disabled>บันทึกตัวเลขที่กรอก</button></div>
+  </div>
+  <p class="sub" id="plNote" style="margin:-10px 0 0">กำลังโหลด…</p>
+  <p class="sub uncnote" id="plUnc" hidden></p>
+  <div class="summary kp4">
+    <div><span>รายได้จากการขาย (ก่อน VAT)</span><strong id="kpSales">0</strong><em>100%</em></div>
+    <div><span>กำไรขั้นต้น</span><strong id="kpGross">0</strong><em id="kpGrossP"></em></div>
+    <div><span>กำไรจากการดำเนินงาน</span><strong id="kpOp">0</strong><em id="kpOpP"></em></div>
+    <div><span>กำไร (ขาดทุน) สุทธิ</span><strong id="kpNet">0</strong><em id="kpNetP"></em></div>
+  </div>
+  <section>
+    <h2>งบกำไรขาดทุน</h2>
+    <p class="sub">"จากบันทึกรายวัน" ดึงจากบิลตลาด เงินสดย่อย (ตามหมวด) และค่าธรรมเนียมในหน้ากระทบยอด · "กรอกเพิ่ม" ใช้ใส่รายการรายเดือน เช่น เงินเดือน ค่าเช่า ค่าไฟ</p>
+    <div class="scroll"><table class="pltable">
+      <thead><tr><th>รายการ</th><th class="r">จากบันทึกรายวัน</th><th class="r">กรอกเพิ่ม</th><th class="r">รวม</th><th class="r">%</th></tr></thead>
+      <tbody id="plBody"></tbody>
+    </table></div>
+  </section>
+</main>
 <datalist id="dlPettyPayee"></datalist><datalist id="dlMktPayee"></datalist><datalist id="dlItem"></datalist>
 <div class="toast" id="toast" hidden></div>
 
@@ -428,14 +470,43 @@ const blank=v=>v===0||v==null?'':v;
 
 let db=null, unsub=null, dirty=false, latest=null, canWrite=true;
 
+/* ---------- หมวด P&L ---------- */
+const PL_COGS=[['raw_fresh','ค่าวัตถุดิบ ของสด+ผักสด'],['raw_dry','ค่าวัตถุดิบ เครื่องปรุง ของแห้ง'],['rice','ข้าวสาร ข้าวเหนียว'],['oil','น้ำมัน'],['gas','ค่าแก๊ส'],['beer','ค่าเบียร์'],['water','น้ำดื่ม'],['coke','โค้ก'],['ice','ค่าน้ำแข็ง'],['dessert','ค่าของหวาน']];
+const PL_OPEX=[['salary','เงินเดือน และ O/T'],['parttime','พนักงานพาร์ทไทม์'],['staffmeal','ค่าอาหารพนักงาน'],['incentive','Incentive'],['welfare','สวัสดิการอื่นๆ'],['rent','ค่าเช่า ค่าบริการส่วนกลาง ค่าบริการอื่นๆ'],['utility','ค่าไฟ ค่าน้ำ ค่าโทรศัพท์'],['dishwasher','ค่าเช่าเครื่องล้างจาน'],['transport','ค่าขนส่ง'],['police','ตม. ตำรวจ ปคม.'],['equipment','อุปกรณ์ภาชนะ เครื่องครัวเพิ่มเติม'],['cardfee','ค่าธรรมเนียมบัตร'],['gp','LINE MAN & GRAB'],['misc','ค่าใช้จ่ายเบ็ดเตล็ดและวัสดุสิ้นเปลือง']];
+const PL_NAME=Object.fromEntries([...PL_COGS,...PL_OPEX]);
+const CAT_OPTS='<option value="">— เลือกหมวด —</option><optgroup label="ต้นทุนทางตรง">'+PL_COGS.map(([k,n])=>`<option value="${k}">${n}</option>`).join('')+'</optgroup><optgroup label="ค่าใช้จ่ายบริหาร">'+PL_OPEX.map(([k,n])=>`<option value="${k}">${n}</option>`).join('')+'</optgroup>';
+/* เดาหมวดจากคำ: ใช้หมวดที่เคยเลือกให้รายการชื่อเดียวกันก่อน แล้วค่อยใช้คำสำคัญ */
+const CAT_HIST=new Map();
+const CAT_RULES=[
+  [/น้ำแข็ง/,'ice'],[/แก๊ส|แก็ส|gas/i,'gas'],[/เบียร์|beer|ลีโอ|ช้าง|สิงห์|ไฮเนเก้น/i,'beer'],[/โค้ก|coke|เป๊ปซี่|pepsi|น้ำอัดลม|สไปรท์|แฟนต้า/i,'coke'],
+  [/น้ำดื่ม|น้ำเปล่า/,'water'],[/ข้าวสาร|ข้าวเหนียว/,'rice'],[/น้ำมัน/,'oil'],[/ของหวาน|ขนมหวาน|ไอติม|ไอศกรีม/,'dessert'],
+  [/อาหารพนักงาน|ข้าวพนักงาน/,'staffmeal'],[/พาร์ทไทม์|part ?time/i,'parttime'],[/เงินเดือน|โอที|\bot\b|ค่าแรง/i,'salary'],[/incentive|อินเซนทีฟ/i,'incentive'],[/สวัสดิการ/,'welfare'],
+  [/ค่าเช่าเครื่องล้างจาน|เครื่องล้างจาน/,'dishwasher'],[/ค่าเช่า|ส่วนกลาง/,'rent'],[/ค่าไฟ|ค่าน้ำประปา|ค่าน้ำ$|โทรศัพท์|อินเทอร์เน็ต|เน็ต/,'utility'],
+  [/ขนส่ง|ค่ารถ|ค่าส่ง|lalamove|แกร็บส่งของ/i,'transport'],[/ตำรวจ|ตม\.?|ปคม/,'police'],[/ค่าธรรมเนียมบัตร|ค่าธรรมเนียม/,'cardfee'],
+  [/ถ้วย|จาน|ชาม|หม้อ|กระทะ|มีด|ครก|สาก|เขียง|ช้อน|ส้อม|แก้ว|ตะหลิว/,'equipment'],
+  [/น้ำปลา|ปลาร้า|ผงชูรส|น้ำตาล|ซอส|เกลือ|เครื่องปรุง|ซีอิ๊ว|มะขามเปียก|ผงปรุง|กะปิ/,'raw_dry'],
+  [/ผัก|หมู|ไก่|ปลา|กุ้ง|ปู|เนื้อ|มะละกอ|มะนาว|พริก|ไข่|มะเขือ|ถั่ว|กะหล่ำ|แตง|หอย|ลูกชิ้น|ไส้กรอก|แหนม/,'raw_fresh'],
+  [/ถุง|กล่อง|ทิชชู่|กระดาษ|น้ำยา|ฟองน้ำ|หลอด|ถุงมือ|สก็อตไบรต์|ไม้จิ้ม|ยาง/,'misc'],
+];
+function guessCat(item){
+  item=String(item||'').trim();if(!item)return'';
+  const h=CAT_HIST.get(item);if(h){let best='',n=0;h.forEach((c,k)=>{if(c>n){n=c;best=k}});if(best)return best}
+  for(const [re,k] of CAT_RULES)if(re.test(item))return k;
+  return'';
+}
 function pettyRow(tbody,r={item:'',amount:''}){
   const tr=document.createElement('tr');
   tr.innerHTML=`<td><input class="t" placeholder="เช่น น้ำแข็ง" aria-label="รายการ" list="dlItem" autocomplete="off"></td>
+  <td><select class="cat" aria-label="หมวด P&L">${CAT_OPTS}</select></td>
   <td><input class="n" inputmode="decimal" aria-label="ยอดเงิน"></td>
   <td><button class="del" type="button" aria-label="ลบรายการ">×</button></td>`;
-  const i=tr.querySelectorAll('input');i[0].value=r.item??'';i[1].value=blank(r.amount);
-  tbody.appendChild(tr);
+  const i=tr.querySelectorAll('input'),sel=tr.querySelector('select.cat');i[0].value=r.item??'';i[1].value=blank(r.amount);
+  sel.value=r.cat&&PL_NAME[r.cat]?r.cat:'';sel.dataset.auto=r.cat?'0':'1';
+  i[0].addEventListener('input',()=>{if(sel.dataset.auto==='1'){sel.value=guessCat(i[0].value);catMark(sel)}});
+  sel.addEventListener('change',()=>{sel.dataset.auto='0';catMark(sel);markDirty()});
+  catMark(sel);tbody.appendChild(tr);
 }
+function catMark(sel){const tr=sel.closest('tr');const has=tr&&(tr.querySelector('input.t').value.trim()||num(tr.querySelector('input.n').value));sel.classList.toggle('need',!!has&&!sel.value)}
 const uid=()=>Math.random().toString(36).slice(2,10);
 /* ทุกบิลมี id; สถานะโอนเก็บแยกในตาราง tamnua_paid (key = วันที่|id) แก้ได้เฉพาะเจ้าของ */
 function ensureIds(d){
@@ -454,7 +525,7 @@ function pettyBill(b={}){
       <button class="del delbill" type="button" aria-label="ลบบิลนี้" title="ลบบิลนี้">×</button>
     </div>
     <div class="scroll"><table>
-      <thead><tr><th style="width:60%">รายการ</th><th class="r">ยอดเงิน (บาท)</th><th></th></tr></thead>
+      <thead><tr><th style="width:42%">รายการ</th><th>หมวด P&amp;L</th><th class="r">ยอดเงิน (บาท)</th><th></th></tr></thead>
       <tbody class="pitems"></tbody>
     </table></div>
     <button class="btn btn-add addItem" type="button">+ เพิ่มรายการ</button>`;
@@ -481,7 +552,7 @@ function collect(){
   const sales={cash:num($('cash').value),lineman:num($('lineman').value),grab:num($('grab').value),credit:num($('credit').value),kplus:num($('kplus').value)};
   const bills=num($('bills').value), vat=$('vat').checked;
   const petty=[...$('pettyBills').querySelectorAll('.pbill')].map(b=>({id:b.dataset.id,...paidOf(b),payee:b.querySelector('.pay').value.trim(),
-    items:[...b.querySelector('.pitems').rows].map(tr=>{const i=tr.querySelectorAll('input');return{item:i[0].value.trim(),amount:num(i[1].value)}}).filter(r=>r.item||r.amount)}))
+    items:[...b.querySelector('.pitems').rows].map(tr=>{const i=tr.querySelectorAll('input');const c=tr.querySelector('select.cat').value;const o={item:i[0].value.trim(),amount:num(i[1].value)};if(c)o.cat=c;return o}).filter(r=>r.item||r.amount)}))
     .filter(b=>b.payee||b.items.length);
   const market=[...$('mktBody').rows].map(tr=>{const o={id:tr.dataset.id,...paidOf(tr),payee:tr.querySelector('.mpay').value.trim()};tr.querySelectorAll('input.n').forEach((el,k)=>o[CATS[k]]=num(el.value));return o})
     .filter(o=>CATS.some(c=>o[c]));
@@ -526,7 +597,7 @@ function showSaved(){
   $('moveBtn').hidden=!latest||!canWrite;$('moveBox').hidden=true;
 }
 function lockInputs(){
-  document.querySelectorAll('#dailyView section:not(#exportSec) input, #dailyView .btn-add, #dailyView .del').forEach(el=>el.disabled=!canWrite||!db);
+  document.querySelectorAll('#dailyView section:not(#exportSec) input, #dailyView section:not(#exportSec) select, #dailyView .btn-add, #dailyView .del').forEach(el=>el.disabled=!canWrite||!db);
   $('save').disabled=!canWrite||!db;$('clear').disabled=!canWrite||!db;
 }
 function toast(t,undo){
@@ -607,6 +678,7 @@ function initDb(){
   if(location.hash==='#transfer')showView('transfer');
   else if(location.hash==='#dashboard')showView('dash');
   else if(location.hash==='#recon')showView('recon');
+  else if(location.hash==='#pl')showView('pl');
   db.auth.onAuthStateChange&&db.auth.onAuthStateChange(()=>{});
 }
 /* ---------- สรุป + ดาวน์โหลด Excel / PDF ---------- */
@@ -655,7 +727,7 @@ function detailRows(){
   const mkt=[],pet=[];
   rangeDocs.forEach(d=>{
     (d.market||[]).forEach(o=>{const v=CATS.map(c=>num(o[c]));mkt.push([dmy(d.date),o.payee||'',...v,v.reduce((a,b)=>a+b,0)])});
-    pettyBillsOf(d).forEach(b=>(b.items||[]).forEach(r=>pet.push([dmy(d.date),b.payee||'',r.item||'',num(r.amount)])));
+    pettyBillsOf(d).forEach(b=>(b.items||[]).forEach(r=>pet.push([dmy(d.date),b.payee||'',r.item||'',PL_NAME[r.cat]||'ไม่ระบุ',num(r.amount)])));
   });
   return {mkt,pet};
 }
@@ -697,7 +769,7 @@ $('xlsBtn').onclick=()=>withBusy($('xlsBtn'),'กำลังสร้าง…'
   X.utils.book_append_sheet(wb,makeSheet(`บิลตลาด ${rangeLabel()}`,
     ['วันที่','จ่ายให้',...CAT_TH,'รวมบิล'],mkt,2,[2,3,4,5,6,7],[12,22,12,14,12,13,12,13]),'บิลตลาด');
   X.utils.book_append_sheet(wb,makeSheet(`เงินสดย่อย ${rangeLabel()}`,
-    ['วันที่','จ่ายให้','รายการ','ยอดเงิน (บาท)'],pet,3,[3],[12,22,36,16]),'เงินสดย่อย');
+    ['วันที่','จ่ายให้','รายการ','หมวด P&L','ยอดเงิน (บาท)'],pet,4,[4],[12,22,32,30,16]),'เงินสดย่อย');
   const buf=X.write(wb,{bookType:'xlsx',type:'array'});
   await saveFile(fileBase()+'.xlsx',buf);
 });
@@ -715,7 +787,7 @@ $('pdfBtn').onclick=()=>withBusy($('pdfBtn'),'กำลังสร้าง…'
   const tables=[
     {title:'สรุปรายวัน',head:['วันที่',...CAT_TH,'รวมบิลตลาด','เงินสดย่อย','รวมทั้งหมด'],rows:sumRows,tot:total(sumRows,1),tx:[0]},
     {title:'รายละเอียดบิลตลาด',head:['วันที่','จ่ายให้',...CAT_TH,'รวมบิล'],rows:mkt,tot:total(mkt,2),tx:[0,1]},
-    {title:'รายละเอียดเงินสดย่อย',head:['วันที่','จ่ายให้','รายการ','ยอดเงิน (บาท)'],rows:pet,tot:total(pet,3),tx:[0,1,2]},
+    {title:'รายละเอียดเงินสดย่อย',head:['วันที่','จ่ายให้','รายการ','หมวด','ยอดเงิน (บาท)'],rows:pet,tot:total(pet,4),tx:[0,1,2,3]},
   ].filter(t=>t.rows.length);
   const PER=36,pages=[];
   tables.forEach(t=>{for(let i=0;i<t.rows.length;i+=PER){const part=t.rows.slice(i,i+PER),lastPart=i+PER>=t.rows.length;
@@ -777,11 +849,11 @@ function firstOfPrevMonth(){const d=new Date();d.setDate(1);d.setMonth(d.getMont
 $('tFrom').value=firstOfPrevMonth();$('tTo').value=today();
 
 let curView='daily';
-const VIEWS={daily:'dailyView',transfer:'transferView',dash:'dashView',recon:'reconView'};
+const VIEWS={daily:'dailyView',transfer:'transferView',dash:'dashView',recon:'reconView',pl:'plView'};
 function showView(v){
   curView=VIEWS[v]?v:'daily';
   document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-current',b.dataset.view===curView?'page':'false'));
-  try{history.replaceState(null,'',curView==='transfer'?'#transfer':curView==='dash'?'#dashboard':curView==='recon'?'#recon':location.pathname)}catch(e){}
+  try{history.replaceState(null,'',curView==='transfer'?'#transfer':curView==='dash'?'#dashboard':curView==='recon'?'#recon':curView==='pl'?'#pl':location.pathname)}catch(e){}
   $('dailyCtl').hidden=curView!=='daily';
   Object.values(VIEWS).forEach(id=>$(id).hidden=true);$('loginView').hidden=true;
   if(curView==='daily'){$('dailyView').hidden=false;return}
@@ -796,7 +868,7 @@ async function checkOwner(){
   owner=email&&(!allowed||email.toLowerCase()===allowed)?email:null;
   if(curView!==v)return;
   $('loginView').hidden=!!owner;$(VIEWS[v]).hidden=!owner;
-  if(owner){document.querySelectorAll('.who').forEach(el=>el.textContent=owner);v==='transfer'?loadTransfers():v==='dash'?loadDash():loadRecon()}
+  if(owner){document.querySelectorAll('.who').forEach(el=>el.textContent=owner);v==='transfer'?loadTransfers():v==='dash'?loadDash():v==='recon'?loadRecon():loadPL()}
   else if(email){$('tLoginErr').textContent='บัญชี '+email+' ไม่มีสิทธิ์เปิดหน้านี้';try{await db.auth.signOut()}catch(e){}}
 }
 $('tLoginForm').addEventListener('submit',async e=>{
@@ -986,13 +1058,13 @@ try{window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',
 /* คำที่เคยกรอก: ดึงจากข้อมูล 120 วันล่าสุด เรียงตามที่ใช้บ่อย แสดงเป็นตัวเลือกตอนพิมพ์ */
 const SUG={pp:new Map(),mp:new Map(),it:new Map()};
 function addSug(m,v){v=String(v||'').trim();if(v)m.set(v,(m.get(v)||0)+1)}
-function sugFrom(d){if(!d||d.deleted)return;d=ensureIds(d);d.petty.forEach(b=>{addSug(SUG.pp,b.payee);(b.items||[]).forEach(i=>addSug(SUG.it,i.item))});d.market.forEach(m=>addSug(SUG.mp,m.payee))}
+function sugFrom(d){if(!d||d.deleted)return;d=ensureIds(d);d.petty.forEach(b=>{addSug(SUG.pp,b.payee);(b.items||[]).forEach(i=>{addSug(SUG.it,i.item);const it=String(i.item||'').trim();if(it&&i.cat){const h=CAT_HIST.get(it)||new Map();h.set(i.cat,(h.get(i.cat)||0)+1);CAT_HIST.set(it,h)}})});d.market.forEach(m=>addSug(SUG.mp,m.payee))}
 function renderSug(){[['dlPettyPayee',SUG.pp],['dlMktPayee',SUG.mp],['dlItem',SUG.it]].forEach(([id,m])=>{
   $(id).innerHTML=[...m.entries()].sort((a,b)=>b[1]-a[1]).slice(0,300).map(([v])=>`<option value="${escH(v)}"></option>`).join('')})}
 async function loadSuggestions(){
   if(!db)return;
   try{const {data,error}=await db.from(TABLE).select('data').gte('date',isoOf(new Date(Date.now()-120*864e5))).limit(400);if(error)return;
-    Object.values(SUG).forEach(m=>m.clear());(data||[]).forEach(r=>sugFrom(r.data));renderSug()}catch(e){}
+    Object.values(SUG).forEach(m=>m.clear());CAT_HIST.clear();(data||[]).forEach(r=>sugFrom(r.data));renderSug()}catch(e){}
 }
 
 /* ---------- กระทบยอดเงิน ---------- */
@@ -1068,6 +1140,130 @@ $('rList').addEventListener('click',async e=>{
     toast('ลบเงินเข้าแล้ว',async()=>{const {created_at,...back}=row;const q=await db.from(RCPT).insert(back);if(q.error)throw q.error;await loadRecon()})}
   catch(err){toast('ลบไม่สำเร็จ ลองใหม่อีกครั้ง');b.disabled=false}
 });
+
+
+/* ---------- งบกำไรขาดทุน (P&L) รายเดือน ---------- */
+const MONTHLY='tamnua_monthly';
+const TH_MON=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+const MKT_TO_PL={fresh:'raw_fresh',dry:'raw_dry',supplies:'misc',staffMeal:'staffmeal',transport:'transport'};
+const monLabel=ym=>{const [y,m]=ym.split('-').map(Number);return TH_MON[m-1]+' '+(y+543)};
+(function(){const now=new Date();let h='';for(let i=0;i<18;i++){const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+  const ym=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');h+=`<option value="${ym}">${monLabel(ym)}</option>`}$('plMonth').innerHTML=h})();
+let plData=null,plManual={},plOther=[],plDirty=false;
+$('plMonth').onchange=loadPL;
+async function loadPL(){
+  if(!db||!owner)return;
+  const ym=$('plMonth').value,[y,m]=ym.split('-').map(Number);
+  const f=ym+'-01',t=ym+'-'+String(new Date(y,m,0).getDate()).padStart(2,'0'),dim=new Date(y,m,0).getDate();
+  $('plNote').textContent='กำลังโหลด…';
+  const [days,rc,mo]=await Promise.all([
+    db.from(TABLE).select('date,data').gte('date',f).lte('date',t).limit(40),
+    db.from(RCPT).select('channel,fee,period_to').gte('period_to',f).lte('period_to',t).limit(1000),
+    db.from(MONTHLY).select('data').eq('month',ym).maybeSingle()]);
+  if(days.error){$('plNote').textContent='โหลดยอดขายไม่ได้ ลองใหม่อีกครั้ง';return}
+  const moMissing=mo.error&&/does not exist|relation|schema cache/i.test(mo.error.message||'');
+  const auto={};[...PL_COGS,...PL_OPEX].forEach(([k])=>auto[k]=0);
+  let sales=0,salesInc=0,n=0,uncN=0,uncAmt=0;
+  (days.data||[]).filter(r=>r.data&&!r.data.deleted).forEach(r=>{
+    const d=ensureIds({...r.data,date:r.date}),mm=dayMetrics(d);n++;sales+=mm.ex;salesInc+=mm.sales;
+    d.market.forEach(x=>Object.entries(MKT_TO_PL).forEach(([c,k])=>auto[k]+=num(x[c])));
+    d.petty.forEach(b=>(b.items||[]).forEach(i=>{const a=num(i.amount);if(!a)return;if(i.cat&&auto[i.cat]!=null)auto[i.cat]+=a;else{auto.misc+=a;uncN++;uncAmt+=a}}));
+  });
+  if(!rc.error)(rc.data||[]).forEach(r=>{const fe=num(r.fee);if(!fe)return;
+    const k=r.channel==='lineman'||r.channel==='grab'?'gp':r.channel==='credit'||r.channel==='kplus'?'cardfee':'misc';auto[k]+=fe});
+  const md=(!mo.error&&mo.data&&mo.data.data)||{};
+  plManual={...(md.manual||{})};plOther=(md.other||[]).map(o=>({...o}));plDirty=false;
+  plData={ym,sales,salesInc,n,dim,auto,uncN,uncAmt,moMissing};
+  $('plNote').textContent=`${monLabel(ym)} · บันทึกยอดแล้ว ${n}/${dim} วัน`+(moMissing?' · ยังไม่ได้สร้างตาราง tamnua_monthly (ช่องกรอกเพิ่มจะบันทึกไม่ได้)':'');
+  $('plUnc').hidden=!uncN;$('plUnc').textContent=uncN?`เงินสดย่อยยังไม่ระบุหมวด ${uncN} รายการ รวม ${fmt(uncAmt)} บาท ตอนนี้นับไว้ใน "ค่าใช้จ่ายเบ็ดเตล็ด" แก้หมวดได้ในหน้าบันทึกรายวัน`:'';
+  renderPL();
+}
+function plTotals(){
+  const D=plData,tot=k=>D.auto[k]+num(plManual[k]);
+  const cogs=PL_COGS.reduce((a,[k])=>a+tot(k),0),gross=D.sales-cogs,opex=PL_OPEX.reduce((a,[k])=>a+tot(k),0),op=gross-opex;
+  const other=plOther.reduce((a,o)=>a+num(o.amount),0);
+  return {tot,cogs,gross,opex,op,other,net:op-other};
+}
+function renderPL(){
+  if(!plData)return;const D=plData,T=plTotals(),pc=v=>D.sales?(v/D.sales*100).toFixed(2):'–';
+  const line=(k,n)=>`<tr><td class="ind">${n}</td><td>${D.auto[k]?fmt(D.auto[k]):'–'}</td><td><input class="n plm" data-k="${k}" inputmode="decimal" value="${plManual[k]?escH(plManual[k]):''}" aria-label="กรอกเพิ่ม ${n}"></td><td class="tv">${fmt(T.tot(k))}</td><td class="pc">${pc(T.tot(k))}</td></tr>`;
+  const sum=(label,v,cls)=>`<tr class="${cls}"><td>${label}</td><td></td><td></td><td class="tv">${fmt(v)}</td><td class="pc">${pc(v)}</td></tr>`;
+  $('plBody').innerHTML=
+    `<tr class="rev"><td>รายได้จากการขาย <span class="muted">(ก่อน VAT · รวม VAT ${fmt(D.salesInc)})</span></td><td>${fmt(D.sales)}</td><td></td><td class="tv">${fmt(D.sales)}</td><td class="pc">100.00</td></tr>`
+    +`<tr class="hd"><td colspan="5">หักต้นทุนทางตรง</td></tr>`+PL_COGS.map(([k,n])=>line(k,n)).join('')
+    +sum('รวมต้นทุนทางตรง',T.cogs,'sub')+sum('กำไรขั้นต้น',T.gross,'key')
+    +`<tr class="hd"><td colspan="5">ค่าใช้จ่ายในการบริหาร</td></tr>`+PL_OPEX.map(([k,n])=>line(k,n)).join('')
+    +sum('รวมค่าใช้จ่ายในการบริหาร',T.opex,'sub')+sum('กำไรจากการดำเนินงาน',T.op,'key')
+    +`<tr class="hd"><td colspan="5">รายการอื่นๆ <span class="muted">(ใส่ค่าใช้จ่ายเป็นบวก รายรับ/เงินคืนเป็นลบ)</span></td></tr>`
+    +plOther.map((o,i)=>`<tr><td class="ind"><input class="t plo" data-i="${i}" data-f="label" value="${escH(o.label||'')}" placeholder="ชื่อรายการ" aria-label="ชื่อรายการ"></td><td></td><td><input class="n plo" data-i="${i}" data-f="amount" inputmode="decimal" value="${o.amount!=null&&o.amount!==''?escH(o.amount):''}" aria-label="จำนวนเงิน"></td><td class="tv">${fmt(num(o.amount))}</td><td class="pc">${pc(num(o.amount))} <button type="button" class="del plDel" data-i="${i}" aria-label="ลบรายการ">×</button></td></tr>`).join('')
+    +`<tr><td class="ind" colspan="5"><button type="button" class="btn btn-add" id="plAddOther">+ เพิ่มรายการอื่นๆ</button></td></tr>`
+    +sum('กำไร (ขาดทุน) สุทธิ',T.net,'net '+(T.net<0?'neg':''));
+  $('plSave').disabled=!plDirty||D.moMissing;
+  $('kpSales').textContent=fmt0(D.sales);$('kpGross').textContent=fmt0(T.gross);$('kpGrossP').textContent=pc(T.gross)+'%';
+  $('kpOp').textContent=fmt0(T.op);$('kpOpP').textContent=pc(T.op)+'%';$('kpNet').textContent=fmt0(T.net);$('kpNetP').textContent=pc(T.net)+'%';
+  $('kpNet').classList.toggle('warnnum',T.net<0);
+}
+function plRecalc(){/* re-render and keep the cursor in the field being typed */
+  const keep=document.activeElement&&document.activeElement.closest('#plBody')?{cls:document.activeElement.className,k:document.activeElement.dataset.k,i:document.activeElement.dataset.i,f:document.activeElement.dataset.f,pos:document.activeElement.selectionStart}:null;
+  renderPL();
+  if(keep){const sel=keep.k?`.plm[data-k="${keep.k}"]`:`.plo[data-i="${keep.i}"][data-f="${keep.f}"]`;const el=$('plBody').querySelector(sel);if(el){el.focus();try{el.setSelectionRange(keep.pos,keep.pos)}catch(e){}}}
+}
+$('plBody').addEventListener('input',e=>{
+  const t=e.target;
+  if(t.classList.contains('plm')){const v=t.value.trim();if(v)plManual[t.dataset.k]=v;else delete plManual[t.dataset.k]}
+  else if(t.classList.contains('plo')){plOther[+t.dataset.i][t.dataset.f]=t.value}
+  else return;
+  plDirty=true;plRecalc();
+});
+$('plBody').addEventListener('click',e=>{
+  if(e.target.id==='plAddOther'){plOther.push({label:'',amount:''});plDirty=true;renderPL();const els=$('plBody').querySelectorAll('.plo[data-f="label"]');els[els.length-1].focus();return}
+  const d=e.target.closest('.plDel');if(d){const i=+d.dataset.i,snap=plOther.map(o=>({...o}));plOther.splice(i,1);plDirty=true;renderPL();toast('ลบรายการแล้ว',()=>{plOther=snap;plDirty=true;renderPL()})}
+});
+$('plSave').onclick=async()=>{
+  if(!plData)return;const ym=plData.ym,btn=$('plSave');btn.disabled=true;
+  const manual={};Object.entries(plManual).forEach(([k,v])=>{if(num(v))manual[k]=num(v)});
+  const other=plOther.filter(o=>String(o.label||'').trim()||num(o.amount)).map(o=>({label:String(o.label||'').trim(),amount:num(o.amount)}));
+  try{
+    const prev=await db.from(MONTHLY).select('data').eq('month',ym).maybeSingle();
+    const r=await db.from(MONTHLY).upsert({month:ym,data:{manual,other},updated_at:new Date().toISOString()});if(r.error)throw r.error;
+    plDirty=false;plManual=Object.fromEntries(Object.entries(manual).map(([k,v])=>[k,String(v)]));plOther=other;renderPL();
+    toast('บันทึก P&L '+monLabel(ym)+' แล้ว',async()=>{const back=(prev.data&&prev.data.data)||{manual:{},other:[]};
+      const q=await db.from(MONTHLY).upsert({month:ym,data:back,updated_at:new Date().toISOString()});if(q.error)throw q.error;if($('plMonth').value===ym)loadPL()});
+  }catch(e){toast('บันทึกไม่สำเร็จ ลองใหม่อีกครั้ง');btn.disabled=false}
+};
+$('plXls').onclick=async()=>{
+  if(!plData)return;const xb=$('plXls');xb.disabled=true;xb.textContent='กำลังสร้าง…';try{
+  if(!window.XLSX)await loadScript('https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js');
+  const X=window.XLSX,D=plData,T=plTotals(),pc=v=>D.sales?v/D.sales:0;
+  const G='2F6B3A',rows=[],st=[];
+  const push=(cells,style)=>{rows.push(cells);st.push(style||'')};
+  push([`ตำนัว · งบกำไรขาดทุน ${monLabel(D.ym)}`],'title');
+  push([`บันทึกยอดแล้ว ${D.n}/${D.dim} วัน`],'note');
+  push(['รายการ','จากบันทึกรายวัน','กรอกเพิ่ม','รวม','% ของยอดขาย'],'head');
+  push(['รายได้จากการขาย (ก่อน VAT)',D.sales,'',D.sales,1],'rev');
+  push(['หักต้นทุนทางตรง'],'hd');
+  PL_COGS.forEach(([k,n])=>push(['   '+n,D.auto[k],num(plManual[k])||'',T.tot(k),pc(T.tot(k))]));
+  push(['รวมต้นทุนทางตรง','','',T.cogs,pc(T.cogs)],'sub');push(['กำไรขั้นต้น','','',T.gross,pc(T.gross)],'key');
+  push(['ค่าใช้จ่ายในการบริหาร'],'hd');
+  PL_OPEX.forEach(([k,n])=>push(['   '+n,D.auto[k],num(plManual[k])||'',T.tot(k),pc(T.tot(k))]));
+  push(['รวมค่าใช้จ่ายในการบริหาร','','',T.opex,pc(T.opex)],'sub');push(['กำไรจากการดำเนินงาน','','',T.op,pc(T.op)],'key');
+  if(plOther.length){push(['รายการอื่นๆ'],'hd');plOther.forEach(o=>push(['   '+(o.label||''),'',num(o.amount),num(o.amount),pc(num(o.amount))]))}
+  push(['กำไร (ขาดทุน) สุทธิ','','',T.net,pc(T.net)],'key');
+  const ws=X.utils.aoa_to_sheet(rows);
+  rows.forEach((r,ri)=>{for(let c=0;c<5;c++){const a=X.utils.encode_cell({r:ri,c});if(!ws[a])ws[a]={t:'s',v:''};const s={};const kind=st[ri];
+    if(c>0&&c<4)s.numFmt='#,##0.00;[Red]-#,##0.00';if(c===4)s.numFmt='0.00%;[Red]-0.00%';
+    if(kind==='title')s.font={bold:true,sz:14,color:{rgb:G}};
+    if(kind==='head'){s.font={bold:true,color:{rgb:'FFFFFF'}};s.fill={fgColor:{rgb:G}};s.alignment={horizontal:'center'}}
+    if(kind==='hd'||kind==='rev')s.font={bold:true};
+    if(kind==='sub')s.font={bold:true};
+    if(kind==='key'){s.font={bold:true};s.fill={fgColor:{rgb:'FFE8A3'}}}
+    ws[a].s=s}});
+  ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:4}},{s:{r:1,c:0},e:{r:1,c:4}}];
+  ws['!cols']=[{wch:40},{wch:16},{wch:14},{wch:16},{wch:14}];
+  const wb=X.utils.book_new();X.utils.book_append_sheet(wb,ws,'P&L');
+  await saveFile(`ตำนัว_PL_${D.ym}.xlsx`,X.write(wb,{bookType:'xlsx',type:'array'}));
+  }catch(e){toast('สร้างไฟล์ไม่สำเร็จ ลองใหม่อีกครั้ง')}finally{xb.disabled=false;xb.textContent='ดาวน์โหลด Excel'}
+};
 
 function dmyS(iso){const p=String(iso).split('-');return p.length===3?p[2]+'/'+p[1]:iso}
 initDb();
