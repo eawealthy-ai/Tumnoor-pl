@@ -323,6 +323,7 @@ select.t{font:inherit;width:100%;padding:9px 10px;border:1px solid var(--line);b
     </div>
     <div class="totrow">
       <span>ยอดขายรวม <b id="salesTot">0.00</b> บาท</span>
+      <label class="chk" id="holWrap" hidden><input type="checkbox" id="hol"> วันหยุดนักขัตฤกษ์ (ใช้เกณฑ์ Incentive แบบ ศ.–อา.)</label>
       <span class="incw" id="incWrap" hidden>Incentive <b id="incAmt">0</b> บาท <span class="inch" id="incHint"></span></span>
     </div>
   </section>
@@ -570,23 +571,36 @@ function guessCat(item){
 }
 
 /* ---------- Incentive รายวัน (ตามยอดขายรวมของวัน) ----------
-   จ.–พฤ.: ยอด ≥ 30,000 = 1,000 · ≥ 26,000 = 800 · ≥ 22,000 = 500 · ต่ำกว่านั้น = 0
-   ศ.–อา.: ยังไม่ได้ตั้งเกณฑ์ (เพิ่มขั้นใน INC_TIERS.friSun ได้) */
-const INC_TIERS={monThu:[[30000,1000],[26000,800],[22000,500]],friSun:null};
-function incentiveFor(iso,sales){
-  if(!iso)return{amt:0,tiers:null};
-  const g=new Date(iso+'T00:00:00').getDay(),tiers=g>=1&&g<=4?INC_TIERS.monThu:INC_TIERS.friSun;
-  if(!tiers)return{amt:0,tiers:null};
-  for(const [min,amt] of tiers)if(sales>=min)return{amt,tiers};
-  return{amt:0,tiers};
+   จ.–พฤ.:                 ยอด ≥ 30,000 = 1,000 · ≥ 26,000 = 800 · ≥ 22,000 = 500
+   ศ.–อา. และวันหยุดนักขัตฤกษ์: ยอด ≥ 40,000 = 1,000 · ≥ 36,000 = 800 · ≥ 32,000 = 500
+   ต่ำกว่าขั้นต่ำ = 0 */
+const INC_TIERS={weekday:[[30000,1000],[26000,800],[22000,500]],weekend:[[40000,1000],[36000,800],[32000,500]]};
+/* วันหยุดราชการ/ธนาคาร (รวมวันจริงและวันหยุดชดเชย) ตามประกาศ ครม. และธนาคารแห่งประเทศไทย
+   วันที่ไม่อยู่ในรายการนี้ ติ๊ก "วันหยุดนักขัตฤกษ์" ในหน้าบันทึกรายวันได้ */
+const TH_HOLIDAYS=new Set([
+  '2026-01-01','2026-01-02','2026-03-03','2026-04-06','2026-04-13','2026-04-14','2026-04-15','2026-05-01','2026-05-04','2026-05-31','2026-06-01','2026-06-03',
+  '2026-07-28','2026-07-29','2026-07-30','2026-08-12','2026-10-13','2026-10-23','2026-12-05','2026-12-07','2026-12-10','2026-12-31',
+  '2027-01-01','2027-02-21','2027-02-22','2027-04-06','2027-04-13','2027-04-14','2027-04-15','2027-05-01','2027-05-03','2027-05-04','2027-05-20','2027-06-03',
+  '2027-07-18','2027-07-19','2027-07-28','2027-08-12','2027-10-13','2027-10-23','2027-10-25','2027-12-05','2027-12-06','2027-12-10','2027-12-31']);
+function isHoliday(iso,override){return override!=null?!!override:TH_HOLIDAYS.has(iso)}
+function incentiveFor(iso,sales,override){
+  if(!iso)return{amt:0,tiers:null,kind:''};
+  const g=new Date(iso+'T00:00:00').getDay(),wk=g===0||g===5||g===6,hol=isHoliday(iso,override);
+  const tiers=wk||hol?INC_TIERS.weekend:INC_TIERS.weekday,kind=wk?'ศ.–อา.':hol?'วันหยุด':'จ.–พฤ.';
+  for(const [min,amt] of tiers)if(sales>=min)return{amt,tiers,kind};
+  return{amt:0,tiers,kind};
 }
+function bindHol(){const h=$('hol');if(h&&!h.dataset.bound){h.dataset.bound='1';h.addEventListener('click',()=>{h.dataset.manual='1'})}}
+function holOverride(){const h=$('hol');return h.dataset.manual==='1'?h.checked:undefined}
 function showIncentive(s){
-  const day=$('day').value,r=incentiveFor(day,s);
-  $('incWrap').hidden=!day;if(!day)return;
-  if(!r.tiers){$('incAmt').textContent='–';$('incHint').textContent='(ยังไม่มีเกณฑ์วันศุกร์–อาทิตย์)';return}
+  const day=$('day').value;$('incWrap').hidden=!day;$('holWrap').hidden=true;if(!day)return;
+  const g=new Date(day+'T00:00:00').getDay(),wk=g===0||g===5||g===6;
+  $('holWrap').hidden=wk;
+  if(!wk&&$('hol').dataset.manual!=='1')$('hol').checked=TH_HOLIDAYS.has(day);
+  const r=incentiveFor(day,s,holOverride());
   $('incAmt').textContent=fmt0(r.amt);
   const next=[...r.tiers].reverse().find(([min])=>s<min);
-  $('incHint').textContent=next?`· ขายอีก ${fmt0(next[0]-s)} ได้ ${fmt0(next[1])}`:'· ถึงขั้นสูงสุดแล้ว';
+  $('incHint').textContent=`(เกณฑ์${r.kind}) `+(next?`· ขายอีก ${fmt0(next[0]-s)} ได้ ${fmt0(next[1])}`:'· ถึงขั้นสูงสุดแล้ว');
 }
 function pettyRow(tbody,r={item:'',amount:''}){
   const tr=document.createElement('tr');
@@ -652,13 +666,15 @@ function collect(){
     .filter(o=>CATS.some(c=>o[c]));
   const salesTotal=Object.values(sales).reduce((a,b)=>a+b,0);
   const marketByCat={};CATS.forEach(c=>marketByCat[c]=market.reduce((a,o)=>a+o[c],0));
-  return {date:$('day').value,vat,sales,bills,petty,market,
+  const holiday=holOverride();
+  return {date:$('day').value,vat,sales,bills,petty,market,...(holiday!=null?{holiday}:{}),
     totals:{sales:salesTotal,salesExVat:salesTotal,
       petty:petty.reduce((a,b)=>a+b.items.reduce((x,r)=>x+r.amount,0),0),market:Object.values(marketByCat).reduce((a,b)=>a+b,0),marketByCat},
     updatedAt:new Date().toISOString()};
 }
 function load(d){
   d=ensureIds(d)||{};
+  $('hol').dataset.manual=d.holiday!=null?'1':'';$('hol').checked=d.holiday!=null?!!d.holiday:TH_HOLIDAYS.has($('day').value);
   const s=d.sales||{};['cash','lineman','grab','credit','kplus'].forEach(k=>$(k).value=blank(s[k]));
   $('bills').value=blank(d.bills);
   $('pettyBills').innerHTML='';const pb=pettyBillsOf(d);(pb.length?pb:[{}]).forEach(b=>pettyBill(b));
@@ -813,7 +829,7 @@ $('save').onclick=async()=>{
 
 $('day').value='';
 $('from').value=today().slice(0,8)+'01';$('to').value=today();
-load(null);lockInputs();
+bindHol();load(null);lockInputs();
 function initDb(){
   const cfg=window.TAMNUA_CONFIG||{};
   if(!window.supabase||!cfg.supabaseUrl||!cfg.supabaseAnonKey||/YOUR_/.test(cfg.supabaseUrl+cfg.supabaseAnonKey)){
@@ -1311,7 +1327,7 @@ async function loadPL(){
   const auto={};[...PL_COGS,...PL_OPEX].forEach(([k])=>auto[k]=0);
   let sales=0,salesInc=0,n=0,uncN=0,uncAmt=0;const unc=[];
   (days.data||[]).filter(r=>r.data&&!r.data.deleted).forEach(r=>{
-    const d=ensureIds({...r.data,date:r.date}),mm=dayMetrics(d);n++;sales+=mm.ex;salesInc+=mm.sales;auto.incentive+=incentiveFor(r.date,mm.sales).amt;
+    const d=ensureIds({...r.data,date:r.date}),mm=dayMetrics(d);n++;sales+=mm.ex;salesInc+=mm.sales;auto.incentive+=incentiveFor(r.date,mm.sales,r.data.holiday).amt;
     d.market.forEach(x=>Object.entries(MKT_TO_PL).forEach(([c,k])=>auto[k]+=num(x[c])));
     d.petty.forEach(b=>(b.items||[]).forEach((i,ix)=>{const a=num(i.amount);if(!a)return;if(i.cat&&auto[i.cat]!=null)auto[i.cat]+=a;else{auto.misc+=a;uncN++;uncAmt+=a;unc.push({date:d.date,bill:b.id,ix,payee:b.payee||'',item:i.item||'',a})}}));
   });
