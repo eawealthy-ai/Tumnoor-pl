@@ -254,6 +254,11 @@ select.t{font:inherit;width:100%;padding:9px 10px;border:1px solid var(--line);b
 .filebtn{position:relative;overflow:hidden}
 .filebtn input{position:absolute;inset:0;opacity:0;cursor:pointer}
 #pcSum{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+.accform{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.accform input{flex:1 1 240px}
+.acclist{display:grid;gap:6px}
+.accrow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 12px;border:1px solid var(--line);border-radius:10px;font-size:14px}
+.accrow .muted{font-size:12px}
 .nowrap{white-space:nowrap}
 .tcontent{display:grid;gap:22px}
 .tcontent[hidden]{display:none}
@@ -444,7 +449,7 @@ select.t{font:inherit;width:100%;padding:9px 10px;border:1px solid var(--line);b
 <main id="loginView" hidden>
   <section class="login">
     <h2>เข้าสู่ระบบเจ้าของร้าน</h2>
-    <p class="sub">หน้ารายการโอน กระทบยอด P&L และหุ้นส่วน เปิดได้เฉพาะเจ้าของร้าน</p>
+    <p class="sub">หน้ารายการโอน กระทบยอด P&L และหุ้นส่วน เปิดได้เฉพาะเจ้าของร้าน · Dashboard เปิดได้เฉพาะคนที่ได้รับสิทธิ์</p>
     <form id="tLoginForm" class="loginf">
       <label class="f">อีเมล<input type="email" id="tEmail" class="t" autocomplete="username" required></label>
       <label class="f">รหัสผ่าน<input type="password" id="tPass" class="t" autocomplete="current-password" required></label>
@@ -455,7 +460,7 @@ select.t{font:inherit;width:100%;padding:9px 10px;border:1px solid var(--line);b
 </main>
 
 <main id="dashView" hidden>
-  <div class="tuser" id="dashUser" hidden>เข้าสู่ระบบเป็น <b class="who"></b> · <button type="button" class="linkbtn logout">ออกจากระบบ</button></div>
+  <div class="tuser">เข้าสู่ระบบเป็น <b class="who"></b> · <button type="button" class="linkbtn logout">ออกจากระบบ</button></div>
   <div class="range dhead">
     <label class="f">ตั้งแต่<input type="date" id="dFrom" class="t"></label>
     <label class="f">ถึง<input type="date" id="dTo" class="t"></label>
@@ -502,6 +507,12 @@ select.t{font:inherit;width:100%;padding:9px 10px;border:1px solid var(--line);b
       <thead><tr><th>วันที่</th><th class="r">ยอดขาย</th><th class="r">บิล</th><th class="r">เฉลี่ย/บิล</th><th class="r">บิลตลาด</th><th class="r">เงินสดย่อย</th><th class="r">ค่าใช้จ่าย %</th></tr></thead>
       <tbody id="dBody"></tbody><tfoot id="dFoot"></tfoot>
     </table></div>
+  </section>
+  <section id="accBox" hidden>
+    <h2>สิทธิ์ดู Dashboard</h2>
+    <p class="sub">คนที่อยู่ในรายการนี้ล็อกอินแล้วดูได้เฉพาะ Dashboard · สร้างบัญชีให้แต่ละคนที่ Supabase → Authentication → Users ด้วยอีเมลเดียวกัน</p>
+    <form id="accForm" class="accform"><input type="email" id="accEmail" class="t" placeholder="อีเมลของคนที่จะให้ดู" required aria-label="อีเมล"><button class="btn btn-save" type="submit">เพิ่ม</button></form>
+    <div id="accList" class="acclist"></div>
   </section>
 </main>
 <main id="reconView" hidden>
@@ -1102,24 +1113,26 @@ function showView(v){
   $('dailyCtl').hidden=curView!=='daily';
   Object.values(VIEWS).forEach(id=>$(id).hidden=true);$('loginView').hidden=true;
   if(curView==='daily'){$('dailyView').hidden=false;return}
-  /* Dashboard เปิดดูได้ทุกคนที่มีลิงก์ ไม่ต้องล็อกอิน */
-  if(curView==='dash'){$('dashView').hidden=false;$('dashUser').hidden=true;
-    if(db){loadDash();db.auth.getSession().then(({data})=>{const e=data&&data.session&&data.session.user&&data.session.user.email;if(e&&curView==='dash'){$('dashUser').hidden=false;document.querySelectorAll('.who').forEach(el=>el.textContent=e)}}).catch(()=>{})}
-    return}
   checkOwner();
 }
 let owner=null;
+const ACCESS='tamnua_access';
+/* สิทธิ์: เจ้าของ (ownerEmail) เปิดได้ทุกหน้า · คนที่อยู่ในตาราง tamnua_access เปิดได้เฉพาะ Dashboard */
 async function checkOwner(){
   const v=curView;if(v==='daily')return;
-  if(v==='dash'){showView('dash');return}
   if(!db){$('loginView').hidden=false;$('tLoginErr').textContent='ยังไม่ได้เชื่อมฐานข้อมูล';return}
   let email=null;try{const {data}=await db.auth.getSession();email=data&&data.session&&data.session.user&&data.session.user.email}catch(e){}
   const allowed=(window.TAMNUA_CONFIG&&window.TAMNUA_CONFIG.ownerEmail||'').toLowerCase();
   owner=email&&(!allowed||email.toLowerCase()===allowed)?email:null;
+  let viewer=false;
+  if(email&&!owner&&v==='dash'){try{const r=await db.from(ACCESS).select('email').eq('email',email.toLowerCase()).maybeSingle();viewer=!r.error&&!!r.data}catch(e){}}
   if(curView!==v)return;
-  $('loginView').hidden=!!owner;$(VIEWS[v]).hidden=!owner;
-  if(owner){document.querySelectorAll('.who').forEach(el=>el.textContent=owner);v==='transfer'?loadTransfers():v==='dash'?loadDash():v==='recon'?loadRecon():v==='pl'?loadPL():loadPartner()}
-  else if(email){$('tLoginErr').textContent='บัญชี '+email+' ไม่มีสิทธิ์เปิดหน้านี้';try{await db.auth.signOut()}catch(e){}}
+  const ok=!!owner||viewer;
+  $('loginView').hidden=ok;$(VIEWS[v]).hidden=!ok;
+  if(ok){document.querySelectorAll('.who').forEach(el=>el.textContent=email);$('accBox').hidden=!owner;
+    v==='transfer'?loadTransfers():v==='dash'?(loadDash(),owner&&loadAccess()):v==='recon'?loadRecon():v==='pl'?loadPL():loadPartner()}
+  else if(email){$('tLoginErr').innerHTML='';const msg=document.createElement('span');msg.textContent=v==='dash'?'บัญชี '+email+' ยังไม่ได้รับสิทธิ์ดู Dashboard':'บัญชี '+email+' เปิดได้เฉพาะ Dashboard';$('tLoginErr').appendChild(msg);
+    const b=document.createElement('button');b.type='button';b.className='linkbtn';b.textContent=' ออกจากระบบ';b.onclick=async()=>{try{await db.auth.signOut()}catch(e){}$('tLoginErr').textContent='';checkOwner()};$('tLoginErr').appendChild(b)}
 }
 $('tLoginForm').addEventListener('submit',async e=>{
   e.preventDefault();if(!db)return;const btn=$('tLoginBtn');btn.disabled=true;$('tLoginErr').textContent='';
@@ -1794,6 +1807,23 @@ async function showForecast(ym,idV,idN,idL){
   $(idV).textContent=fmt0(F.fc);
   $(idN).textContent=F.remaining?`ขายแล้ว ${fmt0(F.actual)} (${F.recorded} วัน) + ประมาณการอีก ${F.remaining} วัน ตามค่าเฉลี่ยรายวันในสัปดาห์`:`ครบเดือนแล้ว ${fmt0(F.actual)}`;
 }
+
+/* จัดการสิทธิ์ดู Dashboard (เฉพาะเจ้าของ) */
+async function loadAccess(){
+  const r=await db.from(ACCESS).select('email,added_at').order('added_at',{ascending:true});
+  if(r.error){$('accList').innerHTML=`<p class="sub uncnote">${/does not exist|relation|schema cache/i.test(r.error.message||'')?'ยังไม่ได้สร้างตาราง tamnua_access (รัน supabase/access.sql)':'โหลดรายการไม่ได้'}</p>`;return}
+  $('accList').innerHTML=(r.data||[]).length?(r.data||[]).map(x=>`<div class="accrow"><span>${escH(x.email)} <span class="muted">· เพิ่มเมื่อ ${dmy(String(x.added_at).slice(0,10))}</span></span><button type="button" class="del accDel" data-e="${escH(x.email)}" aria-label="ยกเลิกสิทธิ์">×</button></div>`).join(''):'<p class="sub" style="margin:0">ยังไม่มีใครได้รับสิทธิ์</p>';
+}
+$('accForm').addEventListener('submit',async e=>{
+  e.preventDefault();if(!owner)return;const em=$('accEmail').value.trim().toLowerCase();if(!em)return;
+  const r=await db.from(ACCESS).upsert({email:em});if(r.error){toast('เพิ่มไม่สำเร็จ ลองใหม่อีกครั้ง');return}
+  $('accEmail').value='';loadAccess();toast('ให้สิทธิ์ '+em+' ดู Dashboard แล้ว',async()=>{const q=await db.from(ACCESS).delete().eq('email',em);if(q.error)throw q.error;loadAccess()});
+});
+$('accList').addEventListener('click',async e=>{
+  const b=e.target.closest('.accDel');if(!b||!owner)return;const em=b.dataset.e;
+  const r=await db.from(ACCESS).delete().eq('email',em);if(r.error){toast('ลบไม่สำเร็จ ลองใหม่อีกครั้ง');return}
+  loadAccess();toast('ยกเลิกสิทธิ์ '+em+' แล้ว',async()=>{const q=await db.from(ACCESS).upsert({email:em});if(q.error)throw q.error;loadAccess()});
+});
 function dmyS(iso){const p=String(iso).split('-');return p.length===3?p[2]+'/'+p[1]:iso}
 initDb();
 </script>
