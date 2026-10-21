@@ -147,6 +147,13 @@ tfoot td.lbl{font-family:var(--body);text-align:left;font-weight:600}
 .tdmeta .linkbtn{font-size:13px;color:var(--leaf);font-weight:600}
 .kpis{grid-template-columns:repeat(3,1fr)}
 .fcast strong{color:var(--leaf)}
+.pdfhead{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid var(--bar);padding-bottom:8px;font-size:14px;color:var(--muted)}
+.pdfhead b{font-family:var(--display);font-size:22px;color:var(--bar)}
+#dashView.pdfmode{width:1040px;max-width:none;padding:24px}
+#dashView.pdfmode .tuser,#dashView.pdfmode .dhead,#dashView.pdfmode #accBox,#dashView.pdfmode #dNote{display:none!important}
+#dashView.pdfmode .kpis{grid-template-columns:repeat(3,1fr)}
+#dashView.pdfmode .grid2{grid-template-columns:1fr 1fr}
+#dashView.pdfmode .scroll{overflow:visible}
 @media (max-width:900px){.kpis{grid-template-columns:repeat(2,1fr)}}
 .warnnum{color:var(--chili)}
 .dhead{margin:0}
@@ -469,7 +476,9 @@ select.t{font:inherit;width:100%;padding:9px 10px;border:1px solid var(--line);b
       <button type="button" data-p="lastMonth" aria-pressed="false">เดือนก่อน</button>
       <button type="button" data-p="last7" aria-pressed="false">7 วันล่าสุด</button>
     </div>
+    <div class="dl"><button class="btn btn-dl" id="dPdf" type="button">ดาวน์โหลด PDF</button></div>
   </div>
+  <div class="pdfhead" id="dPdfHead" hidden><div><b>ร้านตำนัว</b> · Dashboard</div><div id="dPdfRange"></div></div>
   <p class="sub" id="dNote" style="margin:-10px 0 0">กำลังโหลด…</p>
   <div class="summary kpis">
     <div><span>ยอดขายรวม</span><strong id="kSales">0</strong><em id="kSalesEx"></em></div>
@@ -1278,7 +1287,7 @@ async function loadDash(){
     r.d.market.forEach(m=>{const a=CATS.reduce((x,c)=>x+num(m[c]),0);if(a&&!paidKeys.has(r.date+'|'+m.id)){pend+=a;pendN++}});
   });
   $('dNote').textContent=dashRows.length?`${dmy(f)} – ${dmy(t)} · บันทึกแล้ว ${dashRows.length} วัน`:'ยังไม่มีข้อมูลที่บันทึกในช่วงวันที่นี้';
-  renderDash(pend,pendN);
+  dashLast=[pend,pendN];renderDash(pend,pendN);
 }
 function tok(name){return getComputedStyle(document.documentElement).getPropertyValue(name).trim()||'#888'}
 async function renderDash(pend,pendN){
@@ -1824,6 +1833,38 @@ $('accList').addEventListener('click',async e=>{
   const r=await db.from(ACCESS).delete().eq('email',em);if(r.error){toast('ลบไม่สำเร็จ ลองใหม่อีกครั้ง');return}
   loadAccess();toast('ยกเลิกสิทธิ์ '+em+' แล้ว',async()=>{const q=await db.from(ACCESS).upsert({email:em});if(q.error)throw q.error;loadAccess()});
 });
+
+/* Dashboard → PDF: แสดงแบบกว้างและสีสว่างชั่วคราว ถ่ายภาพหน้าแล้วแบ่งเป็นหน้า A4 */
+let dashLast=null;
+$('dPdf').onclick=async()=>{
+  const b=$('dPdf'),el=$('dashView'),root=document.documentElement,prevTheme=root.getAttribute('data-theme');
+  b.disabled=true;b.textContent='กำลังสร้าง…';
+  try{
+    if(!window.html2canvas)await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
+    if(!window.jspdf)await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+    try{await document.fonts.ready}catch(e){}
+    $('dPdfRange').textContent=`${dmy($('dFrom').value)} – ${dmy($('dTo').value)} · พิมพ์เมื่อ ${new Date().toLocaleString('th-TH',{dateStyle:'medium',timeStyle:'short'})}`;
+    root.setAttribute('data-theme','light');el.classList.add('pdfmode');$('dPdfHead').hidden=false;
+    if(dashLast)await renderDash(...dashLast);
+    await new Promise(r=>setTimeout(r,500));
+    const cv=await window.html2canvas(el,{scale:2,backgroundColor:'#ffffff',logging:false,windowWidth:1100});
+    const pdf=new window.jspdf.jsPDF({unit:'mm',format:'a4',orientation:'portrait'});
+    const pxPerPage=Math.floor(cv.width*297/210);let y=0,page=0;
+    while(y<cv.height){
+      const h=Math.min(pxPerPage,cv.height-y),pc=document.createElement('canvas');pc.width=cv.width;pc.height=h;
+      const ctx=pc.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,pc.width,h);ctx.drawImage(cv,0,y,cv.width,h,0,0,cv.width,h);
+      if(page)pdf.addPage();pdf.addImage(pc.toDataURL('image/jpeg',0.9),'JPEG',0,0,210,h*210/cv.width);
+      y+=h;page++;
+    }
+    await saveFile(`ตำนัว_Dashboard_${$('dFrom').value}_${$('dTo').value}.pdf`,pdf.output('arraybuffer'));
+  }catch(e){toast('สร้างไฟล์ไม่สำเร็จ ลองใหม่อีกครั้ง')}
+  finally{
+    el.classList.remove('pdfmode');$('dPdfHead').hidden=true;
+    if(prevTheme==null)root.removeAttribute('data-theme');else root.setAttribute('data-theme',prevTheme);
+    if(dashLast)renderDash(...dashLast);
+    b.disabled=false;b.textContent='ดาวน์โหลด PDF';
+  }
+};
 function dmyS(iso){const p=String(iso).split('-');return p.length===3?p[2]+'/'+p[1]:iso}
 initDb();
 </script>
