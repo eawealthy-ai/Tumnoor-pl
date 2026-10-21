@@ -230,6 +230,8 @@ select.t{font:inherit;width:100%;padding:9px 10px;border:1px solid var(--line);b
   .pitems td:first-child{grid-column:1/-1}
 }
 
+.pcset{padding-block:12px}
+.pcset summary{cursor:pointer;font-weight:600;font-size:15px}
 .pctable{min-width:560px}
 .pctable td{font-size:14px;text-align:right;font-family:var(--num);padding:4px 6px}
 .pctable td:first-child{text-align:left}
@@ -574,9 +576,9 @@ select.t{font:inherit;width:100%;padding:9px 10px;border:1px solid var(--line);b
   </div>
   <p class="sub" id="pcNote" style="margin:-10px 0 0">กำลังโหลด…</p>
   <div class="summary kp4" id="pcSum" hidden></div>
-  <section>
-    <h2>หุ้นส่วน</h2>
-    <p class="sub">% ปันผล ใช้แบ่งกำไรแต่ละเดือน (อาจไม่เท่ากับสัดส่วนเงินลงทุน) · แบ่งส่วนของหุ้นส่วนต่อให้ผู้ร่วมลงทุนได้</p>
+  <section class="pcset">
+    <details id="pcSetBox"><summary>ตั้งค่าหุ้นส่วน <span class="muted">(ชื่อ เงินลงทุน % ปันผล)</span></summary>
+    <p class="sub" style="margin-top:10px">% ปันผล ใช้แบ่งกำไรแต่ละเดือน (อาจไม่เท่ากับสัดส่วนเงินลงทุน) · แบ่งส่วนของหุ้นส่วนต่อให้ผู้ร่วมลงทุนได้</p>
     <p class="sub" id="pcEmpty">ยังไม่มีข้อมูลหุ้นส่วน กด "นำเข้าไฟล์ Excel" เพื่อดึงรายชื่อและประวัติปันผลจากไฟล์เดิม หรือเพิ่มเอง</p>
     <div class="scroll"><table class="pctable">
       <thead><tr><th>ชื่อ</th><th class="r">เงินลงทุน</th><th class="r">% ทุน</th><th class="r">% ปันผล</th><th></th></tr></thead>
@@ -584,6 +586,7 @@ select.t{font:inherit;width:100%;padding:9px 10px;border:1px solid var(--line);b
     </table></div>
     <p class="sub uncnote" id="pcShareWarn" hidden></p>
     <div class="toolbar"><button class="btn btn-add" id="pcAddP" type="button">+ เพิ่มหุ้นส่วน</button></div>
+    </details>
   </section>
   <section>
     <h2>ปันผลรายเดือน</h2>
@@ -1605,6 +1608,7 @@ async function loadPartner(){
 function renderPartners(){
   const P=pc.partners,inv=P.reduce((a,p)=>a+num(p.invest),0),sh=P.reduce((a,p)=>a+num(p.share),0);
   $('pcEmpty').hidden=P.length>0;
+  if(!P.length)$('pcSetBox').open=true;
   $('pcBody').innerHTML=P.map((p,i)=>`<tr><td><input class="t pce" data-i="${i}" data-f="name" value="${escH(p.name)}" aria-label="ชื่อหุ้นส่วน"></td>
     <td><input class="n pce" data-i="${i}" data-f="invest" inputmode="decimal" value="${escH(p.invest??'')}" aria-label="เงินลงทุน"></td>
     <td class="pcv">${inv?(num(p.invest)/inv*100).toFixed(1)+'%':'–'}</td>
