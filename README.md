@@ -7,6 +7,7 @@
 - `index.html` – หน้าเว็บ
 - `config.js` – ค่าเชื่อมต่อ Supabase (Project URL + anon key)
 - `supabase/schema.sql` – สร้างตาราง `tamnua_days`
+- `supabase/paid.sql` – ตารางสถานะโอน `tamnua_paid` (แก้ได้เฉพาะ ownerEmail)
 
 ## ตั้งค่าครั้งแรก
 1. Supabase: สร้างโปรเจกต์ → SQL Editor → วางเนื้อหา `supabase/schema.sql` → Run

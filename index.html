@@ -97,6 +97,12 @@ tfoot td.lbl{font-family:var(--body);text-align:left;font-weight:600}
 .tlist td.det{color:var(--muted);font-size:13px;max-width:280px}
 .tlist tr.isPaid td{color:var(--muted)}
 .nowrap{white-space:nowrap}
+.tcontent{display:grid;gap:22px}
+.tcontent[hidden]{display:none}
+.tuser{font-size:13px;color:var(--muted);text-align:right}
+.login{max-width:420px;width:100%;justify-self:center}
+.loginf{display:grid;gap:12px}
+.loginf .btn{justify-self:start}
 .muted{color:var(--muted)}
 .chip{display:inline-block;font-size:12px;font-weight:600;padding:2px 9px;border-radius:999px;white-space:nowrap;border:1px solid var(--line)}
 .chip.paidc{background:var(--leaf-soft);color:var(--leaf);border-color:transparent}
@@ -231,6 +237,18 @@ tfoot td.lbl{font-family:var(--body);text-align:left;font-weight:600}
 </main>
 
 <main id="transferView" hidden>
+  <section id="tLogin" class="login">
+    <h2>รายการโอน</h2>
+    <p class="sub">หน้านี้เปิดได้เฉพาะเจ้าของร้าน กรุณาเข้าสู่ระบบ</p>
+    <form id="tLoginForm" class="loginf">
+      <label class="f">อีเมล<input type="email" id="tEmail" class="t" autocomplete="username" required></label>
+      <label class="f">รหัสผ่าน<input type="password" id="tPass" class="t" autocomplete="current-password" required></label>
+      <button class="btn btn-save" id="tLoginBtn" type="submit">เข้าสู่ระบบ</button>
+      <p class="sub" id="tLoginErr" style="color:var(--chili);margin:0"></p>
+    </form>
+  </section>
+  <div id="tContent" class="tcontent" hidden>
+  <div class="tuser">เข้าสู่ระบบเป็น <b id="tWho"></b> · <button type="button" class="linkbtn" id="tLogout">ออกจากระบบ</button></div>
   <div class="summary three">
     <div><span>ค้างโอน</span><strong id="tPend">0</strong><em id="tPendN"></em></div>
     <div><span>โอนแล้ว</span><strong id="tDone">0</strong><em id="tDoneN"></em></div>
@@ -256,6 +274,7 @@ tfoot td.lbl{font-family:var(--body);text-align:left;font-weight:600}
     <div class="tbar"><span>เลือก <b id="tSelN2">0</b> บิล · รวม <b id="tSel2">0.00</b> บาท</span>
       <button class="btn btn-save" id="tMark" type="button" disabled>ทำเครื่องหมายโอนแล้ว</button></div>
   </section>
+  </div>
 </main>
 <div class="toast" id="toast" hidden></div>
 
@@ -279,18 +298,19 @@ function pettyRow(tbody,r={item:'',amount:''}){
   tbody.appendChild(tr);
 }
 const uid=()=>Math.random().toString(36).slice(2,10);
-/* ทุกบิลมี id และสถานะโอน (paid/paidAt) ที่หน้า "รายการโอน" เป็นผู้กำหนด */
+/* ทุกบิลมี id; สถานะโอนเก็บแยกในตาราง tamnua_paid (key = วันที่|id) แก้ได้เฉพาะเจ้าของ */
 function ensureIds(d){
   if(!d)return d;
   return {...d,petty:pettyBillsOf(d).map((b,i)=>({...b,id:b.id||'p'+i})),market:(d.market||[]).map((m,i)=>({...m,id:m.id||'m'+i}))};
 }
-function setPaidData(el,b){el.dataset.id=b.id||uid();if(b.paid){el.dataset.paid='1';el.dataset.paidAt=b.paidAt||''}}
-const paidOf=el=>el.dataset.paid?{paid:true,paidAt:el.dataset.paidAt||''}:{};
+function setPaidData(el,b){el.dataset.id=b.id||uid()}
+const paidOf=()=>({});
+const PAID='tamnua_paid';
 function pettyBill(b={}){
   const el=document.createElement('div');el.className='pbill';setPaidData(el,b);
   el.innerHTML=`<div class="phead">
       <label class="f">จ่ายให้<input class="t pay" placeholder="ชื่อคน / ร้านที่รับเงิน"></label>
-      ${b.paid?`<span class="paidchip">โอนแล้ว ${b.paidAt?dmyS(b.paidAt):''}</span>`:''}
+      <span class="paidchip" hidden></span>
       <span class="psub">รวมบิล <b class="pbt">0.00</b></span>
       <button class="del delbill" type="button" aria-label="ลบบิลนี้" title="ลบบิลนี้">×</button>
     </div>
@@ -311,7 +331,7 @@ function pettyBillsOf(d){
 }
 function mktRow(r={}){
   const tr=document.createElement('tr');setPaidData(tr,r);
-  let h=`<td class="idx"><button class="del" type="button" aria-label="ลบบิล">×</button></td><td><input class="t mpay" placeholder="ร้าน / คนรับเงิน" aria-label="จ่ายให้">${r.paid?`<div class="paidchip" style="display:inline-block;margin-top:4px">โอนแล้ว</div>`:''}</td>`;
+  let h=`<td class="idx"><button class="del" type="button" aria-label="ลบบิล">×</button></td><td><input class="t mpay" placeholder="ร้าน / คนรับเงิน" aria-label="จ่ายให้"><div class="paidchip" style="display:inline-block;margin-top:4px" hidden></div></td>`;
   CATS.forEach(c=>h+=`<td><input class="n" inputmode="decimal"></td>`);
   h+=`<td class="rowtot" style="text-align:right;font-family:var(--num)">0.00</td>`;
   tr.innerHTML=h;tr.querySelector('.mpay').value=r.payee??'';tr.querySelectorAll('input.n').forEach((el,k)=>el.value=blank(r[CATS[k]]));
@@ -382,13 +402,13 @@ function watchDay(day){
   latest=null;load(null);
   if(!db){return}
   setStatus('load','กำลังโหลดข้อมูลวันที่ '+day+'…');
-  fetchDay(day).then(d=>{if($('day').value!==day)return;latest=d;if(!dirty)load(d);showSaved()})
+  fetchDay(day).then(d=>{if($('day').value!==day)return;latest=d;if(!dirty)load(d);showSaved();markPaidChips(day)})
     .catch(()=>setStatus('err','โหลดข้อมูลไม่ได้ ตรวจสอบอินเทอร์เน็ตแล้วรีเฟรชหน้านี้'));
   unsub=db.channel('day-'+day).on('postgres_changes',{event:'*',schema:'public',table:TABLE,filter:'date=eq.'+day},p=>{
     const raw=p.new&&p.new.data;if(!raw||(latest&&raw.updatedAt===latest.updatedAt))return;
     const d=raw.deleted?null:raw;latest=d;
     if(dirty){setStatus('dirty','มีคนอัปเดตข้อมูลวันนี้จากเครื่องอื่น');$('reload').hidden=false;return}
-    load(d);showSaved();
+    load(d);showSaved();markPaidChips(day);
   }).subscribe();
 }
 
@@ -411,9 +431,6 @@ $('save').onclick=async()=>{
   if(!db)return;const day=$('day').value;if(!day){toast('เลือกวันที่ก่อนบันทึก');return}
   const btn=$('save');btn.disabled=true;btn.textContent='กำลังบันทึก…';
   try{const data=collect();
-    const cur=ensureIds(await fetchDay(day));const pm={};
-    if(cur)[...cur.petty,...cur.market].forEach(b=>{if(b.paid)pm[b.id]=b});
-    [...data.petty,...data.market].forEach(b=>{const p=pm[b.id];if(p){b.paid=true;b.paidAt=p.paidAt||''}else{delete b.paid;delete b.paidAt}});
     const {error}=await db.from(TABLE).upsert({date:day,data,updated_at:data.updatedAt});if(error)throw error;latest=data;dirty=false;$('reload').hidden=true;showSaved();toast('บันทึกวันที่ '+day+' แล้ว');refreshSummary()}
   catch(e){
     if(e&&e.code==='invalid_argument'){canWrite=false;lockInputs();setStatus('err','บัญชีนี้ดูได้อย่างเดียว ต้องได้สิทธิ์ Contributor ขึ้นไปจึงจะบันทึกได้')}
@@ -432,6 +449,7 @@ function initDb(){
   db=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey);
   lockInputs();watchDay($('day').value);refreshSummary();
   if(location.hash==='#transfer')showView('transfer');
+  db.auth.onAuthStateChange&&db.auth.onAuthStateChange(()=>{});
 }
 /* ---------- สรุป + ดาวน์โหลด Excel / PDF ---------- */
 const CAT_TH=["ของสด","ของแห้ง-ปรุงรส","สิ้นเปลือง","อาหารพนักงาน","ค่าขนส่ง"];
@@ -599,7 +617,36 @@ function showView(v){
   $('dailyView').hidden=t;$('transferView').hidden=!t;$('dailyCtl').hidden=t;
   document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-current',b.dataset.view===v?'page':'false'));
   try{history.replaceState(null,'',t?'#transfer':location.pathname)}catch(e){}
-  if(t)loadTransfers();
+  if(t)checkOwner();
+}
+let owner=null;
+async function checkOwner(){
+  if(!db){$('tLogin').hidden=false;$('tContent').hidden=true;$('tLoginErr').textContent='ยังไม่ได้เชื่อมฐานข้อมูล';return}
+  let email=null;try{const {data}=await db.auth.getSession();email=data&&data.session&&data.session.user&&data.session.user.email}catch(e){}
+  const allowed=(window.TAMNUA_CONFIG&&window.TAMNUA_CONFIG.ownerEmail||'').toLowerCase();
+  owner=email&&(!allowed||email.toLowerCase()===allowed)?email:null;
+  $('tLogin').hidden=!!owner;$('tContent').hidden=!owner;
+  if(owner){$('tWho').textContent=owner;loadTransfers()}
+  else if(email){$('tLoginErr').textContent='บัญชี '+email+' ไม่มีสิทธิ์เปิดหน้านี้';try{await db.auth.signOut()}catch(e){}}
+}
+$('tLoginForm').addEventListener('submit',async e=>{
+  e.preventDefault();if(!db)return;const btn=$('tLoginBtn');btn.disabled=true;$('tLoginErr').textContent='';
+  try{const {error}=await db.auth.signInWithPassword({email:$('tEmail').value.trim(),password:$('tPass').value});
+    if(error){$('tLoginErr').textContent='อีเมลหรือรหัสผ่านไม่ถูกต้อง';return}
+    $('tPass').value='';await checkOwner();
+  }catch(err){$('tLoginErr').textContent='เข้าสู่ระบบไม่สำเร็จ ลองใหม่อีกครั้ง'}
+  finally{btn.disabled=false}
+});
+$('tLogout').onclick=async()=>{try{await db.auth.signOut()}catch(e){}owner=null;tSel.clear();checkOwner()};
+async function markPaidChips(day){
+  if(!db)return;
+  const {data}=await db.from(PAID).select('bill_key,paid_at').eq('date',day);
+  if($('day').value!==day)return;
+  const m={};(data||[]).forEach(r=>m[r.bill_key]=r.paid_at);
+  document.querySelectorAll('#dailyView .pbill, #mktBody tr').forEach(el=>{
+    const chip=el.querySelector('.paidchip');if(!chip)return;const at=m[day+'|'+el.dataset.id];
+    chip.hidden=!at;chip.textContent=at?'โอนแล้ว '+dmyS(at):'';
+  });
 }
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>showView(b.dataset.view));
 
@@ -620,6 +667,10 @@ async function loadTransfers(){
       if(amt)tRows.push({key:d.date+'|'+m.id,date:d.date,type:'market',payee:m.payee||'',
         detail:CATS.map((c,i)=>num(m[c])?CAT_TH[i]+' '+fmt0(num(m[c])):'').filter(Boolean).join(' · '),amt,paid:!!m.paid,paidAt:m.paidAt||''})});
   });
+  const pr=await db.from(PAID).select('bill_key,paid_at').gte('date',f).lte('date',t);
+  if(pr.error){$('tNote').textContent='โหลดสถานะการโอนไม่ได้ ลองใหม่อีกครั้ง';return}
+  const pm={};(pr.data||[]).forEach(r=>pm[r.bill_key]=r.paid_at);
+  tRows.forEach(r=>{r.paid=!!pm[r.key];r.paidAt=pm[r.key]||''});
   [...tSel].forEach(k=>{if(!tRows.some(r=>r.key===k&&!r.paid))tSel.delete(k)});
   renderTransfers();
 }
@@ -645,16 +696,11 @@ function renderTransfers(){
   $('tAll').checked=pickable.length>0&&pickable.every(r=>tSel.has(r.key));$('tAll').disabled=!pickable.length;
 }
 async function setPaid(keys,paid){
-  const byDate={};keys.forEach(k=>{const i=k.indexOf('|');(byDate[k.slice(0,i)]=byDate[k.slice(0,i)]||[]).push(k.slice(i+1))});
-  const stamp=today();
-  for(const [d,ids] of Object.entries(byDate)){
-    const {data,error}=await db.from(TABLE).select('data').eq('date',d).maybeSingle();
-    if(error)throw error;if(!data||!data.data||data.data.deleted)continue;
-    const cur=ensureIds({...data.data,date:d});
-    [...cur.petty,...cur.market].forEach(b=>{if(ids.includes(b.id)){if(paid){b.paid=true;b.paidAt=stamp}else{delete b.paid;delete b.paidAt}}});
-    cur.updatedAt=new Date().toISOString();
-    const r=await db.from(TABLE).upsert({date:d,data:cur,updated_at:cur.updatedAt});if(r.error)throw r.error;
-  }
+  if(!owner)throw new Error('not owner');
+  const r=paid
+    ?await db.from(PAID).upsert(keys.map(k=>({bill_key:k,date:k.slice(0,k.indexOf('|')),paid_at:today(),paid_by:owner})))
+    :await db.from(PAID).delete().in('bill_key',keys);
+  if(r.error)throw r.error;
 }
 $('tFrom').onchange=$('tTo').onchange=loadTransfers;
 document.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{tFilter=b.dataset.f;
