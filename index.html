@@ -331,7 +331,7 @@ function watchDay(day){
   }).subscribe();
 }
 
-document.addEventListener('input',e=>{if(e.target.closest('main')&&!e.target.closest('#exportSec')&&e.target.matches('input')){calc();if(!dirty){dirty=true;setStatus('dirty','มีการแก้ไขที่ยังไม่ได้บันทึก')}}});
+document.addEventListener('input',e=>{if(e.target.closest('main')&&!e.target.closest('#exportSec')&&!e.target.closest('#status')&&e.target.matches('input')){calc();if(!dirty){dirty=true;setStatus('dirty','มีการแก้ไขที่ยังไม่ได้บันทึก')}}});
 function markDirty(){calc();dirty=true;setStatus('dirty','มีการแก้ไขที่ยังไม่ได้บันทึก')}
 document.addEventListener('click',e=>{
   const t=e.target;
