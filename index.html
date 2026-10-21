@@ -154,8 +154,22 @@ select.t{font:inherit;width:100%;padding:9px 10px;border:1px solid var(--line);b
 .pltable tr.net.neg td.tv,.pltable tr.net.neg td.pc{color:var(--chili)}
 .pltable td.pc{color:var(--muted);white-space:nowrap}
 .pltable .del{font-size:15px;padding:0 4px}
-.pitems select.cat{font:inherit;font-size:13px;width:100%;min-width:150px;padding:8px 6px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg)}
+.pitems select.cat{font:inherit;font-size:13px;width:100%;min-width:0;padding:8px 6px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg)}
 .pitems select.cat.need{border-color:var(--chili)}
+/* รายการเงินสดย่อย: ช่องรายการกว้างขึ้น บนมือถือขึ้นบรรทัดของตัวเอง */
+.pbill>*{min-width:0}
+.pbill .scroll{overflow:visible;margin:0;padding:0}
+.pbill table,.pbill thead,.pbill tbody{display:block;width:100%;min-width:0}
+.pbill thead tr,.pitems tr{display:grid;grid-template-columns:minmax(0,2.2fr) minmax(0,1.3fr) 130px 36px;gap:8px;align-items:center}
+.pbill thead th,.pitems td{display:block;padding:0;border:0;min-width:0}
+.pbill thead tr{padding-bottom:6px;border-bottom:1px solid var(--line)}
+.pitems tr{padding:8px 0;border-bottom:1px solid var(--line)}
+@media (max-width:640px){
+  .pbill thead{display:none}
+  .pitems tr{grid-template-columns:minmax(0,1fr) 112px 32px}
+  .pitems td:first-child{grid-column:1/-1}
+}
+
 .nowrap{white-space:nowrap}
 .tcontent{display:grid;gap:22px}
 .tcontent[hidden]{display:none}
