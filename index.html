@@ -123,6 +123,20 @@ tfoot td.lbl{font-family:var(--body);text-align:left;font-weight:600}
 .dtable td:first-child{text-align:left;font-family:var(--body)}
 .dtable tfoot td{font-weight:600}
 .tabs{flex-wrap:wrap}
+select.t{font:inherit;width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg)}
+.rtable{min-width:640px}
+.rtable td{text-align:right;font-family:var(--num);font-size:14px;font-variant-numeric:tabular-nums}
+.rtable td:first-child,.rtable td:last-child{text-align:left;font-family:var(--body)}
+.rtable tfoot td{font-weight:600}
+.rlist{min-width:720px}
+.rlist td{font-size:14px}
+.rlist td.amt{text-align:right;font-family:var(--num);font-variant-numeric:tabular-nums;white-space:nowrap}
+.rlist td.det{color:var(--muted);font-size:13px}
+.rform{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;align-items:end}
+.rform .wide{grid-column:span 2}
+@media (max-width:420px){.rform .wide{grid-column:auto}}
+.rform .btn{justify-self:start}
+.chip.warnc{background:var(--leaf-soft);color:var(--fg)}
 .nowrap{white-space:nowrap}
 .tcontent{display:grid;gap:22px}
 .tcontent[hidden]{display:none}
@@ -180,7 +194,7 @@ tfoot td.lbl{font-family:var(--body);text-align:left;font-weight:600}
 
 <div class="bar"><div class="bar-in">
   <div class="brand">ร้านตำนัว<small>บันทึกยอดประจำวัน · Daily P&amp;L input</small></div>
-  <nav class="tabs" aria-label="เลือกหน้า"><button type="button" data-view="daily" aria-current="page">บันทึกรายวัน</button><button type="button" data-view="transfer" aria-current="false">รายการโอน</button><button type="button" data-view="dash" aria-current="false">Dashboard</button></nav>
+  <nav class="tabs" aria-label="เลือกหน้า"><button type="button" data-view="daily" aria-current="page">บันทึกรายวัน</button><button type="button" data-view="transfer" aria-current="false">รายการโอน</button><button type="button" data-view="dash" aria-current="false">Dashboard</button><button type="button" data-view="recon" aria-current="false">กระทบยอด</button></nav>
   <div class="bar-ctl" id="dailyCtl">
     <input type="date" id="day" aria-label="วันที่">
     <button class="btn btn-ghost" id="clear" type="button">ล้างฟอร์ม</button>
@@ -298,7 +312,7 @@ tfoot td.lbl{font-family:var(--body);text-align:left;font-weight:600}
 <main id="loginView" hidden>
   <section class="login">
     <h2>เข้าสู่ระบบเจ้าของร้าน</h2>
-    <p class="sub">หน้ารายการโอนและ Dashboard เปิดได้เฉพาะเจ้าของร้าน</p>
+    <p class="sub">หน้ารายการโอน Dashboard และกระทบยอด เปิดได้เฉพาะเจ้าของร้าน</p>
     <form id="tLoginForm" class="loginf">
       <label class="f">อีเมล<input type="email" id="tEmail" class="t" autocomplete="username" required></label>
       <label class="f">รหัสผ่าน<input type="password" id="tPass" class="t" autocomplete="current-password" required></label>
@@ -355,6 +369,49 @@ tfoot td.lbl{font-family:var(--body);text-align:left;font-weight:600}
       <thead><tr><th>วันที่</th><th class="r">ยอดขาย</th><th class="r">ก่อน VAT</th><th class="r">บิล</th><th class="r">เฉลี่ย/บิล</th><th class="r">บิลตลาด</th><th class="r">เงินสดย่อย</th><th class="r">ค่าใช้จ่าย %</th></tr></thead>
       <tbody id="dBody"></tbody><tfoot id="dFoot"></tfoot>
     </table></div>
+  </section>
+</main>
+<main id="reconView" hidden>
+  <div class="tuser">เข้าสู่ระบบเป็น <b class="who"></b> · <button type="button" class="linkbtn logout">ออกจากระบบ</button></div>
+  <div class="range dhead">
+    <label class="f">ยอดขายตั้งแต่<input type="date" id="rFrom" class="t"></label>
+    <label class="f">ถึง<input type="date" id="rTo" class="t"></label>
+    <div class="seg" id="rPreset" role="group" aria-label="ช่วงเวลา">
+      <button type="button" data-p="thisMonth" aria-pressed="true">เดือนนี้</button>
+      <button type="button" data-p="lastMonth" aria-pressed="false">เดือนก่อน</button>
+      <button type="button" data-p="last7" aria-pressed="false">7 วันล่าสุด</button>
+    </div>
+  </div>
+  <p class="sub" id="rNote" style="margin:-10px 0 0">กำลังโหลด…</p>
+  <section>
+    <h2>กระทบยอดตามช่องทางรับเงิน</h2>
+    <p class="sub">ยอดขาย (รวม VAT) เทียบเงินเข้าที่บันทึกไว้ · ส่วนต่าง = ยอดขาย − รับแล้ว − ค่าธรรมเนียม · เงินเข้าแต่ละรายการนับในช่วงที่ "งวดยอดขายถึงวันที่" อยู่</p>
+    <div class="scroll"><table class="rtable">
+      <thead><tr><th>ช่องทาง</th><th class="r">ยอดขาย</th><th class="r">รับแล้ว</th><th class="r">ค่าธรรมเนียม/GP</th><th class="r">ส่วนต่าง</th><th>สถานะ</th></tr></thead>
+      <tbody id="rBody"></tbody><tfoot id="rFoot"></tfoot>
+    </table></div>
+  </section>
+  <section>
+    <h2>บันทึกเงินเข้า</h2>
+    <p class="sub">รับเงินแต่ละรอบให้บันทึกแยกกัน เช่น Grab โอนรายสัปดาห์ หรือนำเงินสดฝากธนาคารหลายครั้ง</p>
+    <form id="rForm" class="rform">
+      <label class="f">วันที่เงินเข้า<input type="date" id="rOn" class="t" required></label>
+      <label class="f">ช่องทาง<select id="rCh" class="t"></select></label>
+      <label class="f">ยอดเงินเข้า (บาท)<input id="rAmt" class="n" inputmode="decimal"></label>
+      <label class="f">ค่าธรรมเนียม/GP (บาท)<input id="rFee" class="n" inputmode="decimal" placeholder="0"></label>
+      <label class="f">งวดยอดขายตั้งแต่<input type="date" id="rPf" class="t" required></label>
+      <label class="f">ถึง<input type="date" id="rPt" class="t" required></label>
+      <label class="f wide">หมายเหตุ<input id="rNoteIn" class="t" placeholder="เช่น เลขที่รายการโอน" autocomplete="off"></label>
+      <button class="btn btn-save" id="rSave" type="submit">บันทึกเงินเข้า</button>
+    </form>
+  </section>
+  <section>
+    <h2>รายการเงินเข้า</h2>
+    <div class="scroll"><table class="rlist">
+      <thead><tr><th>วันที่เงินเข้า</th><th>ช่องทาง</th><th>งวดยอดขาย</th><th class="r">ยอดเข้า</th><th class="r">ค่าธรรมเนียม</th><th>หมายเหตุ</th><th></th></tr></thead>
+      <tbody id="rList"></tbody>
+    </table></div>
+    <p class="sub" id="rListNote" style="margin:10px 0 0"></p>
   </section>
 </main>
 <datalist id="dlPettyPayee"></datalist><datalist id="dlMktPayee"></datalist><datalist id="dlItem"></datalist>
@@ -506,7 +563,7 @@ function watchDay(day){
 document.addEventListener('input',e=>{if(e.target.closest('#dailyView')&&!e.target.closest('#exportSec')&&!e.target.closest('#status')&&e.target.matches('input')){calc();if(!dirty){dirty=true;setStatus('dirty','มีการแก้ไขที่ยังไม่ได้บันทึก')}}});
 function markDirty(){calc();dirty=true;setStatus('dirty','มีการแก้ไขที่ยังไม่ได้บันทึก')}
 document.addEventListener('click',e=>{
-  const t=e.target;
+  const t=e.target;if(!t.closest('#dailyView'))return;
   if(t.classList.contains('delbill')){const snap=snapForm();t.closest('.pbill').remove();if(!$('pettyBills').children.length){pettyBill();lockInputs()}markDirty();toast('ลบบิลเงินสดย่อยแล้ว',()=>restoreForm(snap));return}
   if(t.classList.contains('addItem')){const tb=t.closest('.pbill').querySelector('.pitems');pettyRow(tb);lockInputs();tb.lastElementChild.querySelector('input').focus();return}
   if(t.classList.contains('del')){
@@ -549,6 +606,7 @@ function initDb(){
   lockInputs();watchDay($('day').value);refreshSummary();loadSuggestions();
   if(location.hash==='#transfer')showView('transfer');
   else if(location.hash==='#dashboard')showView('dash');
+  else if(location.hash==='#recon')showView('recon');
   db.auth.onAuthStateChange&&db.auth.onAuthStateChange(()=>{});
 }
 /* ---------- สรุป + ดาวน์โหลด Excel / PDF ---------- */
@@ -719,11 +777,11 @@ function firstOfPrevMonth(){const d=new Date();d.setDate(1);d.setMonth(d.getMont
 $('tFrom').value=firstOfPrevMonth();$('tTo').value=today();
 
 let curView='daily';
-const VIEWS={daily:'dailyView',transfer:'transferView',dash:'dashView'};
+const VIEWS={daily:'dailyView',transfer:'transferView',dash:'dashView',recon:'reconView'};
 function showView(v){
   curView=VIEWS[v]?v:'daily';
   document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-current',b.dataset.view===curView?'page':'false'));
-  try{history.replaceState(null,'',curView==='transfer'?'#transfer':curView==='dash'?'#dashboard':location.pathname)}catch(e){}
+  try{history.replaceState(null,'',curView==='transfer'?'#transfer':curView==='dash'?'#dashboard':curView==='recon'?'#recon':location.pathname)}catch(e){}
   $('dailyCtl').hidden=curView!=='daily';
   Object.values(VIEWS).forEach(id=>$(id).hidden=true);$('loginView').hidden=true;
   if(curView==='daily'){$('dailyView').hidden=false;return}
@@ -738,7 +796,7 @@ async function checkOwner(){
   owner=email&&(!allowed||email.toLowerCase()===allowed)?email:null;
   if(curView!==v)return;
   $('loginView').hidden=!!owner;$(VIEWS[v]).hidden=!owner;
-  if(owner){document.querySelectorAll('.who').forEach(el=>el.textContent=owner);v==='transfer'?loadTransfers():loadDash()}
+  if(owner){document.querySelectorAll('.who').forEach(el=>el.textContent=owner);v==='transfer'?loadTransfers():v==='dash'?loadDash():loadRecon()}
   else if(email){$('tLoginErr').textContent='บัญชี '+email+' ไม่มีสิทธิ์เปิดหน้านี้';try{await db.auth.signOut()}catch(e){}}
 }
 $('tLoginForm').addEventListener('submit',async e=>{
@@ -936,6 +994,81 @@ async function loadSuggestions(){
   try{const {data,error}=await db.from(TABLE).select('data').gte('date',isoOf(new Date(Date.now()-120*864e5))).limit(400);if(error)return;
     Object.values(SUG).forEach(m=>m.clear());(data||[]).forEach(r=>sugFrom(r.data));renderSug()}catch(e){}
 }
+
+/* ---------- กระทบยอดเงิน ---------- */
+const RCPT='tamnua_receipts';let rcRows=[],rcSales={};
+$('rCh').innerHTML=CH.map(([k,n])=>`<option value="${k}">${n}</option>`).join('');
+const chName=k=>(CH.find(c=>c[0]===k)||[k,k])[1];
+const chColor=k=>(CH.find(c=>c[0]===k)||[0,0,'#888'])[2];
+function rcPreset(p){
+  const now=new Date();let f,t;
+  if(p==='lastMonth'){f=new Date(now.getFullYear(),now.getMonth()-1,1);t=new Date(now.getFullYear(),now.getMonth(),0)}
+  else if(p==='last7'){t=now;f=new Date(now);f.setDate(f.getDate()-6)}
+  else{f=new Date(now.getFullYear(),now.getMonth(),1);t=now}
+  $('rFrom').value=isoOf(f);$('rTo').value=isoOf(t);
+  document.querySelectorAll('#rPreset button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.p===p?'true':'false'));
+  syncFormPeriod();
+}
+function syncFormPeriod(){$('rPf').value=$('rFrom').value;$('rPt').value=$('rTo').value}
+$('rOn').value=today();
+rcPreset('thisMonth');
+document.querySelectorAll('#rPreset button').forEach(b=>b.onclick=()=>{rcPreset(b.dataset.p);loadRecon()});
+$('rFrom').onchange=$('rTo').onchange=()=>{document.querySelectorAll('#rPreset button').forEach(b=>b.setAttribute('aria-pressed','false'));syncFormPeriod();loadRecon()};
+
+async function loadRecon(){
+  if(!db||!owner)return;
+  const f=$('rFrom').value,t=$('rTo').value;if(!f||!t){$('rNote').textContent='เลือกช่วงวันที่ให้ครบ';return}
+  $('rNote').textContent='กำลังโหลด…';
+  const [days,rc]=await Promise.all([
+    db.from(TABLE).select('date,data').gte('date',f).lte('date',t).limit(400),
+    db.from(RCPT).select('*').gte('period_to',f).lte('period_to',t).order('received_on',{ascending:false}).limit(1000)]);
+  if(rc.error){$('rNote').textContent=/does not exist|relation|schema cache/i.test(rc.error.message||'')?'ยังไม่ได้สร้างตารางเงินเข้าใน Supabase (รัน supabase/receipts.sql)':'โหลดข้อมูลเงินเข้าไม่ได้ ลองใหม่อีกครั้ง';return}
+  if(days.error){$('rNote').textContent='โหลดยอดขายไม่ได้ ลองใหม่อีกครั้ง';return}
+  rcSales={};CH.forEach(([k])=>rcSales[k]=0);let n=0;
+  (days.data||[]).filter(r=>r.data&&!r.data.deleted).forEach(r=>{n++;const s=r.data.sales||{};CH.forEach(([k])=>rcSales[k]+=num(s[k]))});
+  rcRows=rc.data||[];
+  $('rNote').textContent=`ยอดขาย ${dmy(f)} – ${dmy(t)} (บันทึกแล้ว ${n} วัน) · เงินเข้า ${rcRows.length} รายการ`;
+  renderRecon();
+}
+function renderRecon(){
+  const got={},fee={};CH.forEach(([k])=>{got[k]=0;fee[k]=0});
+  rcRows.forEach(r=>{if(got[r.channel]==null){got[r.channel]=0;fee[r.channel]=0}got[r.channel]+=num(r.amount);fee[r.channel]+=num(r.fee)});
+  const keys=[...new Set([...CH.map(c=>c[0]),...Object.keys(got)])];
+  let T={s:0,g:0,f:0};
+  $('rBody').innerHTML=keys.map(k=>{
+    const s=rcSales[k]||0,g=got[k]||0,fe=fee[k]||0,d=s-g-fe;T.s+=s;T.g+=g;T.f+=fe;
+    const st=Math.abs(d)<1?(s||g?'<span class="chip paidc">ครบ</span>':'<span class="muted">–</span>'):d>0?'<span class="chip pendc">ค้างรับ</span>':'<span class="chip warnc">รับเกิน</span>';
+    return `<tr><td><i class="sw" style="background:${chColor(k)}"></i>${chName(k)}</td><td>${fmt(s)}</td><td>${fmt(g)}</td><td>${fmt(fe)}</td><td class="${Math.abs(d)<1?'':'grand'}">${fmt(d)}</td><td>${st}</td></tr>`;
+  }).join('');
+  const d=T.s-T.g-T.f;
+  $('rFoot').innerHTML=`<tr><td class="lbl">รวม</td><td>${fmt(T.s)}</td><td>${fmt(T.g)}</td><td>${fmt(T.f)}</td><td class="grand">${fmt(d)}</td><td></td></tr>`;
+  $('rList').innerHTML=rcRows.map(r=>`<tr><td class="nowrap">${dmy(r.received_on)}</td><td><i class="sw" style="background:${chColor(r.channel)}"></i>${escH(chName(r.channel))}</td>
+    <td class="nowrap muted">${dmyS(r.period_from)} – ${dmyS(r.period_to)}</td><td class="amt">${fmt(num(r.amount))}</td><td class="amt">${num(r.fee)?fmt(num(r.fee)):'–'}</td>
+    <td class="det">${escH(r.note||'')}</td><td><button type="button" class="del rcDel" data-id="${escH(r.id)}" aria-label="ลบรายการนี้">×</button></td></tr>`).join('');
+  $('rListNote').textContent=rcRows.length?'':'ยังไม่มีเงินเข้าที่บันทึกในช่วงนี้';
+}
+$('rForm').addEventListener('submit',async e=>{
+  e.preventDefault();if(!db||!owner)return;
+  const amt=num($('rAmt').value),fe=num($('rFee').value),pf=$('rPf').value,pt=$('rPt').value;
+  if(!amt){toast('ใส่ยอดเงินเข้าก่อน');$('rAmt').focus();return}
+  if(!pf||!pt||pf>pt){toast('งวดยอดขายไม่ถูกต้อง');return}
+  const row={received_on:$('rOn').value||today(),channel:$('rCh').value,amount:amt,fee:fe,period_from:pf,period_to:pt,note:$('rNoteIn').value.trim(),created_by:owner};
+  const btn=$('rSave');btn.disabled=true;
+  try{
+    const {data,error}=await db.from(RCPT).insert(row).select('id').single();if(error)throw error;
+    $('rAmt').value='';$('rFee').value='';$('rNoteIn').value='';
+    await loadRecon();
+    toast('บันทึกเงินเข้า '+chName(row.channel)+' '+fmt(amt)+' บาทแล้ว',async()=>{const r=await db.from(RCPT).delete().eq('id',data.id);if(r.error)throw r.error;await loadRecon()});
+  }catch(err){toast(/does not exist|relation|schema cache/i.test(err&&err.message||'')?'ยังไม่ได้สร้างตารางเงินเข้าใน Supabase':'บันทึกไม่สำเร็จ ลองใหม่อีกครั้ง')}
+  finally{btn.disabled=false}
+});
+$('rList').addEventListener('click',async e=>{
+  const b=e.target.closest('.rcDel');if(!b)return;const row=rcRows.find(r=>String(r.id)===b.dataset.id);if(!row)return;b.disabled=true;
+  try{const r=await db.from(RCPT).delete().eq('id',row.id);if(r.error)throw r.error;await loadRecon();
+    toast('ลบเงินเข้าแล้ว',async()=>{const {created_at,...back}=row;const q=await db.from(RCPT).insert(back);if(q.error)throw q.error;await loadRecon()})}
+  catch(err){toast('ลบไม่สำเร็จ ลองใหม่อีกครั้ง');b.disabled=false}
+});
+
 function dmyS(iso){const p=String(iso).split('-');return p.length===3?p[2]+'/'+p[1]:iso}
 initDb();
 </script>
