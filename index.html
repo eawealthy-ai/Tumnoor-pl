@@ -48,7 +48,11 @@ main{max-width:880px;margin:0 auto;display:grid;gap:22px;
 .status[data-s="new"] .dot{background:#d79a1c}
 .status[data-s="dirty"] .dot,.status[data-s="err"] .dot{background:var(--chili)}
 .status[data-s="err"]{color:var(--chili)}
-.status button{font:inherit;font-size:13px;color:var(--chili);background:none;border:0;text-decoration:underline;cursor:pointer;padding:0}
+.move{display:flex;flex-wrap:wrap;gap:8px;align-items:center;color:var(--fg)}
+.move input{font:inherit;font-family:var(--num);padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--fg)}
+.move .btn{font-size:13px;padding:6px 12px;text-decoration:none}
+.move .btn-save{color:#fff}
+.status>button{font:inherit;font-size:13px;color:var(--chili);background:none;border:0;text-decoration:underline;cursor:pointer;padding:0}
 .summary{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden}
 .summary div{background:var(--surface);padding:12px 14px;min-width:0}
 .summary span{display:block;font-size:12px;color:var(--muted);letter-spacing:.03em}
@@ -127,7 +131,11 @@ tfoot td.lbl{font-family:var(--body);text-align:left;font-weight:600}
 </div></div>
 
 <main>
-  <div class="status" id="status" data-s="load"><span class="dot"></span><span id="statusText">กำลังเชื่อมต่อฐานข้อมูล…</span><button id="reload" type="button" hidden>โหลดข้อมูลล่าสุด</button></div>
+  <div class="status" id="status" data-s="load"><span class="dot"></span><span id="statusText">กำลังเชื่อมต่อฐานข้อมูล…</span><button id="reload" type="button" hidden>โหลดข้อมูลล่าสุด</button>
+    <button id="moveBtn" type="button" hidden>บันทึกผิดวัน? ย้ายไปวันอื่น</button>
+    <span class="move" id="moveBox" hidden>ย้ายไปวันที่ <input type="date" id="moveTo" aria-label="ย้ายไปวันที่">
+      <button class="btn btn-save" id="moveGo" type="button">ย้าย</button>
+      <button class="btn btn-add" id="moveCancel" type="button">ยกเลิก</button></span></div>
 
   <div class="summary">
     <div><span>ยอดขายรวม</span><strong id="sSales">0</strong><em id="sSalesEx"></em></div>
@@ -290,11 +298,12 @@ function calc(){
   $('sPetty').textContent=fmt0(p);$('sPettyPct').textContent=pct(p);
   $('sAvg').textContent=bills?fmt0(s/bills):'–';$('sBills').textContent=bills?fmt0(bills)+' บิล':'';
 }
-function setStatus(state,text){$('status').dataset.s=state;$('statusText').textContent=text}
+function setStatus(state,text){if(state!=='saved'&&state!=='new'){$('moveBtn').hidden=true;$('moveBox').hidden=true}$('status').dataset.s=state;$('statusText').textContent=text}
 function timeOf(iso){try{return new Date(iso).toLocaleString('th-TH',{dateStyle:'medium',timeStyle:'short'})}catch(e){return ''}}
 function showSaved(){
   if(latest)setStatus('saved','บันทึกในระบบแล้ว · อัปเดตล่าสุด '+timeOf(latest.updatedAt));
   else setStatus('new','ยังไม่มีข้อมูลของวันนี้ในระบบ');
+  $('moveBtn').hidden=!latest||!canWrite;$('moveBox').hidden=true;
 }
 function lockInputs(){
   document.querySelectorAll('main section:not(#exportSec) input, main .btn-add, main .del').forEach(el=>el.disabled=!canWrite||!db);
@@ -305,7 +314,7 @@ function toast(t){const el=$('toast');el.textContent=t;el.hidden=false;clearTime
 const TABLE='tamnua_days';
 async function fetchDay(day){
   const {data,error}=await db.from(TABLE).select('data').eq('date',day).maybeSingle();
-  if(error)throw error;return data?data.data:null;
+  if(error)throw error;return data&&!data.data.deleted?data.data:null;
 }
 function watchDay(day){
   if(unsub&&db){db.removeChannel(unsub);unsub=null}
@@ -315,8 +324,8 @@ function watchDay(day){
   fetchDay(day).then(d=>{if($('day').value!==day)return;latest=d;if(!dirty)load(d);showSaved()})
     .catch(()=>setStatus('err','โหลดข้อมูลไม่ได้ ตรวจสอบอินเทอร์เน็ตแล้วรีเฟรชหน้านี้'));
   unsub=db.channel('day-'+day).on('postgres_changes',{event:'*',schema:'public',table:TABLE,filter:'date=eq.'+day},p=>{
-    const d=p.new&&p.new.data;if(!d||(latest&&d.updatedAt===latest.updatedAt))return;
-    latest=d;
+    const raw=p.new&&p.new.data;if(!raw||(latest&&raw.updatedAt===latest.updatedAt))return;
+    const d=raw.deleted?null:raw;latest=d;
     if(dirty){setStatus('dirty','มีคนอัปเดตข้อมูลวันนี้จากเครื่องอื่น');$('reload').hidden=false;return}
     load(d);showSaved();
   }).subscribe();
@@ -375,7 +384,7 @@ async function refreshSummary(){
   try{
     const {data,error}=await db.from(TABLE).select('date,data').gte('date',f).lte('date',t).order('date').limit(400);
     if(error)throw error;
-    rangeDocs=(data||[]).map(r=>({...r.data,date:r.date})).filter(d=>d&&d.date);
+    rangeDocs=(data||[]).filter(r=>r.data&&!r.data.deleted).map(r=>({...r.data,date:r.date}));
   }catch(e){rangeDocs=[];$('sumNote').textContent='โหลดสรุปไม่ได้ ลองรีเฟรชหน้านี้';renderSummary(true);return}
   renderSummary();
 }
@@ -490,6 +499,28 @@ $('pdfBtn').onclick=()=>withBusy($('pdfBtn'),'กำลังสร้าง…'
   await saveFile(fileBase()+'.pdf',pdf.output('arraybuffer'));
 });
 
+
+/* ย้ายข้อมูลที่บันทึกผิดวัน: เขียนลงวันใหม่ แล้วทำเครื่องหมายวันเดิมว่าไม่มีข้อมูล */
+let moveConfirm=false;
+$('moveBtn').onclick=()=>{$('moveBtn').hidden=true;$('moveBox').hidden=false;$('moveTo').value='';moveConfirm=false;$('moveGo').textContent='ย้าย';$('moveTo').focus()};
+$('moveCancel').onclick=()=>{$('moveBox').hidden=true;$('moveBtn').hidden=false};
+$('moveTo').onchange=()=>{moveConfirm=false;$('moveGo').textContent='ย้าย'};
+$('moveGo').onclick=async()=>{
+  const from=$('day').value,to=$('moveTo').value;
+  if(!to){toast('เลือกวันที่ที่ถูกต้องก่อน');return}
+  if(to===from){toast('เป็นวันเดียวกัน ไม่ต้องย้าย');return}
+  const go=$('moveGo');go.disabled=true;
+  try{
+    if(!moveConfirm&&await fetchDay(to)){moveConfirm=true;go.textContent='วันที่ '+dmy(to)+' มีข้อมูลแล้ว กดอีกครั้งเพื่อเขียนทับ';return}
+    const now=new Date().toISOString();
+    const data={...collect(),date:to,updatedAt:now};
+    let r=await db.from(TABLE).upsert({date:to,data,updated_at:now});if(r.error)throw r.error;
+    r=await db.from(TABLE).upsert({date:from,data:{date:from,deleted:true,movedTo:to,updatedAt:now},updated_at:now});if(r.error)throw r.error;
+    dirty=false;$('day').value=to;watchDay(to);refreshSummary();
+    toast('ย้ายข้อมูลจาก '+dmy(from)+' ไป '+dmy(to)+' แล้ว');
+  }catch(e){toast('ย้ายไม่สำเร็จ ลองใหม่อีกครั้ง')}
+  finally{go.disabled=false}
+};
 initDb();
 </script>
 </body>
