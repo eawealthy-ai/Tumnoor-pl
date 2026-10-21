@@ -1597,8 +1597,9 @@ async function computePartner(){
     const carryIn=deficit;let dist=0,used=0;
     if(profit!=null){if(profit<0)deficit+=-profit;else{used=Math.min(profit,deficit);deficit-=used;dist=profit-used}}
     const shares=P.map(p=>dist*num(p.share)/100);
-    const cogs=R.error||!R.sales?0:PL_COGS.reduce((x,[k])=>x+R.auto[k]+num((R.md.manual||{})[k]),0)/R.sales;
-    pcRows.push({cogs,ym:m,sales:R.error?0:R.sales,n:R.error?0:R.n,dim:R.dim||0,auto,profit,hasOv,carryIn,used,dist,deficit,shares,running:m===end});
+    const sys=!R.error&&R.n>0,o=ov||{};
+    const cogs=sys?(R.sales?PL_COGS.reduce((x,[k])=>x+R.auto[k]+num((R.md.manual||{})[k]),0)/R.sales:0):num(o.cogs)/100;
+    pcRows.push({cogs,ym:m,sales:sys?R.sales:num(o.sales),n:sys?R.n:0,dim:R.dim||0,auto,profit,hasOv,carryIn,used,dist,deficit,shares,running:m===end});
   });
   $('pcNote').textContent=`คำนวณ ${months.length} เดือน ตั้งแต่ ${monLabel(months[0]||end)} · ขาดทุนสะสมคงเหลือ ${fmt(deficit)} บาท`;
   renderPayouts();renderHist();
@@ -1610,7 +1611,7 @@ function renderPayouts(){
     const paid=(pc.paid||{})[r.ym]||{};
     const prof=`<input class="n pco" data-ym="${r.ym}" inputmode="decimal" value="${r.hasOv?escH(pc.overrides[r.ym].profit):''}" placeholder="${r.auto==null?'กรอกกำไร':fmt(r.auto)}" aria-label="กำไรสุทธิ ${monLabel(r.ym)}">`
       +`<div class="src">${r.hasOv?'กรอกเอง':r.auto==null?'ยังไม่มีข้อมูลในระบบ':'จาก P&L'+(r.running?' (เดือนนี้ยังไม่จบ)':'')}</div>`;
-    return `<tr><td class="nowrap"><b>${monLabel(r.ym)}</b>${r.n?`<div class="src">บันทึก ${r.n}/${r.dim} วัน</div>`:''}</td><td>${r.sales?fmt0(r.sales):'–'}</td><td class="pin">${prof}</td>
+    return `<tr><td class="nowrap"><b>${monLabel(r.ym)}</b>${r.n?`<div class="src">บันทึก ${r.n}/${r.dim} วัน</div>`:''}</td><td class="pin">${r.n?(r.sales?fmt0(r.sales):'–'):`<input class="n pcx" data-ym="${r.ym}" data-f="sales" inputmode="decimal" value="${escH(((pc.overrides||{})[r.ym]||{}).sales??'')}" placeholder="ยอดขาย" aria-label="ยอดขาย ${monLabel(r.ym)}"><input class="n pcx" data-ym="${r.ym}" data-f="cogs" inputmode="decimal" value="${escH(((pc.overrides||{})[r.ym]||{}).cogs??'')}" placeholder="%COG" aria-label="%COG ${monLabel(r.ym)}" style="margin-top:4px">`}</td><td class="pin">${prof}</td>
       <td>${r.used?'−'+fmt0(r.used):r.profit<0?'<span class="grand">ขาดทุน '+fmt0(-r.profit)+'</span>':'–'}</td><td><b>${fmt0(r.dist)}</b></td>`
       +P.map((p,i)=>{const amt=(r.dist*num(p.share)/100),pd=paid[p.id];
         const subs=(p.subs||[]).map(s=>`<div class="src">${escH(s.name)} ${fmt0(amt*num(s.pct)/100)}</div>`).join('');
@@ -1661,7 +1662,7 @@ $('pcStart').onchange=()=>{if(!pc)return;pc.startMonth=$('pcStart').value;pcMark
 $('pcOpen').onchange=()=>{if(!pc)return;pc.opening=num($('pcOpen').value);pcMark();computePartner()};
 $('pcRows').addEventListener('change',e=>{
   const t=e.target;if(!pc)return;
-  if(t.classList.contains('pco')){const v=t.value.trim();pc.overrides=pc.overrides||{};if(v)pc.overrides[t.dataset.ym]={profit:v};else delete pc.overrides[t.dataset.ym];pcMark();computePartner()}
+  if(t.classList.contains('pco')||t.classList.contains('pcx')){const v=t.value.trim(),f=t.classList.contains('pco')?'profit':t.dataset.f;pc.overrides=pc.overrides||{};const o=pc.overrides[t.dataset.ym]={...(pc.overrides[t.dataset.ym]||{})};if(v)o[f]=v;else delete o[f];if(!Object.keys(o).length)delete pc.overrides[t.dataset.ym];pcMark();computePartner()}
   if(t.classList.contains('pcPaid')){pc.paid=pc.paid||{};const m=pc.paid[t.dataset.ym]=pc.paid[t.dataset.ym]||{};if(t.checked)m[t.dataset.p]=today();else delete m[t.dataset.p];pcMark();renderPayouts()}
 });
 $('pcSave').onclick=async()=>{
