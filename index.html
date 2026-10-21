@@ -230,9 +230,16 @@ select.t{font:inherit;width:100%;padding:9px 10px;border:1px solid var(--line);b
 .rep table{width:100%;border-collapse:collapse}
 .rep th{background:#c4580f;color:#ffffff;font-size:11px;padding:6px 6px;text-align:right;border:0}
 .rep th:first-child,.rep td:first-child{text-align:left}
-.rep td{padding:4px 6px;border-bottom:1px solid #dde3d7;text-align:right;font-variant-numeric:tabular-nums}
+.rep td{padding:4px 6px;border-bottom:1px solid #ecdfd3;text-align:right;font-variant-numeric:tabular-nums}
 .rep td.tx{text-align:left}
 .rep tr.tot td{font-weight:600;background:#fdeadb;border-bottom:0}
+.rep.pl td{padding:3px 6px;font-size:11.5px}
+.rep.pl td.ind{padding-left:20px}
+.rep.pl tr.hd td{font-weight:600;padding-top:8px;border-bottom:1px solid #ecdfd3}
+.rep.pl tr.sub td{font-weight:600;border-top:1px solid #2a1d14}
+.rep.pl tr.key td{font-weight:700;background:#fdeadb}
+.rep.pl tr.net td{font-weight:700;background:#fdeadb;border-top:2px solid #2a1d14;font-size:12.5px}
+.rep.pl td.neg{color:#b3261e}
 .rep footer{position:absolute;bottom:28px;left:44px;right:44px;font-size:10px;color:#5f6d61;display:flex;justify-content:space-between}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -464,7 +471,7 @@ select.t{font:inherit;width:100%;padding:9px 10px;border:1px solid var(--line);b
   <div class="tuser">เข้าสู่ระบบเป็น <b class="who"></b> · <button type="button" class="linkbtn logout">ออกจากระบบ</button></div>
   <div class="range dhead">
     <label class="f">เดือน<select id="plMonth" class="t"></select></label>
-    <div class="dl"><button class="btn btn-dl" id="plXls" type="button">ดาวน์โหลด Excel</button><button class="btn btn-save" id="plSave" type="button" disabled>บันทึกตัวเลขที่กรอก</button></div>
+    <div class="dl"><button class="btn btn-dl" id="plXls" type="button">ดาวน์โหลด Excel</button><button class="btn btn-dl" id="plPdf" type="button">ดาวน์โหลด PDF</button><button class="btn btn-save" id="plSave" type="button" disabled>บันทึกตัวเลขที่กรอก</button></div>
   </div>
   <p class="sub" id="plNote" style="margin:-10px 0 0">กำลังโหลด…</p>
   <div class="uncbox" id="plUnc" hidden></div>
@@ -1318,6 +1325,38 @@ $('plUnc').addEventListener('click',e=>{
   if($('day').value===b.dataset.date){applyPendingFocus();return}
   setDay(b.dataset.date);lockInputs();watchDay(b.dataset.date);
 });
+
+$('plPdf').onclick=async()=>{
+  if(!plData)return;const pb=$('plPdf');pb.disabled=true;pb.textContent='กำลังสร้าง…';
+  try{
+    if(!window.html2canvas)await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
+    if(!window.jspdf)await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+    try{await document.fonts.ready}catch(e){}
+    const D=plData,T=plTotals(),pc=v=>D.sales?(v/D.sales*100).toFixed(2):'–',m=v=>`<td class="${v<0?'neg':''}">${fmt(v)}</td>`;
+    const line=(k,n)=>`<tr><td class="tx ind">${escH(n)}</td><td>${D.auto[k]?fmt(D.auto[k]):'–'}</td><td>${num(plManual[k])?fmt(num(plManual[k])):'–'}</td>${m(T.tot(k))}<td>${pc(T.tot(k))}</td></tr>`;
+    const sum=(l,v,c)=>`<tr class="${c}"><td class="tx">${l}</td><td></td><td></td>${m(v)}<td>${pc(v)}</td></tr>`;
+    const hd=l=>`<tr class="hd"><td class="tx" colspan="5">${l}</td></tr>`;
+    const rows=`<tr class="key"><td class="tx">รายได้จากการขาย</td><td>${fmt(D.sales)}</td><td></td><td>${fmt(D.sales)}</td><td>100.00</td></tr>`
+      +hd('หักต้นทุนทางตรง')+PL_COGS.map(([k,n])=>line(k,n)).join('')+sum('รวมต้นทุนทางตรง',T.cogs,'sub')+sum('กำไรขั้นต้น',T.gross,'key')
+      +hd('ค่าใช้จ่ายในการบริหาร')+PL_OPEX.map(([k,n])=>line(k,n)).join('')+sum('รวมค่าใช้จ่ายในการบริหาร',T.opex,'sub')+sum('กำไรจากการดำเนินงาน',T.op,'key')
+      +(plOther.length?hd('รายการอื่นๆ')+plOther.map(o=>`<tr><td class="tx ind">${escH(o.label||'')}</td><td></td><td>${fmt(num(o.amount))}</td>${m(num(o.amount))}<td>${pc(num(o.amount))}</td></tr>`).join(''):'')
+      +sum('กำไร (ขาดทุน) สุทธิ',T.net,'net');
+    const el=document.createElement('div');el.className='rep pl';
+    el.innerHTML=`<header><div><h1>ร้านตำนัว</h1><div class="rs">งบกำไรขาดทุน</div></div><div class="rs">${monLabel(D.ym)} · บันทึกยอด ${D.n}/${D.dim} วัน</div></header>
+      <table><thead><tr><th>รายการ</th><th>จากบันทึกรายวัน</th><th>กรอกเพิ่ม</th><th>รวม (บาท)</th><th>% ของยอดขาย</th></tr></thead><tbody>${rows}</tbody></table>
+      <footer><span>พิมพ์เมื่อ ${new Date().toLocaleString('th-TH',{dateStyle:'medium',timeStyle:'short'})}</span><span>หน้า 1/1</span></footer>`;
+    document.body.appendChild(el);
+    try{
+      const cv=await window.html2canvas(el,{scale:2,backgroundColor:'#ffffff',logging:false});
+      const pdf=new window.jspdf.jsPDF({unit:'mm',format:'a4',orientation:'portrait'});
+      const h=cv.height*210/cv.width;
+      if(h<=297)pdf.addImage(cv.toDataURL('image/jpeg',0.92),'JPEG',0,0,210,h);
+      else{const w2=210*297/h;pdf.addImage(cv.toDataURL('image/jpeg',0.92),'JPEG',(210-w2)/2,0,w2,297)}
+      await saveFile(`ตำนัว_PL_${D.ym}.pdf`,pdf.output('arraybuffer'));
+    }finally{el.remove()}
+  }catch(e){toast('สร้างไฟล์ไม่สำเร็จ ลองใหม่อีกครั้ง')}
+  finally{pb.disabled=false;pb.textContent='ดาวน์โหลด PDF'}
+};
 function dmyS(iso){const p=String(iso).split('-');return p.length===3?p[2]+'/'+p[1]:iso}
 initDb();
 </script>
