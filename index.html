@@ -76,11 +76,34 @@ th.r{text-align:right}
 td{padding:5px 6px;border-bottom:1px solid var(--line);vertical-align:middle}
 tfoot td{font-family:var(--num);font-weight:500;text-align:right;border-bottom:0;padding-top:10px}
 tfoot td.lbl{font-family:var(--body);text-align:left;font-weight:600}
-.market{min-width:620px}
+.market{min-width:780px}
+.market input.t{min-width:140px}
 .idx{width:48px}
 .market input.n{min-width:92px}
 .del{background:none;border:0;color:var(--muted);font-size:18px;cursor:pointer;padding:4px 8px;border-radius:6px}
 .del:hover{color:var(--chili);background:var(--chili-soft)}
+.tabs{display:flex;gap:4px;background:rgba(255,255,255,.14);padding:3px;border-radius:9px}
+.tabs button{font:inherit;font-weight:600;font-size:14px;color:#fff;background:none;border:0;padding:6px 12px;border-radius:7px;cursor:pointer}
+.tabs button[aria-current="page"]{background:#fff;color:#1d2a1f}
+.paidchip{font-size:11px;font-weight:600;background:var(--leaf-soft);color:var(--leaf);padding:2px 8px;border-radius:999px;white-space:nowrap;align-self:center}
+.summary.three{grid-template-columns:repeat(3,1fr)}
+@media (max-width:640px){.summary.three{grid-template-columns:1fr 1fr}}
+.seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{font:inherit;font-size:14px;padding:8px 12px;background:var(--surface);color:var(--muted);border:0;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--leaf);color:var(--surface);font-weight:600}
+.tlist{min-width:780px}
+.tlist td{font-size:14px}
+.tlist td.amt{text-align:right;font-family:var(--num);font-variant-numeric:tabular-nums;white-space:nowrap}
+.tlist td.det{color:var(--muted);font-size:13px;max-width:280px}
+.tlist tr.isPaid td{color:var(--muted)}
+.nowrap{white-space:nowrap}
+.muted{color:var(--muted)}
+.chip{display:inline-block;font-size:12px;font-weight:600;padding:2px 9px;border-radius:999px;white-space:nowrap;border:1px solid var(--line)}
+.chip.paidc{background:var(--leaf-soft);color:var(--leaf);border-color:transparent}
+.chip.pendc{background:var(--chili-soft);color:var(--chili);border-color:transparent}
+.linkbtn{font:inherit;font-size:12px;color:var(--muted);background:none;border:0;text-decoration:underline;cursor:pointer;padding:0 4px}
+.tbar{position:sticky;bottom:env(safe-area-inset-bottom,0px);display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;align-items:center;background:var(--surface);border-top:1px solid var(--line);margin:14px -18px -18px;padding:12px 18px;border-radius:0 0 12px 12px}
+.tbar b{font-family:var(--num);font-variant-numeric:tabular-nums}
 .grand{color:var(--chili)}
 .pbills{display:grid;gap:14px}
 .pbill{border:1px solid var(--line);border-radius:10px;padding:12px 12px 8px;display:grid;gap:6px;min-width:0}
@@ -123,14 +146,15 @@ tfoot td.lbl{font-family:var(--body);text-align:left;font-weight:600}
 
 <div class="bar"><div class="bar-in">
   <div class="brand">ร้านตำนัว<small>บันทึกยอดประจำวัน · Daily P&amp;L input</small></div>
-  <div class="bar-ctl">
+  <nav class="tabs" aria-label="เลือกหน้า"><button type="button" data-view="daily" aria-current="page">บันทึกรายวัน</button><button type="button" data-view="transfer" aria-current="false">รายการโอน</button></nav>
+  <div class="bar-ctl" id="dailyCtl">
     <input type="date" id="day" aria-label="วันที่">
     <button class="btn btn-ghost" id="clear" type="button">ล้างฟอร์ม</button>
     <button class="btn btn-save" id="save" type="button" disabled>บันทึก</button>
   </div>
 </div></div>
 
-<main>
+<main id="dailyView">
   <div class="status" id="status" data-s="load"><span class="dot"></span><span id="statusText">กำลังเชื่อมต่อฐานข้อมูล…</span><button id="reload" type="button" hidden>โหลดข้อมูลล่าสุด</button>
     <button id="moveBtn" type="button" hidden>บันทึกผิดวัน? ย้ายไปวันอื่น</button>
     <span class="move" id="moveBox" hidden>ย้ายไปวันที่ <input type="date" id="moveTo" aria-label="ย้ายไปวันที่">
@@ -172,14 +196,14 @@ tfoot td.lbl{font-family:var(--body);text-align:left;font-weight:600}
 
   <section>
     <h2>บิลตลาด</h2>
-    <p class="sub">1 แถว = 1 บิล · ใส่ยอดเงินตามประเภท ระบบรวมให้อัตโนมัติ</p>
+    <p class="sub">1 แถว = 1 บิล · ใส่ชื่อผู้รับเงินและยอดตามประเภท ระบบรวมให้อัตโนมัติ</p>
     <div class="scroll"><table class="market">
       <thead><tr>
-        <th></th><th class="r">ของสด</th><th class="r">ของแห้ง-ปรุงรส</th><th class="r">สิ้นเปลือง</th>
+        <th></th><th>จ่ายให้</th><th class="r">ของสด</th><th class="r">ของแห้ง-ปรุงรส</th><th class="r">สิ้นเปลือง</th>
         <th class="r">อาหารพนักงาน</th><th class="r">ค่าขนส่ง</th><th class="r">รวมบิล</th>
       </tr></thead>
       <tbody id="mktBody"></tbody>
-      <tfoot><tr><td class="lbl">รวม</td>
+      <tfoot><tr><td class="lbl">รวม</td><td></td>
         <td id="m0">0.00</td><td id="m1">0.00</td><td id="m2">0.00</td><td id="m3">0.00</td><td id="m4">0.00</td>
         <td id="mTot" class="grand">0.00</td></tr></tfoot>
     </table></div>
@@ -205,6 +229,34 @@ tfoot td.lbl{font-family:var(--body);text-align:left;font-weight:600}
     <p class="sub" id="sumNote" style="margin:10px 0 0">กำลังโหลด…</p>
   </section>
 </main>
+
+<main id="transferView" hidden>
+  <div class="summary three">
+    <div><span>ค้างโอน</span><strong id="tPend">0</strong><em id="tPendN"></em></div>
+    <div><span>โอนแล้ว</span><strong id="tDone">0</strong><em id="tDoneN"></em></div>
+    <div><span>เลือกไว้</span><strong id="tSel">0</strong><em id="tSelN"></em></div>
+  </div>
+  <section>
+    <h2>รายการโอนรายบิล</h2>
+    <p class="sub">บิลเงินสดย่อยและบิลตลาดทั้งหมดในช่วงวันที่ เลือกบิลที่โอนเงินแล้ว แล้วกด "ทำเครื่องหมายโอนแล้ว"</p>
+    <div class="range">
+      <label class="f">ตั้งแต่<input type="date" id="tFrom" class="t"></label>
+      <label class="f">ถึง<input type="date" id="tTo" class="t"></label>
+      <div class="seg" role="group" aria-label="สถานะการโอน">
+        <button type="button" data-f="pending" aria-pressed="true">ค้างโอน</button>
+        <button type="button" data-f="paid" aria-pressed="false">โอนแล้ว</button>
+        <button type="button" data-f="all" aria-pressed="false">ทั้งหมด</button>
+      </div>
+    </div>
+    <div class="scroll"><table class="tlist">
+      <thead><tr><th><input type="checkbox" id="tAll" aria-label="เลือกทั้งหมด"></th><th>วันที่</th><th>ประเภท</th><th>จ่ายให้</th><th>รายละเอียด</th><th class="r">ยอดเงิน (บาท)</th><th>สถานะ</th></tr></thead>
+      <tbody id="tBody"></tbody>
+    </table></div>
+    <p class="sub" id="tNote" style="margin:10px 0 0">กำลังโหลด…</p>
+    <div class="tbar"><span>เลือก <b id="tSelN2">0</b> บิล · รวม <b id="tSel2">0.00</b> บาท</span>
+      <button class="btn btn-save" id="tMark" type="button" disabled>ทำเครื่องหมายโอนแล้ว</button></div>
+  </section>
+</main>
 <div class="toast" id="toast" hidden></div>
 
 <script>
@@ -226,10 +278,19 @@ function pettyRow(tbody,r={item:'',amount:''}){
   const i=tr.querySelectorAll('input');i[0].value=r.item??'';i[1].value=blank(r.amount);
   tbody.appendChild(tr);
 }
+const uid=()=>Math.random().toString(36).slice(2,10);
+/* ทุกบิลมี id และสถานะโอน (paid/paidAt) ที่หน้า "รายการโอน" เป็นผู้กำหนด */
+function ensureIds(d){
+  if(!d)return d;
+  return {...d,petty:pettyBillsOf(d).map((b,i)=>({...b,id:b.id||'p'+i})),market:(d.market||[]).map((m,i)=>({...m,id:m.id||'m'+i}))};
+}
+function setPaidData(el,b){el.dataset.id=b.id||uid();if(b.paid){el.dataset.paid='1';el.dataset.paidAt=b.paidAt||''}}
+const paidOf=el=>el.dataset.paid?{paid:true,paidAt:el.dataset.paidAt||''}:{};
 function pettyBill(b={}){
-  const el=document.createElement('div');el.className='pbill';
+  const el=document.createElement('div');el.className='pbill';setPaidData(el,b);
   el.innerHTML=`<div class="phead">
       <label class="f">จ่ายให้<input class="t pay" placeholder="ชื่อคน / ร้านที่รับเงิน"></label>
+      ${b.paid?`<span class="paidchip">โอนแล้ว ${b.paidAt?dmyS(b.paidAt):''}</span>`:''}
       <span class="psub">รวมบิล <b class="pbt">0.00</b></span>
       <button class="del delbill" type="button" aria-label="ลบบิลนี้" title="ลบบิลนี้">×</button>
     </div>
@@ -249,21 +310,21 @@ function pettyBillsOf(d){
   return p;
 }
 function mktRow(r={}){
-  const tr=document.createElement('tr');
-  let h=`<td class="idx"><button class="del" type="button" aria-label="ลบบิล">×</button></td>`;
+  const tr=document.createElement('tr');setPaidData(tr,r);
+  let h=`<td class="idx"><button class="del" type="button" aria-label="ลบบิล">×</button></td><td><input class="t mpay" placeholder="ร้าน / คนรับเงิน" aria-label="จ่ายให้">${r.paid?`<div class="paidchip" style="display:inline-block;margin-top:4px">โอนแล้ว</div>`:''}</td>`;
   CATS.forEach(c=>h+=`<td><input class="n" inputmode="decimal"></td>`);
   h+=`<td class="rowtot" style="text-align:right;font-family:var(--num)">0.00</td>`;
-  tr.innerHTML=h;tr.querySelectorAll('input').forEach((el,k)=>el.value=blank(r[CATS[k]]));
+  tr.innerHTML=h;tr.querySelector('.mpay').value=r.payee??'';tr.querySelectorAll('input.n').forEach((el,k)=>el.value=blank(r[CATS[k]]));
   $('mktBody').appendChild(tr);
 }
 
 function collect(){
   const sales={cash:num($('cash').value),lineman:num($('lineman').value),grab:num($('grab').value),credit:num($('credit').value),kplus:num($('kplus').value)};
   const bills=num($('bills').value), vat=$('vat').checked;
-  const petty=[...$('pettyBills').querySelectorAll('.pbill')].map(b=>({payee:b.querySelector('.pay').value.trim(),
+  const petty=[...$('pettyBills').querySelectorAll('.pbill')].map(b=>({id:b.dataset.id,...paidOf(b),payee:b.querySelector('.pay').value.trim(),
     items:[...b.querySelector('.pitems').rows].map(tr=>{const i=tr.querySelectorAll('input');return{item:i[0].value.trim(),amount:num(i[1].value)}}).filter(r=>r.item||r.amount)}))
     .filter(b=>b.payee||b.items.length);
-  const market=[...$('mktBody').rows].map(tr=>{const o={};tr.querySelectorAll('input').forEach((el,k)=>o[CATS[k]]=num(el.value));return o})
+  const market=[...$('mktBody').rows].map(tr=>{const o={id:tr.dataset.id,...paidOf(tr),payee:tr.querySelector('.mpay').value.trim()};tr.querySelectorAll('input.n').forEach((el,k)=>o[CATS[k]]=num(el.value));return o})
     .filter(o=>CATS.some(c=>o[c]));
   const salesTotal=Object.values(sales).reduce((a,b)=>a+b,0);
   const marketByCat={};CATS.forEach(c=>marketByCat[c]=market.reduce((a,o)=>a+o[c],0));
@@ -273,7 +334,7 @@ function collect(){
     updatedAt:new Date().toISOString()};
 }
 function load(d){
-  d=d||{};
+  d=ensureIds(d)||{};
   $('vat').checked=d.vat!==false;
   const s=d.sales||{};['cash','lineman','grab','credit','kplus'].forEach(k=>$(k).value=blank(s[k]));
   $('bills').value=blank(d.bills);
@@ -306,7 +367,7 @@ function showSaved(){
   $('moveBtn').hidden=!latest||!canWrite;$('moveBox').hidden=true;
 }
 function lockInputs(){
-  document.querySelectorAll('main section:not(#exportSec) input, main .btn-add, main .del').forEach(el=>el.disabled=!canWrite||!db);
+  document.querySelectorAll('#dailyView section:not(#exportSec) input, #dailyView .btn-add, #dailyView .del').forEach(el=>el.disabled=!canWrite||!db);
   $('save').disabled=!canWrite||!db;$('clear').disabled=!canWrite||!db;
 }
 function toast(t){const el=$('toast');el.textContent=t;el.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>el.hidden=true,2600)}
@@ -331,7 +392,7 @@ function watchDay(day){
   }).subscribe();
 }
 
-document.addEventListener('input',e=>{if(e.target.closest('main')&&!e.target.closest('#exportSec')&&!e.target.closest('#status')&&e.target.matches('input')){calc();if(!dirty){dirty=true;setStatus('dirty','มีการแก้ไขที่ยังไม่ได้บันทึก')}}});
+document.addEventListener('input',e=>{if(e.target.closest('#dailyView')&&!e.target.closest('#exportSec')&&!e.target.closest('#status')&&e.target.matches('input')){calc();if(!dirty){dirty=true;setStatus('dirty','มีการแก้ไขที่ยังไม่ได้บันทึก')}}});
 function markDirty(){calc();dirty=true;setStatus('dirty','มีการแก้ไขที่ยังไม่ได้บันทึก')}
 document.addEventListener('click',e=>{
   const t=e.target;
@@ -349,7 +410,11 @@ $('day').onchange=()=>{if($('day').value)watchDay($('day').value)};
 $('save').onclick=async()=>{
   if(!db)return;const day=$('day').value;if(!day){toast('เลือกวันที่ก่อนบันทึก');return}
   const btn=$('save');btn.disabled=true;btn.textContent='กำลังบันทึก…';
-  try{const data=collect();const {error}=await db.from(TABLE).upsert({date:day,data,updated_at:data.updatedAt});if(error)throw error;latest=data;dirty=false;$('reload').hidden=true;showSaved();toast('บันทึกวันที่ '+day+' แล้ว');refreshSummary()}
+  try{const data=collect();
+    const cur=ensureIds(await fetchDay(day));const pm={};
+    if(cur)[...cur.petty,...cur.market].forEach(b=>{if(b.paid)pm[b.id]=b});
+    [...data.petty,...data.market].forEach(b=>{const p=pm[b.id];if(p){b.paid=true;b.paidAt=p.paidAt||''}else{delete b.paid;delete b.paidAt}});
+    const {error}=await db.from(TABLE).upsert({date:day,data,updated_at:data.updatedAt});if(error)throw error;latest=data;dirty=false;$('reload').hidden=true;showSaved();toast('บันทึกวันที่ '+day+' แล้ว');refreshSummary()}
   catch(e){
     if(e&&e.code==='invalid_argument'){canWrite=false;lockInputs();setStatus('err','บัญชีนี้ดูได้อย่างเดียว ต้องได้สิทธิ์ Contributor ขึ้นไปจึงจะบันทึกได้')}
     else toast('บันทึกไม่สำเร็จ ลองกดบันทึกอีกครั้ง');
@@ -366,6 +431,7 @@ function initDb(){
     setStatus('err','ยังไม่ได้ตั้งค่าฐานข้อมูล (ไฟล์ config.js)');$('sumNote').textContent='ยังไม่ได้ตั้งค่าฐานข้อมูล';return}
   db=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey);
   lockInputs();watchDay($('day').value);refreshSummary();
+  if(location.hash==='#transfer')showView('transfer');
 }
 /* ---------- สรุป + ดาวน์โหลด Excel / PDF ---------- */
 const CAT_TH=["ของสด","ของแห้ง-ปรุงรส","สิ้นเปลือง","อาหารพนักงาน","ค่าขนส่ง"];
@@ -412,7 +478,7 @@ const fileBase=()=>`ตำนัว_สรุปบิลตลาด-เงิ�
 function detailRows(){
   const mkt=[],pet=[];
   rangeDocs.forEach(d=>{
-    (d.market||[]).forEach((o,i)=>{const v=CATS.map(c=>num(o[c]));mkt.push([dmy(d.date),i+1,...v,v.reduce((a,b)=>a+b,0)])});
+    (d.market||[]).forEach(o=>{const v=CATS.map(c=>num(o[c]));mkt.push([dmy(d.date),o.payee||'',...v,v.reduce((a,b)=>a+b,0)])});
     pettyBillsOf(d).forEach(b=>(b.items||[]).forEach(r=>pet.push([dmy(d.date),b.payee||'',r.item||'',num(r.amount)])));
   });
   return {mkt,pet};
@@ -453,7 +519,7 @@ $('xlsBtn').onclick=()=>withBusy($('xlsBtn'),'กำลังสร้าง…'
   X.utils.book_append_sheet(wb,makeSheet(`ร้านตำนัว · สรุปบิลตลาดและเงินสดย่อย ${rangeLabel()}`,
     ['วันที่',...CAT_TH,'รวมบิลตลาด','เงินสดย่อย','รวมทั้งหมด'],sum,1,[1,2,3,4,5,6,7,8],[12,12,14,12,13,12,14,13,14]),'สรุปรายวัน');
   X.utils.book_append_sheet(wb,makeSheet(`บิลตลาด ${rangeLabel()}`,
-    ['วันที่','บิลที่',...CAT_TH,'รวมบิล'],mkt,2,[2,3,4,5,6,7],[12,8,12,14,12,13,12,13]),'บิลตลาด');
+    ['วันที่','จ่ายให้',...CAT_TH,'รวมบิล'],mkt,2,[2,3,4,5,6,7],[12,22,12,14,12,13,12,13]),'บิลตลาด');
   X.utils.book_append_sheet(wb,makeSheet(`เงินสดย่อย ${rangeLabel()}`,
     ['วันที่','จ่ายให้','รายการ','ยอดเงิน (บาท)'],pet,3,[3],[12,22,36,16]),'เงินสดย่อย');
   const buf=X.write(wb,{bookType:'xlsx',type:'array'});
@@ -472,7 +538,7 @@ $('pdfBtn').onclick=()=>withBusy($('pdfBtn'),'กำลังสร้าง…'
   const total=(rows,from)=>rows[0]?rows[0].map((_,c)=>c===0?'รวม':c<from?'':rows.reduce((a,r)=>a+(+r[c]||0),0)):[];
   const tables=[
     {title:'สรุปรายวัน',head:['วันที่',...CAT_TH,'รวมบิลตลาด','เงินสดย่อย','รวมทั้งหมด'],rows:sumRows,tot:total(sumRows,1),tx:[0]},
-    {title:'รายละเอียดบิลตลาด',head:['วันที่','บิลที่',...CAT_TH,'รวมบิล'],rows:mkt,tot:total(mkt,2),tx:[0,1]},
+    {title:'รายละเอียดบิลตลาด',head:['วันที่','จ่ายให้',...CAT_TH,'รวมบิล'],rows:mkt,tot:total(mkt,2),tx:[0,1]},
     {title:'รายละเอียดเงินสดย่อย',head:['วันที่','จ่ายให้','รายการ','ยอดเงิน (บาท)'],rows:pet,tot:total(pet,3),tx:[0,1,2]},
   ].filter(t=>t.rows.length);
   const PER=36,pages=[];
@@ -521,6 +587,93 @@ $('moveGo').onclick=async()=>{
   }catch(e){toast('ย้ายไม่สำเร็จ ลองใหม่อีกครั้ง')}
   finally{go.disabled=false}
 };
+
+/* ---------- รายการโอนรายบิล ---------- */
+const escH=t=>String(t??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let tRows=[],tFilter='pending';const tSel=new Set();
+function firstOfPrevMonth(){const d=new Date();d.setDate(1);d.setMonth(d.getMonth()-1);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-01'}
+$('tFrom').value=firstOfPrevMonth();$('tTo').value=today();
+
+function showView(v){
+  const t=v==='transfer';
+  $('dailyView').hidden=t;$('transferView').hidden=!t;$('dailyCtl').hidden=t;
+  document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-current',b.dataset.view===v?'page':'false'));
+  try{history.replaceState(null,'',t?'#transfer':location.pathname)}catch(e){}
+  if(t)loadTransfers();
+}
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>showView(b.dataset.view));
+
+async function loadTransfers(){
+  if(!db){$('tNote').textContent='ยังไม่ได้เชื่อมฐานข้อมูล';return}
+  const f=$('tFrom').value,t=$('tTo').value;
+  if(!f||!t){$('tNote').textContent='เลือกช่วงวันที่ให้ครบ';return}
+  $('tNote').textContent='กำลังโหลด…';
+  const {data,error}=await db.from(TABLE).select('date,data').gte('date',f).lte('date',t).order('date').limit(400);
+  if(error){$('tNote').textContent='โหลดไม่ได้ ตรวจสอบอินเทอร์เน็ตแล้วลองใหม่';return}
+  tRows=[];
+  (data||[]).filter(r=>r.data&&!r.data.deleted).forEach(r=>{
+    const d=ensureIds({...r.data,date:r.date});
+    d.petty.forEach(b=>{const amt=(b.items||[]).reduce((a,x)=>a+num(x.amount),0);
+      if(amt)tRows.push({key:d.date+'|'+b.id,date:d.date,type:'petty',payee:b.payee||'',
+        detail:(b.items||[]).map(x=>x.item).filter(Boolean).join(', '),amt,paid:!!b.paid,paidAt:b.paidAt||''})});
+    d.market.forEach(m=>{const amt=CATS.reduce((a,c)=>a+num(m[c]),0);
+      if(amt)tRows.push({key:d.date+'|'+m.id,date:d.date,type:'market',payee:m.payee||'',
+        detail:CATS.map((c,i)=>num(m[c])?CAT_TH[i]+' '+fmt0(num(m[c])):'').filter(Boolean).join(' · '),amt,paid:!!m.paid,paidAt:m.paidAt||''})});
+  });
+  [...tSel].forEach(k=>{if(!tRows.some(r=>r.key===k&&!r.paid))tSel.delete(k)});
+  renderTransfers();
+}
+function renderTransfers(){
+  const pend=tRows.filter(r=>!r.paid),done=tRows.filter(r=>r.paid),sum=a=>a.reduce((x,r)=>x+r.amt,0);
+  $('tPend').textContent=fmt0(sum(pend));$('tPendN').textContent=pend.length+' บิล';
+  $('tDone').textContent=fmt0(sum(done));$('tDoneN').textContent=done.length+' บิล';
+  const rows=tRows.filter(r=>tFilter==='all'||(tFilter==='paid'?r.paid:!r.paid));
+  $('tBody').innerHTML=rows.map(r=>`<tr${r.paid?' class="isPaid"':''}>
+    <td>${r.paid?'':`<input type="checkbox" class="tPick" data-key="${escH(r.key)}"${tSel.has(r.key)?' checked':''} aria-label="เลือกบิลนี้">`}</td>
+    <td class="nowrap">${dmy(r.date)}</td>
+    <td><span class="chip ${r.type}">${r.type==='petty'?'เงินสดย่อย':'บิลตลาด'}</span></td>
+    <td>${r.payee?escH(r.payee):'<span class="muted">ไม่ระบุ</span>'}</td>
+    <td class="det">${escH(r.detail)}</td>
+    <td class="amt">${fmt(r.amt)}</td>
+    <td>${r.paid?`<span class="chip paidc">โอนแล้ว ${dmy(r.paidAt)}</span> <button type="button" class="linkbtn tUndo" data-key="${escH(r.key)}">ยกเลิก</button>`:'<span class="chip pendc">ค้างโอน</span>'}</td></tr>`).join('');
+  $('tNote').textContent=rows.length?`${rows.length} บิล · รวม ${fmt(sum(rows))} บาท`:(tFilter==='pending'?'ไม่มีบิลค้างโอนในช่วงวันที่นี้':'ไม่มีบิลในช่วงวันที่นี้');
+  const picks=[...tSel].map(k=>tRows.find(r=>r.key===k)).filter(Boolean);
+  $('tSel').textContent=fmt0(sum(picks));$('tSelN').textContent=picks.length+' บิล';
+  $('tSel2').textContent=fmt(sum(picks));$('tSelN2').textContent=picks.length;
+  $('tMark').disabled=!picks.length;
+  const pickable=rows.filter(r=>!r.paid);
+  $('tAll').checked=pickable.length>0&&pickable.every(r=>tSel.has(r.key));$('tAll').disabled=!pickable.length;
+}
+async function setPaid(keys,paid){
+  const byDate={};keys.forEach(k=>{const i=k.indexOf('|');(byDate[k.slice(0,i)]=byDate[k.slice(0,i)]||[]).push(k.slice(i+1))});
+  const stamp=today();
+  for(const [d,ids] of Object.entries(byDate)){
+    const {data,error}=await db.from(TABLE).select('data').eq('date',d).maybeSingle();
+    if(error)throw error;if(!data||!data.data||data.data.deleted)continue;
+    const cur=ensureIds({...data.data,date:d});
+    [...cur.petty,...cur.market].forEach(b=>{if(ids.includes(b.id)){if(paid){b.paid=true;b.paidAt=stamp}else{delete b.paid;delete b.paidAt}}});
+    cur.updatedAt=new Date().toISOString();
+    const r=await db.from(TABLE).upsert({date:d,data:cur,updated_at:cur.updatedAt});if(r.error)throw r.error;
+  }
+}
+$('tFrom').onchange=$('tTo').onchange=loadTransfers;
+document.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{tFilter=b.dataset.f;
+  document.querySelectorAll('.seg button').forEach(x=>x.setAttribute('aria-pressed',x===b?'true':'false'));renderTransfers()});
+$('tBody').addEventListener('change',e=>{if(e.target.classList.contains('tPick')){e.target.checked?tSel.add(e.target.dataset.key):tSel.delete(e.target.dataset.key);renderTransfers()}});
+$('tAll').onchange=()=>{const vis=tRows.filter(r=>!r.paid&&(tFilter!=='paid'));vis.forEach(r=>$('tAll').checked?tSel.add(r.key):tSel.delete(r.key));renderTransfers()};
+$('tBody').addEventListener('click',async e=>{
+  const b=e.target.closest('.tUndo');if(!b)return;b.disabled=true;
+  try{await setPaid([b.dataset.key],false);toast('ยกเลิกสถานะโอนแล้ว');await loadTransfers()}
+  catch(err){toast('ทำรายการไม่สำเร็จ ลองใหม่อีกครั้ง');b.disabled=false}
+});
+$('tMark').onclick=async()=>{
+  const keys=[...tSel];if(!keys.length)return;const btn=$('tMark');btn.disabled=true;btn.textContent='กำลังบันทึก…';
+  try{await setPaid(keys,true);tSel.clear();toast('ทำเครื่องหมายโอนแล้ว '+keys.length+' บิล');await loadTransfers()}
+  catch(err){toast('บันทึกไม่สำเร็จ ลองใหม่อีกครั้ง')}
+  finally{btn.textContent='ทำเครื่องหมายโอนแล้ว';btn.disabled=!tSel.size}
+};
+
+function dmyS(iso){const p=String(iso).split('-');return p.length===3?p[2]+'/'+p[1]:iso}
 initDb();
 </script>
 </body>
