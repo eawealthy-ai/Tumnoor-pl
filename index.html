@@ -230,6 +230,7 @@ select.t{font:inherit;width:100%;padding:9px 10px;border:1px solid var(--line);b
 .potable td.pin input{width:120px;padding:5px 8px;font-size:14px}
 .potable tfoot td{font-weight:600}
 .potable.hist{min-width:900px}
+.potable.hist tr.sysrow td{background:var(--leaf-soft)}
 .potable.hist td{vertical-align:baseline;padding:3px 6px;font-size:13px}
 .pdk{display:flex;gap:4px;align-items:center;justify-content:flex-end;font-size:12px;font-family:var(--body);color:var(--muted);margin-top:4px;white-space:nowrap}
 .filebtn{position:relative;overflow:hidden}
@@ -576,7 +577,7 @@ select.t{font:inherit;width:100%;padding:9px 10px;border:1px solid var(--line);b
     <div class="scroll"><table class="potable"><thead id="pcHead"></thead><tbody id="pcRows"></tbody><tfoot id="pcRowsFoot"></tfoot></table></div>
   </section>
   <section id="pcHistBox" hidden>
-    <details><summary><h2 style="display:inline">ประวัติปันผล (จากไฟล์เดิม)</h2></summary>
+    <details><summary><h2 style="display:inline">ประวัติปันผลทั้งหมด</h2></summary>
       <p class="sub" id="pcHistMeta"></p>
       <div class="scroll"><table class="potable hist"><thead id="pcHistHead"></thead><tbody id="pcHistBody"></tbody><tfoot id="pcHistFoot"></tfoot></table></div>
     </details>
@@ -1596,7 +1597,8 @@ async function computePartner(){
     const carryIn=deficit;let dist=0,used=0;
     if(profit!=null){if(profit<0)deficit+=-profit;else{used=Math.min(profit,deficit);deficit-=used;dist=profit-used}}
     const shares=P.map(p=>dist*num(p.share)/100);
-    pcRows.push({ym:m,sales:R.error?0:R.sales,n:R.error?0:R.n,dim:R.dim||0,auto,profit,hasOv,carryIn,used,dist,deficit,shares,running:m===end});
+    const cogs=R.error||!R.sales?0:PL_COGS.reduce((x,[k])=>x+R.auto[k]+num((R.md.manual||{})[k]),0)/R.sales;
+    pcRows.push({cogs,ym:m,sales:R.error?0:R.sales,n:R.error?0:R.n,dim:R.dim||0,auto,profit,hasOv,carryIn,used,dist,deficit,shares,running:m===end});
   });
   $('pcNote').textContent=`คำนวณ ${months.length} เดือน ตั้งแต่ ${monLabel(months[0]||end)} · ขาดทุนสะสมคงเหลือ ${fmt(deficit)} บาท`;
   renderPayouts();renderHist();
@@ -1623,14 +1625,19 @@ function renderPayouts(){
   $('pcSum').hidden=!P.length;
 }
 function renderHist(){
-  const H=pc.hist||[],P=pc.partners;
+  const P=pc.partners,subsOf=P.flatMap(p=>(p.subs||[]).map(s=>({p,name:s.name,pct:num(s.pct)})));
+  /* ประวัติจากไฟล์ + เดือนที่ระบบคำนวณ (เฉพาะเดือนที่มีตัวเลขกำไร) */
+  const H=(pc.hist||[]).map(r=>({...r,src:'file'})).concat(pcRows.filter(r=>r.profit!=null).map(r=>({
+    label:monLabel(r.ym),sales:r.sales,cogs:r.cogs,profit:r.profit,pct:r.sales?r.profit/r.sales*100:null,src:r.running?'live':'sys',
+    shares:Object.fromEntries(P.map(p=>[p.id,r.dist*num(p.share)/100])),
+    subs:Object.fromEntries(subsOf.map(s=>[s.name,r.dist*num(s.p.share)/100*s.pct/100]))})));
   $('pcHistBox').hidden=!H.length;
-  $('pcHistMeta').textContent=pc.histMeta?`นำเข้าจาก ${pc.histMeta.file} เมื่อ ${dmy(String(pc.histMeta.at).slice(0,10))} · ${H.length} เดือน`:'';
-  const subsOf=P.flatMap(p=>(p.subs||[]).map(s=>s.name));
-  $('pcHistHead').innerHTML=`<tr><th>เดือน</th><th class="r">ยอดขาย</th><th class="r">%COG</th><th class="r">กำไร</th><th class="r">%</th>${P.map(p=>`<th class="r">${escH(p.name)}</th>`).join('')}${subsOf.map(n=>`<th class="r">${escH(n)}</th>`).join('')}</tr>`;
-  $('pcHistBody').innerHTML=H.map(r=>`<tr><td>${escH(r.label)}</td><td>${r.sales?fmt0(r.sales):'–'}</td><td>${r.cogs?(r.cogs*100).toFixed(1)+'%':'–'}</td><td class="${r.profit<0?'grand':''}">${fmt0(r.profit||0)}</td><td>${r.pct!=null?Number(r.pct).toFixed(1):'–'}</td>${P.map(p=>`<td>${fmt0(num((r.shares||{})[p.id]))}</td>`).join('')}${subsOf.map(n=>`<td>${fmt0(num((r.subs||{})[n]))}</td>`).join('')}</tr>`).join('');
+  const nf=(pc.hist||[]).length,ns=H.length-nf;
+  $('pcHistMeta').textContent=(pc.histMeta?`นำเข้าจาก ${pc.histMeta.file} ${nf} เดือน`:'')+(ns?`${nf?' · ':''}จากระบบ ${ns} เดือน (ตามสัดส่วนปันผลปัจจุบัน หักขาดทุนยกมาแล้ว)`:'');
+  $('pcHistHead').innerHTML=`<tr><th>เดือน</th><th class="r">ยอดขาย</th><th class="r">%COG</th><th class="r">กำไร</th><th class="r">%</th>${P.map(p=>`<th class="r">${escH(p.name)}</th>`).join('')}${subsOf.map(s=>`<th class="r">${escH(s.name)}</th>`).join('')}</tr>`;
+  $('pcHistBody').innerHTML=H.map(r=>`<tr class="${r.src!=='file'?'sysrow':''}"><td>${escH(r.label)}${r.src==='sys'?' <span class="chip paidc">ระบบ</span>':r.src==='live'?' <span class="chip pendc">เดือนนี้</span>':''}</td><td>${r.sales?fmt0(r.sales):'–'}</td><td>${r.cogs?(r.cogs*100).toFixed(1)+'%':'–'}</td><td class="${r.profit<0?'grand':''}">${fmt0(r.profit||0)}</td><td>${r.pct!=null?Number(r.pct).toFixed(1):'–'}</td>${P.map(p=>`<td>${fmt0(num((r.shares||{})[p.id]))}</td>`).join('')}${subsOf.map(s=>`<td>${fmt0(num((r.subs||{})[s.name]))}</td>`).join('')}</tr>`).join('');
   const S=k=>H.reduce((a,r)=>a+num(r[k]),0);
-  $('pcHistFoot').innerHTML=H.length?`<tr><td class="lbl">รวม</td><td>${fmt0(S('sales'))}</td><td></td><td>${fmt0(S('profit'))}</td><td></td>${P.map(p=>`<td>${fmt0(H.reduce((a,r)=>a+num((r.shares||{})[p.id]),0))}</td>`).join('')}${subsOf.map(n=>`<td>${fmt0(H.reduce((a,r)=>a+num((r.subs||{})[n]),0))}</td>`).join('')}</tr>`:'';
+  $('pcHistFoot').innerHTML=H.length?`<tr><td class="lbl">รวม</td><td>${fmt0(S('sales'))}</td><td></td><td>${fmt0(S('profit'))}</td><td></td>${P.map(p=>`<td>${fmt0(H.reduce((a,r)=>a+num((r.shares||{})[p.id]),0))}</td>`).join('')}${subsOf.map(s=>`<td>${fmt0(H.reduce((a,r)=>a+num((r.subs||{})[s.name]),0))}</td>`).join('')}</tr>`:'';
 }
 /* แก้ไขข้อมูล */
 $('pcBody').addEventListener('input',e=>{
