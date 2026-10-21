@@ -143,7 +143,18 @@ select.t{font:inherit;width:100%;padding:9px 10px;border:1px solid var(--line);b
 .chip.warnc{background:var(--leaf-soft);color:var(--fg)}
 .kp4{grid-template-columns:repeat(4,1fr)}
 @media (max-width:760px){.kp4{grid-template-columns:repeat(2,1fr)}}
-.uncnote{color:var(--chili);margin:0}
+.uncbox{border:1px solid var(--chili);background:var(--chili-soft);border-radius:12px;padding:12px 14px;color:var(--fg)}
+.uncbox p{margin:0 0 8px;font-size:14px;color:var(--chili)}
+.uncbox ul{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.unclink{all:unset;box-sizing:border-box;width:100%;display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:10px;align-items:baseline;padding:8px 10px;border-radius:8px;background:var(--surface);cursor:pointer;font-size:14px}
+.unclink:hover,.unclink:focus-visible{outline:2px solid var(--leaf)}
+.unclink .ud{font-family:var(--num);color:var(--muted);font-size:13px}
+.unclink .ua{font-family:var(--num);font-variant-numeric:tabular-nums}
+.unclink .ugo{color:var(--leaf);font-weight:600;white-space:nowrap}
+@media (max-width:480px){.unclink{grid-template-columns:auto minmax(0,1fr) auto}.unclink .ugo{display:none}}
+.flash{animation:flash 2.4s ease-out}
+@keyframes flash{0%,30%{background:var(--leaf-soft)}100%{background:transparent}}
+@media (prefers-reduced-motion:reduce){.flash{animation:none;background:var(--leaf-soft)}}
 .pltable{min-width:720px}
 .pltable td{font-size:14px;text-align:right;font-family:var(--num);font-variant-numeric:tabular-nums;padding:4px 6px}
 .pltable td:first-child{text-align:left;font-family:var(--body)}
@@ -458,7 +469,7 @@ select.t{font:inherit;width:100%;padding:9px 10px;border:1px solid var(--line);b
     <div class="dl"><button class="btn btn-dl" id="plXls" type="button">ดาวน์โหลด Excel</button><button class="btn btn-save" id="plSave" type="button" disabled>บันทึกตัวเลขที่กรอก</button></div>
   </div>
   <p class="sub" id="plNote" style="margin:-10px 0 0">กำลังโหลด…</p>
-  <p class="sub uncnote" id="plUnc" hidden></p>
+  <div class="uncbox" id="plUnc" hidden></div>
   <div class="summary kp4">
     <div><span>รายได้จากการขาย (ก่อน VAT)</span><strong id="kpSales">0</strong><em>100%</em></div>
     <div><span>กำไรขั้นต้น</span><strong id="kpGross">0</strong><em id="kpGrossP"></em></div>
@@ -641,7 +652,7 @@ function watchDay(day){
   latest=null;load(null);
   if(!db){return}
   setStatus('load','กำลังโหลดข้อมูลวันที่ '+day+'…');
-  fetchDay(day).then(d=>{if($('day').value!==day)return;latest=d;if(!dirty)load(d);showSaved();markPaidChips(day)})
+  fetchDay(day).then(d=>{if($('day').value!==day)return;latest=d;if(!dirty)load(d);showSaved();markPaidChips(day);applyPendingFocus()})
     .catch(()=>setStatus('err','โหลดข้อมูลไม่ได้ ตรวจสอบอินเทอร์เน็ตแล้วรีเฟรชหน้านี้'));
   unsub=db.channel('day-'+day).on('postgres_changes',{event:'*',schema:'public',table:TABLE,filter:'date=eq.'+day},p=>{
     const raw=p.new&&p.new.data;if(!raw||raw.updatedAt===ownStamp||(latest&&raw.updatedAt===latest.updatedAt))return;
@@ -1187,11 +1198,11 @@ async function loadPL(){
   if(days.error){$('plNote').textContent='โหลดยอดขายไม่ได้ ลองใหม่อีกครั้ง';return}
   const moMissing=mo.error&&/does not exist|relation|schema cache/i.test(mo.error.message||'');
   const auto={};[...PL_COGS,...PL_OPEX].forEach(([k])=>auto[k]=0);
-  let sales=0,salesInc=0,n=0,uncN=0,uncAmt=0;
+  let sales=0,salesInc=0,n=0,uncN=0,uncAmt=0;const unc=[];
   (days.data||[]).filter(r=>r.data&&!r.data.deleted).forEach(r=>{
     const d=ensureIds({...r.data,date:r.date}),mm=dayMetrics(d);n++;sales+=mm.ex;salesInc+=mm.sales;
     d.market.forEach(x=>Object.entries(MKT_TO_PL).forEach(([c,k])=>auto[k]+=num(x[c])));
-    d.petty.forEach(b=>(b.items||[]).forEach(i=>{const a=num(i.amount);if(!a)return;if(i.cat&&auto[i.cat]!=null)auto[i.cat]+=a;else{auto.misc+=a;uncN++;uncAmt+=a}}));
+    d.petty.forEach(b=>(b.items||[]).forEach((i,ix)=>{const a=num(i.amount);if(!a)return;if(i.cat&&auto[i.cat]!=null)auto[i.cat]+=a;else{auto.misc+=a;uncN++;uncAmt+=a;unc.push({date:d.date,bill:b.id,ix,payee:b.payee||'',item:i.item||'',a})}}));
   });
   if(!rc.error)(rc.data||[]).forEach(r=>{const fe=num(r.fee);if(!fe)return;
     const k=r.channel==='lineman'||r.channel==='grab'?'gp':r.channel==='credit'||r.channel==='kplus'?'cardfee':'misc';auto[k]+=fe});
@@ -1199,7 +1210,9 @@ async function loadPL(){
   plManual={...(md.manual||{})};plOther=(md.other||[]).map(o=>({...o}));plDirty=false;
   plData={ym,sales,salesInc,n,dim,auto,uncN,uncAmt,moMissing};
   $('plNote').textContent=`${monLabel(ym)} · บันทึกยอดแล้ว ${n}/${dim} วัน`+(moMissing?' · ยังไม่ได้สร้างตาราง tamnua_monthly (ช่องกรอกเพิ่มจะบันทึกไม่ได้)':'');
-  $('plUnc').hidden=!uncN;$('plUnc').textContent=uncN?`เงินสดย่อยยังไม่ระบุหมวด ${uncN} รายการ รวม ${fmt(uncAmt)} บาท ตอนนี้นับไว้ใน "ค่าใช้จ่ายเบ็ดเตล็ด" แก้หมวดได้ในหน้าบันทึกรายวัน`:'';
+  $('plUnc').hidden=!uncN;
+  $('plUnc').innerHTML=uncN?`<p>เงินสดย่อยยังไม่ระบุหมวด <b>${uncN}</b> รายการ รวม <b>${fmt(uncAmt)}</b> บาท ตอนนี้นับไว้ใน "ค่าใช้จ่ายเบ็ดเตล็ด" · กดรายการเพื่อไปเลือกหมวด</p><ul>`
+    +unc.map(u=>`<li><button type="button" class="unclink" data-date="${escH(u.date)}" data-bill="${escH(u.bill)}" data-ix="${u.ix}"><span class="ud">${dmy(u.date)}</span><span class="ui">${escH(u.item||'(ไม่มีชื่อรายการ)')}${u.payee?` <span class="muted">· ${escH(u.payee)}</span>`:''}</span><span class="ua">${fmt(u.a)}</span><span class="ugo">ไปแก้ ›</span></button></li>`).join('')+'</ul>':'';
   renderPL();
 }
 function plTotals(){
@@ -1289,6 +1302,25 @@ $('plXls').onclick=async()=>{
   }catch(e){toast('สร้างไฟล์ไม่สำเร็จ ลองใหม่อีกครั้ง')}finally{xb.disabled=false;xb.textContent='ดาวน์โหลด Excel'}
 };
 
+
+/* ลิงก์จาก P&L ไปยังรายการเงินสดย่อยที่ยังไม่ระบุหมวด */
+let pendingFocus=null;
+function applyPendingFocus(){
+  if(!pendingFocus||$('day').value!==pendingFocus.date)return;const pf=pendingFocus;pendingFocus=null;
+  const bill=[...document.querySelectorAll('#pettyBills .pbill')].find(b=>b.dataset.id===pf.bill);if(!bill)return;
+  const tr=bill.querySelectorAll('.pitems tr')[pf.ix]||bill;const sel=tr.querySelector&&tr.querySelector('select.cat');
+  try{tr.scrollIntoView({block:'center',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'})}catch(e){}
+  tr.classList.remove('flash');void tr.offsetWidth;tr.classList.add('flash');
+  if(sel)setTimeout(()=>{try{sel.focus({preventScroll:true})}catch(e){sel.focus()}},350);
+}
+$('plUnc').addEventListener('click',e=>{
+  const b=e.target.closest('.unclink');if(!b)return;
+  if(dirty&&$('day').value&&$('day').value!==b.dataset.date){toast('หน้าบันทึกรายวันมีการแก้ไขที่ยังไม่ได้บันทึก กดบันทึกก่อนแล้วลองใหม่');return}
+  pendingFocus={date:b.dataset.date,bill:b.dataset.bill,ix:+b.dataset.ix};
+  showView('daily');
+  if($('day').value===b.dataset.date){applyPendingFocus();return}
+  setDay(b.dataset.date);lockInputs();watchDay(b.dataset.date);
+});
 function dmyS(iso){const p=String(iso).split('-');return p.length===3?p[2]+'/'+p[1]:iso}
 initDb();
 </script>
