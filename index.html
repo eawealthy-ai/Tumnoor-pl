@@ -212,6 +212,7 @@ select.t{font:inherit;width:100%;padding:9px 10px;border:1px solid var(--line);b
 .pltable tr.key td{font-weight:700;background:var(--leaf-soft)}
 .pltable tr.net td{font-weight:700;font-size:16px;background:var(--leaf-soft);border-top:2px solid var(--fg)}
 .pltable tr.net.neg td.tv,.pltable tr.net.neg td.pc{color:var(--chili)}
+.pltable .src{font-size:11.5px;color:var(--muted)}
 .pltable td.pc{color:var(--muted);white-space:nowrap}
 .pltable .del{font-size:15px;padding:0 4px}
 .pitems select.cat{font:inherit;font-size:13px;width:100%;min-width:0;padding:8px 6px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg)}
@@ -560,7 +561,7 @@ select.t{font:inherit;width:100%;padding:9px 10px;border:1px solid var(--line);b
   </div>
   <section>
     <h2>งบกำไรขาดทุน</h2>
-    <p class="sub">"จากบันทึกรายวัน" ดึงจากบิลตลาด เงินสดย่อย (ตามหมวด) และค่าธรรมเนียมในหน้ากระทบยอด · "กรอกเพิ่ม" ใช้ใส่รายการรายเดือน เช่น เงินเดือน ค่าเช่า ค่าไฟ</p>
+    <p class="sub">"จากบันทึกรายวัน" ดึงจากบิลตลาด เงินสดย่อย (ตามหมวด) และส่วนต่างในหน้ากระทบยอด (LINE MAN + Grab, Credit) · "กรอกเพิ่ม" ใช้ใส่รายการรายเดือน เช่น เงินเดือน ค่าเช่า ค่าไฟ</p>
     <div class="scroll"><table class="pltable">
       <thead><tr><th>รายการ</th><th class="r">จากบันทึกรายวัน</th><th class="r">กรอกเพิ่ม</th><th class="r">รวม</th><th class="r">%</th></tr></thead>
       <tbody id="plBody"></tbody>
@@ -1409,21 +1410,28 @@ async function plFetch(ym){
   const f=ym+'-01',t=ym+'-'+String(new Date(y,m,0).getDate()).padStart(2,'0'),dim=new Date(y,m,0).getDate();
   const [days,rc,mo]=await Promise.all([
     db.from(TABLE).select('date,data').gte('date',f).lte('date',t).limit(40),
-    db.from(RCPT).select('channel,fee,period_to').gte('period_to',f).lte('period_to',t).limit(1000),
+    db.from(RCPT).select('channel,amount,fee,period_to').gte('period_to',f).lte('period_to',t).limit(1000),
     db.from(MONTHLY).select('data').eq('month',ym).maybeSingle()]);
   if(days.error)return{error:true};
   const moMissing=!!(mo.error&&/does not exist|relation|schema cache/i.test(mo.error.message||''));
   const auto={};[...PL_COGS,...PL_OPEX].forEach(([k])=>auto[k]=0);
-  let sales=0,salesInc=0,n=0,uncN=0,uncAmt=0;const unc=[];
+  let sales=0,salesInc=0,n=0,uncN=0,uncAmt=0;const unc=[],chS={};
   (days.data||[]).filter(r=>r.data&&!r.data.deleted).forEach(r=>{
-    const d=ensureIds({...r.data,date:r.date}),mm=dayMetrics(d);n++;sales+=mm.ex;salesInc+=mm.sales;auto.incentive+=incentiveFor(r.date,mm.sales,r.data.holiday).amt;
+    const d=ensureIds({...r.data,date:r.date}),mm=dayMetrics(d);n++;sales+=mm.ex;salesInc+=mm.sales;Object.entries(mm.ch).forEach(([k,v])=>chS[k]=(chS[k]||0)+v);auto.incentive+=incentiveFor(r.date,mm.sales,r.data.holiday).amt;
     d.market.forEach(x=>Object.entries(MKT_TO_PL).forEach(([c,k])=>auto[k]+=num(x[c])));
     d.petty.forEach(b=>(b.items||[]).forEach((i,ix)=>{const a=num(i.amount);if(!a)return;if(i.cat&&auto[i.cat]!=null)auto[i.cat]+=a;else{auto.misc+=a;uncN++;uncAmt+=a;unc.push({date:d.date,bill:b.id,ix,payee:b.payee||'',item:i.item||'',a})}}));
   });
-  if(!rc.error)(rc.data||[]).forEach(r=>{const fe=num(r.fee);if(!fe)return;
-    const k=r.channel==='lineman'||r.channel==='grab'?'gp':r.channel==='credit'||r.channel==='kplus'?'cardfee':'misc';auto[k]+=fe});
+  /* ค่าธรรมเนียมจากหน้ากระทบยอด: ส่วนต่างระหว่างยอดขายกับเงินที่รับเข้าจริงของเดือน
+     LINE MAN + Grab → "LINE MAN & GRAB" · Credit → "ค่าธรรมเนียมบัตร" (คิดเมื่อมีบันทึกเงินเข้าของช่องทางนั้นแล้ว) */
+  const got={},has={};
+  if(!rc.error)(rc.data||[]).forEach(r=>{got[r.channel]=(got[r.channel]||0)+num(r.amount);has[r.channel]=true});
+  const feeDiff={};
+  [['gp',['lineman','grab']],['cardfee',['credit']]].forEach(([k,chs])=>{
+    if(!chs.some(c=>has[c])){feeDiff[k]=null;return}
+    const v=chs.reduce((a,c)=>a+(chS[c]||0)-(got[c]||0),0);feeDiff[k]=v;auto[k]+=v;
+  });
   const md=(!mo.error&&mo.data&&mo.data.data)||{};
-  return{ym,sales,salesInc,n,dim,auto,uncN,uncAmt,unc,md,moMissing};
+  return{ym,sales,salesInc,n,dim,auto,uncN,uncAmt,unc,md,moMissing,feeDiff};
 }
 function plNetOf(R){
   const man=R.md.manual||{},tot=k=>R.auto[k]+num(man[k]);
@@ -1437,9 +1445,9 @@ async function loadPL(){
   $('plNote').textContent='กำลังโหลด…';
   const R=await plFetch(ym);
   if(R.error){$('plNote').textContent='โหลดยอดขายไม่ได้ ลองใหม่อีกครั้ง';return}
-  const {sales,salesInc,n,dim,auto,uncN,uncAmt,unc,md,moMissing}=R;
+  const {sales,salesInc,n,dim,auto,uncN,uncAmt,unc,md,moMissing,feeDiff}=R;
   plManual={...(md.manual||{})};plOther=(md.other||[]).map(o=>({...o}));plDirty=false;
-  plData={ym,sales,salesInc,n,dim,auto,uncN,uncAmt,moMissing};
+  plData={ym,sales,salesInc,n,dim,auto,uncN,uncAmt,moMissing,feeDiff};
   $('plNote').textContent=`${monLabel(ym)} · บันทึกยอดแล้ว ${n}/${dim} วัน`+(moMissing?' · ยังไม่ได้สร้างตาราง tamnua_monthly (ช่องกรอกเพิ่มจะบันทึกไม่ได้)':'');
   $('plUnc').hidden=!uncN;
   $('plUnc').innerHTML=uncN?`<p>เงินสดย่อยยังไม่ระบุหมวด <b>${uncN}</b> รายการ รวม <b>${fmt(uncAmt)}</b> บาท ตอนนี้นับไว้ใน "ค่าใช้จ่ายเบ็ดเตล็ด" · กดรายการเพื่อไปเลือกหมวด</p><ul>`
@@ -1454,7 +1462,8 @@ function plTotals(){
 }
 function renderPL(){
   if(!plData)return;const D=plData,T=plTotals(),pc=v=>D.sales?(v/D.sales*100).toFixed(2):'–';
-  const line=(k,n)=>`<tr><td class="ind">${n}</td><td>${D.auto[k]?fmt(D.auto[k]):'–'}</td><td><input class="n plm" data-k="${k}" inputmode="decimal" value="${plManual[k]?escH(plManual[k]):''}" aria-label="กรอกเพิ่ม ${n}"></td><td class="tv">${fmt(T.tot(k))}</td><td class="pc">${pc(T.tot(k))}</td></tr>`;
+  const hint=k=>D.feeDiff&&k in D.feeDiff?`<div class="src">${D.feeDiff[k]==null?'ยังไม่มีบันทึกเงินเข้าในหน้ากระทบยอด':'ส่วนต่างจากหน้ากระทบยอด'}</div>`:'';
+  const line=(k,n)=>`<tr><td class="ind">${n}${hint(k)}</td><td>${D.auto[k]?fmt(D.auto[k]):'–'}</td><td><input class="n plm" data-k="${k}" inputmode="decimal" value="${plManual[k]?escH(plManual[k]):''}" aria-label="กรอกเพิ่ม ${n}"></td><td class="tv">${fmt(T.tot(k))}</td><td class="pc">${pc(T.tot(k))}</td></tr>`;
   const sum=(label,v,cls)=>`<tr class="${cls}"><td>${label}</td><td></td><td></td><td class="tv">${fmt(v)}</td><td class="pc">${pc(v)}</td></tr>`;
   $('plBody').innerHTML=
     `<tr class="rev"><td>รายได้จากการขาย</td><td>${fmt(D.sales)}</td><td></td><td class="tv">${fmt(D.sales)}</td><td class="pc">100.00</td></tr>`
