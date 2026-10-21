@@ -56,6 +56,34 @@ main{max-width:880px;margin:0 auto;display:grid;gap:22px;
 .move input{font:inherit;font-family:var(--num);padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--fg)}
 .move .btn{font-size:13px;padding:6px 12px;text-decoration:none}
 .move .btn-save{color:#fff}
+/*daypick*/
+.daypick{display:grid;gap:8px;min-width:0}
+.dphead{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.dplabel{font-family:var(--display);font-weight:500;font-size:16px}
+.dplegend{font-size:12px;color:var(--muted);display:inline-flex;align-items:center;gap:5px}
+.dplegend .lg{width:7px;height:7px;border-radius:50%;background:var(--ok);display:inline-block}
+.dphead .linkbtn{margin-left:auto;font-size:13px;color:var(--leaf);font-weight:600}
+.dstrip{display:flex;gap:6px;overflow-x:auto;padding:2px 2px 6px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
+.dchip{flex:0 0 auto;display:grid;justify-items:center;gap:1px;width:56px;padding:7px 0 7px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--fg);font:inherit;cursor:pointer;scroll-snap-align:center}
+.dchip .dw{font-size:11px;color:var(--muted)}
+.dchip .dn{font-family:var(--num);font-size:19px;font-weight:600;line-height:1.2}
+.dchip .dm{font-size:11px;color:var(--muted)}
+.dchip .dot{width:7px;height:7px;border-radius:50%;margin-top:3px;background:transparent}
+.dchip.has .dot{background:var(--ok)}
+.dchip.today{border-color:var(--leaf)}
+.dchip.sel{background:var(--bar);border-color:var(--bar);color:#fff}
+.dchip.sel .dw,.dchip.sel .dm{color:#fff}
+.dchip.sel.has .dot{background:#fff}
+.dchip:focus-visible{outline:2px solid var(--chili);outline-offset:2px}
+.recentbox summary{cursor:pointer;font-size:14px;font-weight:600;color:var(--muted);padding:2px 0}
+.recent{display:grid;gap:4px;margin-top:6px}
+.rrow{all:unset;box-sizing:border-box;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:2px 12px;align-items:baseline;padding:8px 12px;border-radius:10px;background:var(--surface);border:1px solid var(--line);cursor:pointer;font-size:14px}
+.rrow:hover,.rrow:focus-visible{border-color:var(--leaf)}
+.rrow.sel{border-color:var(--bar);background:var(--leaf-soft)}
+.rrow .rd{font-family:var(--num);font-weight:600}
+.rrow .rs2{color:var(--muted);font-size:13px;min-width:0}
+.rrow .rt{font-size:12px;color:var(--muted);white-space:nowrap;text-align:right}
+@media (max-width:480px){.rrow{grid-template-columns:auto 1fr}.rrow .rs2{grid-column:1/-1;grid-row:2}}
 .status>button{font:inherit;font-size:13px;color:var(--chili);background:none;border:0;text-decoration:underline;cursor:pointer;padding:0}
 .summary{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden}
 .summary div{background:var(--surface);padding:12px 14px;min-width:0}
@@ -258,6 +286,14 @@ select.t{font:inherit;width:100%;padding:9px 10px;border:1px solid var(--line);b
 </div></div>
 
 <main id="dailyView">
+  <div class="daypick" id="daypick">
+    <div class="dphead"><span class="dplabel">เลือกวันที่</span><span class="dplegend"><i class="lg"></i> บันทึกแล้ว</span><button type="button" class="linkbtn" id="dpCal">วันที่เก่ากว่านี้ ›</button></div>
+    <div class="dstrip" id="dstrip" role="group" aria-label="เลือกวันที่"></div>
+    <details class="recentbox" id="recentBox" open>
+      <summary>อัปเดตล่าสุด</summary>
+      <div class="recent" id="recentList"><p class="sub" style="margin:0">กำลังโหลด…</p></div>
+    </details>
+  </div>
   <div class="status" id="status" data-s="load"><span class="dot"></span><span id="statusText">กำลังเชื่อมต่อฐานข้อมูล…</span><button id="reload" type="button" hidden>โหลดข้อมูลล่าสุด</button>
     <button id="moveBtn" type="button" hidden>บันทึกผิดวัน? ย้ายไปวันอื่น</button>
     <span class="move" id="moveBox" hidden>ย้ายไปวันที่ <input type="date" id="moveTo" aria-label="ย้ายไปวันที่">
@@ -635,9 +671,9 @@ function lockInputs(){
   if(noDay)document.querySelectorAll('#dailyView section:not(#exportSec) input, #dailyView section:not(#exportSec) select, #dailyView .btn-add, #dailyView .del').forEach(el=>el.disabled=true);
   $('save').disabled=!canWrite||!db||noDay;$('clear').disabled=!canWrite||!db||noDay;
 }
-function toast(t,undo){
+function toast(t,undo,label){
   const el=$('toast');el.textContent='';const sp=document.createElement('span');sp.textContent=t;el.appendChild(sp);
-  if(undo){const b=document.createElement('button');b.type='button';b.className='undo';b.textContent='เลิกทำ';
+  if(undo){const b=document.createElement('button');b.type='button';b.className='undo';b.textContent=label||'เลิกทำ';
     b.onclick=async()=>{el.hidden=true;clearTimeout(toast.t);try{await undo()}catch(e){toast('เลิกทำไม่สำเร็จ ลองใหม่อีกครั้ง')}};el.appendChild(b)}
   el.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>el.hidden=true,undo?8000:2600);
 }
@@ -681,10 +717,56 @@ $('addMkt').onclick=()=>{mktRow();$('mktBody').lastElementChild.querySelector('i
 $('reload').onclick=()=>{load(latest);showSaved()};
 $('clear').onclick=()=>{const snap=snapForm();load(null);dirty=true;setStatus('dirty','ล้างฟอร์มแล้ว ยังไม่ได้บันทึก');toast('ล้างฟอร์มแล้ว',()=>restoreForm(snap))};
 function updateDayText(){const v=$('day').value;$('dayText').textContent=v?dmy(v):'เลือกวัน/เดือน/ปี';$('dayBtn').classList.toggle('empty',!v)}
-function setDay(v){$('day').value=v;updateDayText()}
-function noDayState(){if(unsub&&db){db.removeChannel(unsub);unsub=null}latest=null;load(null);lockInputs();setStatus('pick','เลือกวันที่ด้านบนก่อนเริ่มกรอก')}
+function setDay(v){$('day').value=v;curDay=v;updateDayText();renderStrip()}
+function noDayState(){if(unsub&&db){db.removeChannel(unsub);unsub=null}latest=null;load(null);lockInputs();setStatus('pick','แตะเลือกวันที่ด้านบนก่อนเริ่มกรอก')}
 $('day').addEventListener('click',()=>{try{$('day').showPicker()}catch(e){}});
-$('day').onchange=()=>{updateDayText();if($('day').value){lockInputs();watchDay($('day').value)}else noDayState()};
+let curDay='';
+/* เปลี่ยนวัน: ถ้ามีการแก้ไขค้างอยู่ ถามก่อน ไม่ทิ้งข้อมูลเงียบ ๆ */
+function goDay(v,force){
+  if(!v)return;const prev=curDay;
+  if(v===prev&&!force)return;
+  if(dirty&&prev&&!force){setDay(prev);toast('มีการแก้ไขวันที่ '+dmy(prev)+' ที่ยังไม่ได้บันทึก',()=>goDay(v,true),'ทิ้งการแก้ไขแล้วไปวันที่ '+dmyS(v));return}
+  dirty=false;setDay(v);lockInputs();watchDay(v);
+}
+$('day').onchange=()=>{const v=$('day').value;if(v)goDay(v);else if(dirty&&curDay)setDay(curDay);else{setDay('');noDayState()}};
+$('dpCal').onclick=()=>{try{$('day').showPicker()}catch(e){$('day').focus();$('day').click()}};
+let recSet=new Set();
+function renderStrip(){
+  const el=$('dstrip');if(!el)return;
+  const today0=today(),days=[];
+  for(let i=13;i>=0;i--)days.push(isoOf(new Date(Date.now()-i*864e5)));
+  if(curDay&&!days.includes(curDay))days.unshift(curDay);
+  const DW=['อา.','จ.','อ.','พ.','พฤ.','ศ.','ส.'],MO=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  el.innerHTML=days.map(d=>{const x=new Date(d+'T00:00:00');const cls=['dchip',recSet.has(d)?'has':'',d===curDay?'sel':'',d===today0?'today':''].join(' ');
+    return `<button type="button" class="${cls}" data-d="${d}" aria-pressed="${d===curDay}" aria-label="${dmy(d)}${recSet.has(d)?' บันทึกแล้ว':''}"><span class="dw">${d===today0?'วันนี้':DW[x.getDay()]}</span><span class="dn">${x.getDate()}</span><span class="dm">${MO[x.getMonth()]}</span><i class="dot"></i></button>`}).join('');
+  const sel=el.querySelector('.sel')||el.lastElementChild;
+  if(sel)el.scrollLeft=Math.max(0,sel.offsetLeft-el.clientWidth/2+sel.offsetWidth/2);
+  document.querySelectorAll('#recentList .rrow').forEach(r=>r.classList.toggle('sel',r.dataset.d===curDay));
+}
+$('dstrip').addEventListener('click',e=>{const b=e.target.closest('.dchip');if(b)goDay(b.dataset.d)});
+$('recentList').addEventListener('click',e=>{const b=e.target.closest('.rrow');if(b)goDay(b.dataset.d)});
+async function loadRecent(){
+  if(!db)return;
+  const since=isoOf(new Date(Date.now()-13*864e5));
+  const [a,b]=await Promise.all([
+    db.from(TABLE).select('date,data').gte('date',since).limit(40),
+    db.from(TABLE).select('date,updated_at,data').order('updated_at',{ascending:false}).limit(12)]);
+  if(!a.error){recSet=new Set((a.data||[]).filter(r=>r.data&&!r.data.deleted).map(r=>r.date))}
+  if(!b.error){
+    const rows=(b.data||[]).filter(r=>r.data&&!r.data.deleted).slice(0,6);
+    const t0=today();
+    $('recentList').innerHTML=rows.length?rows.map(r=>{
+      const d=ensureIds({...r.data,date:r.date}),m=dayMetrics(d),u=new Date(r.updated_at);
+      const ud=isoOf(u),hm=u.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
+      const when=(ud===t0?'วันนี้ ':dmyS(ud)+' ')+hm+' น.';
+      const parts=[m.sales?'ยอดขาย '+fmt0(m.sales):'',d.market.length?'บิลตลาด '+d.market.length:'',d.petty.length?'สดย่อย '+d.petty.length+' บิล':''].filter(Boolean).join(' · ')||'ยังไม่มีตัวเลข';
+      return `<button type="button" class="rrow${r.date===curDay?' sel':''}" data-d="${r.date}"><span class="rd">${dmy(r.date)}</span><span class="rs2">${parts}</span><span class="rt">แก้ไข ${when}</span></button>`}).join('')
+      :'<p class="sub" style="margin:0">ยังไม่มีข้อมูลที่บันทึก</p>';
+  }
+  renderStrip();
+}
+let recentT=null;
+function watchRecent(){if(!db)return;db.channel('recent-all').on('postgres_changes',{event:'*',schema:'public',table:TABLE},()=>{clearTimeout(recentT);recentT=setTimeout(loadRecent,1200)}).subscribe()}
 $('save').onclick=async()=>{
   if(!db)return;const day=$('day').value;if(!day){toast('เลือกวันที่ก่อนบันทึก');return}
   const btn=$('save');btn.disabled=true;btn.textContent='กำลังบันทึก…';
@@ -713,7 +795,7 @@ function initDb(){
   if(!window.supabase||!cfg.supabaseUrl||!cfg.supabaseAnonKey||/YOUR_/.test(cfg.supabaseUrl+cfg.supabaseAnonKey)){
     setStatus('err','ยังไม่ได้ตั้งค่าฐานข้อมูล (ไฟล์ config.js)');$('sumNote').textContent='ยังไม่ได้ตั้งค่าฐานข้อมูล';return}
   db=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey);
-  lockInputs();if($('day').value)watchDay($('day').value);else noDayState();refreshSummary();loadSuggestions();
+  lockInputs();if($('day').value)watchDay($('day').value);else noDayState();refreshSummary();loadSuggestions();watchRecent();
   if(location.hash==='#transfer')showView('transfer');
   else if(location.hash==='#dashboard')showView('dash');
   else if(location.hash==='#recon')showView('recon');
@@ -730,6 +812,7 @@ function dayRow(d){
   return {date:d.date,mk,mt,p,all:mt+p};
 }
 async function refreshSummary(){
+  loadRecent();
   if(!db)return;
   const f=$('from').value,t=$('to').value;
   if(!f||!t){$('sumNote').textContent='เลือกช่วงวันที่ให้ครบ';return}
