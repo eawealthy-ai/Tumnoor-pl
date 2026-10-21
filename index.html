@@ -78,6 +78,15 @@ tfoot td.lbl{font-family:var(--body);text-align:left;font-weight:600}
 .del{background:none;border:0;color:var(--muted);font-size:18px;cursor:pointer;padding:4px 8px;border-radius:6px}
 .del:hover{color:var(--chili);background:var(--chili-soft)}
 .grand{color:var(--chili)}
+.pbills{display:grid;gap:14px}
+.pbill{border:1px solid var(--line);border-radius:10px;padding:12px 12px 8px;display:grid;gap:6px;min-width:0}
+.phead{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+.phead label.f{flex:1 1 220px}
+.psub{font-size:13px;color:var(--muted);white-space:nowrap;padding-bottom:9px}
+.psub b{font-family:var(--num);font-size:15px;color:var(--fg);font-variant-numeric:tabular-nums}
+.pbill .addItem{justify-self:start;font-size:13px;padding:6px 10px}
+.ptot{display:flex;justify-content:flex-end;gap:10px;align-items:baseline;margin-top:12px;padding-top:12px;border-top:1px dashed var(--line);font-weight:600}
+.ptot b{font-family:var(--num);font-size:17px;color:var(--chili);font-variant-numeric:tabular-nums}
 .toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:12px;flex-wrap:wrap}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:10px 18px;border-radius:999px;font-weight:500;z-index:20;max-width:calc(100% - 32px);text-align:center}
 .chk{display:flex;gap:6px;align-items:center;font-size:13px;color:var(--muted)}
@@ -147,13 +156,10 @@ tfoot td.lbl{font-family:var(--body);text-align:left;font-weight:600}
 
   <section>
     <h2>เงินสดย่อย</h2>
-    <p class="sub">กรอกทีละรายการ เพิ่มบรรทัดได้ตามต้องการ</p>
-    <div class="scroll"><table>
-      <thead><tr><th style="width:60%">รายการ</th><th class="r">ยอดเงิน (บาท)</th><th></th></tr></thead>
-      <tbody id="pettyBody"></tbody>
-      <tfoot><tr><td class="lbl">รวม</td><td id="pettyTot" class="grand">0.00</td><td></td></tr></tfoot>
-    </table></div>
-    <div class="toolbar"><button class="btn btn-add" id="addPetty" type="button">+ เพิ่มรายการ</button></div>
+    <p class="sub">1 บิล = จ่ายให้ 1 คน/ร้าน · กรอกชื่อผู้รับเงินก่อน แล้วใส่รายการในบิลนั้น</p>
+    <div class="pbills" id="pettyBills"></div>
+    <div class="toolbar"><button class="btn btn-add" id="addPetty" type="button">+ เพิ่มบิลเงินสดย่อย</button></div>
+    <div class="ptot">รวมเงินสดย่อยทั้งหมด <b id="pettyTot">0.00</b> บาท</div>
   </section>
 
   <section>
@@ -204,13 +210,35 @@ const blank=v=>v===0||v==null?'':v;
 
 let db=null, unsub=null, dirty=false, latest=null, canWrite=true;
 
-function pettyRow(r={item:'',amount:''}){
+function pettyRow(tbody,r={item:'',amount:''}){
   const tr=document.createElement('tr');
   tr.innerHTML=`<td><input class="t" placeholder="เช่น น้ำแข็ง" aria-label="รายการ"></td>
   <td><input class="n" inputmode="decimal" aria-label="ยอดเงิน"></td>
-  <td><button class="del" type="button" aria-label="ลบ">×</button></td>`;
+  <td><button class="del" type="button" aria-label="ลบรายการ">×</button></td>`;
   const i=tr.querySelectorAll('input');i[0].value=r.item??'';i[1].value=blank(r.amount);
-  $('pettyBody').appendChild(tr);
+  tbody.appendChild(tr);
+}
+function pettyBill(b={}){
+  const el=document.createElement('div');el.className='pbill';
+  el.innerHTML=`<div class="phead">
+      <label class="f">จ่ายให้<input class="t pay" placeholder="ชื่อคน / ร้านที่รับเงิน"></label>
+      <span class="psub">รวมบิล <b class="pbt">0.00</b></span>
+      <button class="del delbill" type="button" aria-label="ลบบิลนี้" title="ลบบิลนี้">×</button>
+    </div>
+    <div class="scroll"><table>
+      <thead><tr><th style="width:60%">รายการ</th><th class="r">ยอดเงิน (บาท)</th><th></th></tr></thead>
+      <tbody class="pitems"></tbody>
+    </table></div>
+    <button class="btn btn-add addItem" type="button">+ เพิ่มรายการ</button>`;
+  el.querySelector('.pay').value=b.payee??'';
+  const tb=el.querySelector('.pitems');(b.items&&b.items.length?b.items:[{}]).forEach(r=>pettyRow(tb,r));
+  $('pettyBills').appendChild(el);return el;
+}
+/* old records saved items without a payee: group them into one bill */
+function pettyBillsOf(d){
+  const p=(d&&d.petty)||[];
+  if(p.length&&!p[0].items)return [{payee:'',items:p}];
+  return p;
 }
 function mktRow(r={}){
   const tr=document.createElement('tr');
@@ -224,15 +252,16 @@ function mktRow(r={}){
 function collect(){
   const sales={cash:num($('cash').value),lineman:num($('lineman').value),grab:num($('grab').value),credit:num($('credit').value),kplus:num($('kplus').value)};
   const bills=num($('bills').value), vat=$('vat').checked;
-  const petty=[...$('pettyBody').rows].map(tr=>{const i=tr.querySelectorAll('input');return{item:i[0].value.trim(),amount:num(i[1].value)}})
-    .filter(r=>r.item||r.amount);
+  const petty=[...$('pettyBills').querySelectorAll('.pbill')].map(b=>({payee:b.querySelector('.pay').value.trim(),
+    items:[...b.querySelector('.pitems').rows].map(tr=>{const i=tr.querySelectorAll('input');return{item:i[0].value.trim(),amount:num(i[1].value)}}).filter(r=>r.item||r.amount)}))
+    .filter(b=>b.payee||b.items.length);
   const market=[...$('mktBody').rows].map(tr=>{const o={};tr.querySelectorAll('input').forEach((el,k)=>o[CATS[k]]=num(el.value));return o})
     .filter(o=>CATS.some(c=>o[c]));
   const salesTotal=Object.values(sales).reduce((a,b)=>a+b,0);
   const marketByCat={};CATS.forEach(c=>marketByCat[c]=market.reduce((a,o)=>a+o[c],0));
   return {date:$('day').value,vat,sales,bills,petty,market,
     totals:{sales:salesTotal,salesExVat:vat?+(salesTotal/1.07).toFixed(2):salesTotal,
-      petty:petty.reduce((a,r)=>a+r.amount,0),market:Object.values(marketByCat).reduce((a,b)=>a+b,0),marketByCat},
+      petty:petty.reduce((a,b)=>a+b.items.reduce((x,r)=>x+r.amount,0),0),market:Object.values(marketByCat).reduce((a,b)=>a+b,0),marketByCat},
     updatedAt:new Date().toISOString()};
 }
 function load(d){
@@ -240,7 +269,7 @@ function load(d){
   $('vat').checked=d.vat!==false;
   const s=d.sales||{};['cash','lineman','grab','credit','kplus'].forEach(k=>$(k).value=blank(s[k]));
   $('bills').value=blank(d.bills);
-  $('pettyBody').innerHTML='';(d.petty&&d.petty.length?d.petty:[{}]).forEach(pettyRow);
+  $('pettyBills').innerHTML='';const pb=pettyBillsOf(d);(pb.length?pb:[{}]).forEach(b=>pettyBill(b));
   $('mktBody').innerHTML='';(d.market&&d.market.length?d.market:[{}]).forEach(mktRow);
   dirty=false;$('reload').hidden=true;
   calc();lockInputs();
@@ -249,7 +278,7 @@ function calc(){
   const s=['cash','lineman','grab','credit','kplus'].reduce((a,k)=>a+num($(k).value),0);
   const bills=num($('bills').value), vat=$('vat').checked, ex=vat?s/1.07:s;
   $('salesTot').textContent=fmt(s);$('salesEx').textContent=fmt(ex);$('exWrap').hidden=!vat;
-  let p=0;[...$('pettyBody').rows].forEach(tr=>p+=num(tr.querySelectorAll('input')[1].value));
+  let p=0;$('pettyBills').querySelectorAll('.pbill').forEach(b=>{let t=0;b.querySelectorAll('.pitems tr').forEach(tr=>t+=num(tr.querySelectorAll('input')[1].value));b.querySelector('.pbt').textContent=fmt(t);p+=t});
   $('pettyTot').textContent=fmt(p);
   const col=Array(CATS.length).fill(0);let m=0;
   [...$('mktBody').rows].forEach(tr=>{let r=0;tr.querySelectorAll('input.n').forEach((el,c)=>{const v=num(el.value);col[c]+=v;r+=v});
@@ -294,11 +323,16 @@ function watchDay(day){
 }
 
 document.addEventListener('input',e=>{if(e.target.closest('main')&&!e.target.closest('#exportSec')&&e.target.matches('input')){calc();if(!dirty){dirty=true;setStatus('dirty','มีการแก้ไขที่ยังไม่ได้บันทึก')}}});
-document.addEventListener('click',e=>{if(e.target.classList.contains('del')){
-  const tb=e.target.closest('tbody');e.target.closest('tr').remove();
-  if(!tb.rows.length)(tb.id==='pettyBody'?pettyRow:mktRow)();
-  calc();dirty=true;setStatus('dirty','มีการแก้ไขที่ยังไม่ได้บันทึก')}});
-$('addPetty').onclick=()=>{pettyRow();$('pettyBody').lastElementChild.querySelector('input').focus()};
+function markDirty(){calc();dirty=true;setStatus('dirty','มีการแก้ไขที่ยังไม่ได้บันทึก')}
+document.addEventListener('click',e=>{
+  const t=e.target;
+  if(t.classList.contains('delbill')){t.closest('.pbill').remove();if(!$('pettyBills').children.length){pettyBill();lockInputs()}markDirty();return}
+  if(t.classList.contains('addItem')){const tb=t.closest('.pbill').querySelector('.pitems');pettyRow(tb);lockInputs();tb.lastElementChild.querySelector('input').focus();return}
+  if(t.classList.contains('del')){
+    const tb=t.closest('tbody');t.closest('tr').remove();
+    if(!tb.rows.length){if(tb.classList.contains('pitems'))pettyRow(tb);else mktRow()}
+    lockInputs();markDirty()}});
+$('addPetty').onclick=()=>{const b=pettyBill();lockInputs();b.querySelector('.pay').focus()};
 $('addMkt').onclick=()=>{mktRow();$('mktBody').lastElementChild.querySelector('input').focus()};
 $('reload').onclick=()=>{load(latest);showSaved()};
 $('clear').onclick=()=>{load(null);dirty=true;setStatus('dirty','ล้างฟอร์มแล้ว ยังไม่ได้บันทึก')};
@@ -330,7 +364,7 @@ let rangeDocs=[];
 const dmy=iso=>{const [y,m,d]=String(iso).split('-');return d&&m&&y?`${d}/${m}/${y}`:iso};
 function dayRow(d){
   const mk=CATS.map(c=>(d.market||[]).reduce((a,o)=>a+num(o[c]),0));
-  const mt=mk.reduce((a,b)=>a+b,0), p=(d.petty||[]).reduce((a,r)=>a+num(r.amount),0);
+  const mt=mk.reduce((a,b)=>a+b,0), p=pettyBillsOf(d).reduce((a,b)=>a+(b.items||[]).reduce((x,r)=>x+num(r.amount),0),0);
   return {date:d.date,mk,mt,p,all:mt+p};
 }
 async function refreshSummary(){
@@ -370,7 +404,7 @@ function detailRows(){
   const mkt=[],pet=[];
   rangeDocs.forEach(d=>{
     (d.market||[]).forEach((o,i)=>{const v=CATS.map(c=>num(o[c]));mkt.push([dmy(d.date),i+1,...v,v.reduce((a,b)=>a+b,0)])});
-    (d.petty||[]).forEach(r=>pet.push([dmy(d.date),r.item||'',num(r.amount)]));
+    pettyBillsOf(d).forEach(b=>(b.items||[]).forEach(r=>pet.push([dmy(d.date),b.payee||'',r.item||'',num(r.amount)])));
   });
   return {mkt,pet};
 }
@@ -412,7 +446,7 @@ $('xlsBtn').onclick=()=>withBusy($('xlsBtn'),'กำลังสร้าง…'
   X.utils.book_append_sheet(wb,makeSheet(`บิลตลาด ${rangeLabel()}`,
     ['วันที่','บิลที่',...CAT_TH,'รวมบิล'],mkt,2,[2,3,4,5,6,7],[12,8,12,14,12,13,12,13]),'บิลตลาด');
   X.utils.book_append_sheet(wb,makeSheet(`เงินสดย่อย ${rangeLabel()}`,
-    ['วันที่','รายการ','ยอดเงิน (บาท)'],pet,2,[2],[12,36,16]),'เงินสดย่อย');
+    ['วันที่','จ่ายให้','รายการ','ยอดเงิน (บาท)'],pet,3,[3],[12,22,36,16]),'เงินสดย่อย');
   const buf=X.write(wb,{bookType:'xlsx',type:'array'});
   await saveFile(fileBase()+'.xlsx',buf);
 });
@@ -430,7 +464,7 @@ $('pdfBtn').onclick=()=>withBusy($('pdfBtn'),'กำลังสร้าง…'
   const tables=[
     {title:'สรุปรายวัน',head:['วันที่',...CAT_TH,'รวมบิลตลาด','เงินสดย่อย','รวมทั้งหมด'],rows:sumRows,tot:total(sumRows,1),tx:[0]},
     {title:'รายละเอียดบิลตลาด',head:['วันที่','บิลที่',...CAT_TH,'รวมบิล'],rows:mkt,tot:total(mkt,2),tx:[0,1]},
-    {title:'รายละเอียดเงินสดย่อย',head:['วันที่','รายการ','ยอดเงิน (บาท)'],rows:pet,tot:total(pet,2),tx:[0,1]},
+    {title:'รายละเอียดเงินสดย่อย',head:['วันที่','จ่ายให้','รายการ','ยอดเงิน (บาท)'],rows:pet,tot:total(pet,3),tx:[0,1,2]},
   ].filter(t=>t.rows.length);
   const PER=36,pages=[];
   tables.forEach(t=>{for(let i=0;i<t.rows.length;i+=PER){const part=t.rows.slice(i,i+PER),lastPart=i+PER>=t.rows.length;
