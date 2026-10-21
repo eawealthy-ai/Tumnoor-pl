@@ -359,7 +359,7 @@ select.t{font:inherit;width:100%;padding:9px 10px;border:1px solid var(--line);b
       <label class="f">จำนวนบิล<input class="n" id="bills" inputmode="numeric"></label>
     </div>
     <div class="totrow">
-      <span>ยอดขายรวม <b id="salesTot">0.00</b> บาท</span>
+      <span>ยอดขายรวม <b id="salesTot">0</b> บาท</span>
       <label class="chk" id="holWrap" hidden><input type="checkbox" id="hol"> วันหยุดนักขัตฤกษ์ (ใช้เกณฑ์ Incentive แบบ ศ.–อา.)</label>
       <span class="incw" id="incWrap" hidden>Incentive <b id="incAmt">0</b> บาท <span class="inch" id="incHint"></span></span>
     </div>
@@ -370,7 +370,7 @@ select.t{font:inherit;width:100%;padding:9px 10px;border:1px solid var(--line);b
     <p class="sub">1 บิล = จ่ายให้ 1 คน/ร้าน · กรอกชื่อผู้รับเงินก่อน แล้วใส่รายการในบิลนั้น</p>
     <div class="pbills" id="pettyBills"></div>
     <div class="toolbar"><button class="btn btn-add" id="addPetty" type="button">+ เพิ่มบิลเงินสดย่อย</button></div>
-    <div class="ptot">รวมเงินสดย่อยทั้งหมด <b id="pettyTot">0.00</b> บาท</div>
+    <div class="ptot">รวมเงินสดย่อยทั้งหมด <b id="pettyTot">0</b> บาท</div>
   </section>
 
   <section>
@@ -383,8 +383,8 @@ select.t{font:inherit;width:100%;padding:9px 10px;border:1px solid var(--line);b
       </tr></thead>
       <tbody id="mktBody"></tbody>
       <tfoot><tr><td class="lbl">รวม</td><td></td>
-        <td id="m0">0.00</td><td id="m1">0.00</td><td id="m2">0.00</td><td id="m3">0.00</td><td id="m4">0.00</td>
-        <td id="mTot" class="grand">0.00</td></tr></tfoot>
+        <td id="m0">0</td><td id="m1">0</td><td id="m2">0</td><td id="m3">0</td><td id="m4">0</td>
+        <td id="mTot" class="grand">0</td></tr></tfoot>
     </table></div>
     <div class="toolbar"><button class="btn btn-add" id="addMkt" type="button">+ เพิ่มบิล</button></div>
   </section>
@@ -434,7 +434,7 @@ select.t{font:inherit;width:100%;padding:9px 10px;border:1px solid var(--line);b
       <tbody id="tBody"></tbody>
     </table></div>
     <p class="sub" id="tNote" style="margin:10px 0 0">กำลังโหลด…</p>
-    <div class="tbar"><span>เลือก <b id="tSelN2">0</b> บิล · รวม <b id="tSel2">0.00</b> บาท</span>
+    <div class="tbar"><span>เลือก <b id="tSelN2">0</b> บิล · รวม <b id="tSel2">0</b> บาท</span>
       <button class="btn btn-save" id="tMark" type="button" disabled>ทำเครื่องหมายโอนแล้ว</button></div>
   </section>
   </div>
@@ -608,7 +608,8 @@ select.t{font:inherit;width:100%;padding:9px 10px;border:1px solid var(--line);b
 const CATS=["fresh","dry","supplies","staffMeal","transport"];
 const $=id=>document.getElementById(id);
 const num=v=>{const x=parseFloat(String(v??'').replace(/,/g,''));return isFinite(x)?x:0};
-const fmt=v=>v.toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2});
+/* ตัวเลขเงิน: ทศนิยม 2 ตำแหน่งเฉพาะเมื่อมีสตางค์ (1,000 ไม่ใช่ 1,000.00) */
+const fmt=v=>{v=Number(v)||0;const whole=Math.abs(Math.round(v*100))%100===0;return v.toLocaleString('th-TH',{minimumFractionDigits:whole?0:2,maximumFractionDigits:whole?0:2})};
 const fmt0=v=>v.toLocaleString('th-TH',{maximumFractionDigits:0});
 const today=()=>{const d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,10)};
 const blank=v=>v===0||v==null?'':v;
@@ -699,7 +700,7 @@ function pettyBill(b={}){
   el.innerHTML=`<div class="phead">
       <label class="f">จ่ายให้<input class="t pay" placeholder="ชื่อคน / ร้านที่รับเงิน" list="dlPettyPayee" autocomplete="off"></label>
       <span class="paidchip" hidden></span>
-      <span class="psub">รวมบิล <b class="pbt">0.00</b></span>
+      <span class="psub">รวมบิล <b class="pbt">0</b></span>
       <button class="del delbill" type="button" aria-label="ลบบิลนี้" title="ลบบิลนี้">×</button>
     </div>
     <div class="scroll"><table>
@@ -721,7 +722,7 @@ function mktRow(r={}){
   const tr=document.createElement('tr');setPaidData(tr,r);
   let h=`<td class="idx"><button class="del" type="button" aria-label="ลบบิล">×</button></td><td><input class="t mpay" placeholder="ร้าน / คนรับเงิน" aria-label="จ่ายให้" list="dlMktPayee" autocomplete="off"><div class="paidchip" style="display:inline-block;margin-top:4px" hidden></div></td>`;
   CATS.forEach(c=>h+=`<td><input class="n" inputmode="decimal"></td>`);
-  h+=`<td class="rowtot" style="text-align:right;font-family:var(--num)">0.00</td>`;
+  h+=`<td class="rowtot" style="text-align:right;font-family:var(--num)">0</td>`;
   tr.innerHTML=h;tr.querySelector('.mpay').value=r.payee??'';tr.querySelectorAll('input.n').forEach((el,k)=>el.value=blank(r[CATS[k]]));
   $('mktBody').appendChild(tr);
 }
