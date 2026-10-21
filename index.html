@@ -357,6 +357,7 @@ tfoot td.lbl{font-family:var(--body);text-align:left;font-weight:600}
     </table></div>
   </section>
 </main>
+<datalist id="dlPettyPayee"></datalist><datalist id="dlMktPayee"></datalist><datalist id="dlItem"></datalist>
 <div class="toast" id="toast" hidden></div>
 
 <script>
@@ -372,7 +373,7 @@ let db=null, unsub=null, dirty=false, latest=null, canWrite=true;
 
 function pettyRow(tbody,r={item:'',amount:''}){
   const tr=document.createElement('tr');
-  tr.innerHTML=`<td><input class="t" placeholder="เช่น น้ำแข็ง" aria-label="รายการ"></td>
+  tr.innerHTML=`<td><input class="t" placeholder="เช่น น้ำแข็ง" aria-label="รายการ" list="dlItem" autocomplete="off"></td>
   <td><input class="n" inputmode="decimal" aria-label="ยอดเงิน"></td>
   <td><button class="del" type="button" aria-label="ลบรายการ">×</button></td>`;
   const i=tr.querySelectorAll('input');i[0].value=r.item??'';i[1].value=blank(r.amount);
@@ -390,7 +391,7 @@ const PAID='tamnua_paid';
 function pettyBill(b={}){
   const el=document.createElement('div');el.className='pbill';setPaidData(el,b);
   el.innerHTML=`<div class="phead">
-      <label class="f">จ่ายให้<input class="t pay" placeholder="ชื่อคน / ร้านที่รับเงิน"></label>
+      <label class="f">จ่ายให้<input class="t pay" placeholder="ชื่อคน / ร้านที่รับเงิน" list="dlPettyPayee" autocomplete="off"></label>
       <span class="paidchip" hidden></span>
       <span class="psub">รวมบิล <b class="pbt">0.00</b></span>
       <button class="del delbill" type="button" aria-label="ลบบิลนี้" title="ลบบิลนี้">×</button>
@@ -412,7 +413,7 @@ function pettyBillsOf(d){
 }
 function mktRow(r={}){
   const tr=document.createElement('tr');setPaidData(tr,r);
-  let h=`<td class="idx"><button class="del" type="button" aria-label="ลบบิล">×</button></td><td><input class="t mpay" placeholder="ร้าน / คนรับเงิน" aria-label="จ่ายให้"><div class="paidchip" style="display:inline-block;margin-top:4px" hidden></div></td>`;
+  let h=`<td class="idx"><button class="del" type="button" aria-label="ลบบิล">×</button></td><td><input class="t mpay" placeholder="ร้าน / คนรับเงิน" aria-label="จ่ายให้" list="dlMktPayee" autocomplete="off"><div class="paidchip" style="display:inline-block;margin-top:4px" hidden></div></td>`;
   CATS.forEach(c=>h+=`<td><input class="n" inputmode="decimal"></td>`);
   h+=`<td class="rowtot" style="text-align:right;font-family:var(--num)">0.00</td>`;
   tr.innerHTML=h;tr.querySelector('.mpay').value=r.payee??'';tr.querySelectorAll('input.n').forEach((el,k)=>el.value=blank(r[CATS[k]]));
@@ -521,7 +522,7 @@ $('save').onclick=async()=>{
   if(!db)return;const day=$('day').value;if(!day){toast('เลือกวันที่ก่อนบันทึก');return}
   const btn=$('save');btn.disabled=true;btn.textContent='กำลังบันทึก…';
   try{const data=collect();const prev=latest?JSON.parse(JSON.stringify(latest)):null;ownStamp=data.updatedAt;
-    const {error}=await db.from(TABLE).upsert({date:day,data,updated_at:data.updatedAt});if(error)throw error;latest=data;dirty=false;$('reload').hidden=true;showSaved();refreshSummary();
+    const {error}=await db.from(TABLE).upsert({date:day,data,updated_at:data.updatedAt});if(error)throw error;latest=data;dirty=false;$('reload').hidden=true;showSaved();refreshSummary();sugFrom(data);renderSug();
     toast('บันทึกวันที่ '+dmy(day)+' แล้ว',async()=>{
       const now=new Date().toISOString();ownStamp=now;
       const back=prev?{...prev,updatedAt:now}:{date:day,deleted:true,updatedAt:now};
@@ -545,7 +546,7 @@ function initDb(){
   if(!window.supabase||!cfg.supabaseUrl||!cfg.supabaseAnonKey||/YOUR_/.test(cfg.supabaseUrl+cfg.supabaseAnonKey)){
     setStatus('err','ยังไม่ได้ตั้งค่าฐานข้อมูล (ไฟล์ config.js)');$('sumNote').textContent='ยังไม่ได้ตั้งค่าฐานข้อมูล';return}
   db=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey);
-  lockInputs();watchDay($('day').value);refreshSummary();
+  lockInputs();watchDay($('day').value);refreshSummary();loadSuggestions();
   if(location.hash==='#transfer')showView('transfer');
   else if(location.hash==='#dashboard')showView('dash');
   db.auth.onAuthStateChange&&db.auth.onAuthStateChange(()=>{});
@@ -923,6 +924,18 @@ async function renderDash(pend,pendN){
 }
 try{window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{if(!$('dashView').hidden&&dashRows.length)loadDash()})}catch(e){}
 
+
+/* คำที่เคยกรอก: ดึงจากข้อมูล 120 วันล่าสุด เรียงตามที่ใช้บ่อย แสดงเป็นตัวเลือกตอนพิมพ์ */
+const SUG={pp:new Map(),mp:new Map(),it:new Map()};
+function addSug(m,v){v=String(v||'').trim();if(v)m.set(v,(m.get(v)||0)+1)}
+function sugFrom(d){if(!d||d.deleted)return;d=ensureIds(d);d.petty.forEach(b=>{addSug(SUG.pp,b.payee);(b.items||[]).forEach(i=>addSug(SUG.it,i.item))});d.market.forEach(m=>addSug(SUG.mp,m.payee))}
+function renderSug(){[['dlPettyPayee',SUG.pp],['dlMktPayee',SUG.mp],['dlItem',SUG.it]].forEach(([id,m])=>{
+  $(id).innerHTML=[...m.entries()].sort((a,b)=>b[1]-a[1]).slice(0,300).map(([v])=>`<option value="${escH(v)}"></option>`).join('')})}
+async function loadSuggestions(){
+  if(!db)return;
+  try{const {data,error}=await db.from(TABLE).select('data').gte('date',isoOf(new Date(Date.now()-120*864e5))).limit(400);if(error)return;
+    Object.values(SUG).forEach(m=>m.clear());(data||[]).forEach(r=>sugFrom(r.data));renderSug()}catch(e){}
+}
 function dmyS(iso){const p=String(iso).split('-');return p.length===3?p[2]+'/'+p[1]:iso}
 initDb();
 </script>
