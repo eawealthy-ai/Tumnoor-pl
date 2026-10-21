@@ -148,6 +148,7 @@ tfoot td.lbl{font-family:var(--body);text-align:left;font-weight:600}
 .ptot{display:flex;justify-content:flex-end;gap:10px;align-items:baseline;margin-top:12px;padding-top:12px;border-top:1px dashed var(--line);font-weight:600}
 .ptot b{font-family:var(--num);font-size:17px;color:var(--chili);font-variant-numeric:tabular-nums}
 .toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:12px;flex-wrap:wrap}
+.toast .undo{font:inherit;font-weight:700;color:inherit;background:none;border:0;border-left:1px solid currentColor;margin-left:12px;padding:0 0 0 12px;text-decoration:underline;cursor:pointer}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:10px 18px;border-radius:999px;font-weight:500;z-index:20;max-width:calc(100% - 32px);text-align:center}
 .chk{display:flex;gap:6px;align-items:center;font-size:13px;color:var(--muted)}
 .range{display:flex;flex-wrap:wrap;gap:12px;align-items:end;margin-bottom:14px}
@@ -470,7 +471,16 @@ function lockInputs(){
   document.querySelectorAll('#dailyView section:not(#exportSec) input, #dailyView .btn-add, #dailyView .del').forEach(el=>el.disabled=!canWrite||!db);
   $('save').disabled=!canWrite||!db;$('clear').disabled=!canWrite||!db;
 }
-function toast(t){const el=$('toast');el.textContent=t;el.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>el.hidden=true,2600)}
+function toast(t,undo){
+  const el=$('toast');el.textContent='';const sp=document.createElement('span');sp.textContent=t;el.appendChild(sp);
+  if(undo){const b=document.createElement('button');b.type='button';b.className='undo';b.textContent='เลิกทำ';
+    b.onclick=async()=>{el.hidden=true;clearTimeout(toast.t);try{await undo()}catch(e){toast('เลิกทำไม่สำเร็จ ลองใหม่อีกครั้ง')}};el.appendChild(b)}
+  el.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>el.hidden=true,undo?8000:2600);
+}
+/* เก็บสภาพฟอร์มก่อนลบ/ล้าง เพื่อกด "เลิกทำ" ได้ */
+function snapForm(){return JSON.parse(JSON.stringify(collect()))}
+function restoreForm(snap){load(snap);markPaidChips($('day').value);dirty=true;setStatus('dirty','กู้คืนแล้ว ยังไม่ได้บันทึก')}
+let ownStamp='';
 
 const TABLE='tamnua_days';
 async function fetchDay(day){
@@ -485,7 +495,7 @@ function watchDay(day){
   fetchDay(day).then(d=>{if($('day').value!==day)return;latest=d;if(!dirty)load(d);showSaved();markPaidChips(day)})
     .catch(()=>setStatus('err','โหลดข้อมูลไม่ได้ ตรวจสอบอินเทอร์เน็ตแล้วรีเฟรชหน้านี้'));
   unsub=db.channel('day-'+day).on('postgres_changes',{event:'*',schema:'public',table:TABLE,filter:'date=eq.'+day},p=>{
-    const raw=p.new&&p.new.data;if(!raw||(latest&&raw.updatedAt===latest.updatedAt))return;
+    const raw=p.new&&p.new.data;if(!raw||raw.updatedAt===ownStamp||(latest&&raw.updatedAt===latest.updatedAt))return;
     const d=raw.deleted?null:raw;latest=d;
     if(dirty){setStatus('dirty','มีคนอัปเดตข้อมูลวันนี้จากเครื่องอื่น');$('reload').hidden=false;return}
     load(d);showSaved();markPaidChips(day);
@@ -496,22 +506,30 @@ document.addEventListener('input',e=>{if(e.target.closest('#dailyView')&&!e.targ
 function markDirty(){calc();dirty=true;setStatus('dirty','มีการแก้ไขที่ยังไม่ได้บันทึก')}
 document.addEventListener('click',e=>{
   const t=e.target;
-  if(t.classList.contains('delbill')){t.closest('.pbill').remove();if(!$('pettyBills').children.length){pettyBill();lockInputs()}markDirty();return}
+  if(t.classList.contains('delbill')){const snap=snapForm();t.closest('.pbill').remove();if(!$('pettyBills').children.length){pettyBill();lockInputs()}markDirty();toast('ลบบิลเงินสดย่อยแล้ว',()=>restoreForm(snap));return}
   if(t.classList.contains('addItem')){const tb=t.closest('.pbill').querySelector('.pitems');pettyRow(tb);lockInputs();tb.lastElementChild.querySelector('input').focus();return}
   if(t.classList.contains('del')){
-    const tb=t.closest('tbody');t.closest('tr').remove();
-    if(!tb.rows.length){if(tb.classList.contains('pitems'))pettyRow(tb);else mktRow()}
-    lockInputs();markDirty()}});
+    const snap=snapForm(),tb=t.closest('tbody'),isPetty=tb.classList.contains('pitems');t.closest('tr').remove();
+    if(!tb.rows.length){if(isPetty)pettyRow(tb);else mktRow()}
+    lockInputs();markDirty();toast(isPetty?'ลบรายการแล้ว':'ลบบิลตลาดแล้ว',()=>restoreForm(snap))}});
 $('addPetty').onclick=()=>{const b=pettyBill();lockInputs();b.querySelector('.pay').focus()};
 $('addMkt').onclick=()=>{mktRow();$('mktBody').lastElementChild.querySelector('input').focus()};
 $('reload').onclick=()=>{load(latest);showSaved()};
-$('clear').onclick=()=>{load(null);dirty=true;setStatus('dirty','ล้างฟอร์มแล้ว ยังไม่ได้บันทึก')};
+$('clear').onclick=()=>{const snap=snapForm();load(null);dirty=true;setStatus('dirty','ล้างฟอร์มแล้ว ยังไม่ได้บันทึก');toast('ล้างฟอร์มแล้ว',()=>restoreForm(snap))};
 $('day').onchange=()=>{if($('day').value)watchDay($('day').value)};
 $('save').onclick=async()=>{
   if(!db)return;const day=$('day').value;if(!day){toast('เลือกวันที่ก่อนบันทึก');return}
   const btn=$('save');btn.disabled=true;btn.textContent='กำลังบันทึก…';
-  try{const data=collect();
-    const {error}=await db.from(TABLE).upsert({date:day,data,updated_at:data.updatedAt});if(error)throw error;latest=data;dirty=false;$('reload').hidden=true;showSaved();toast('บันทึกวันที่ '+day+' แล้ว');refreshSummary()}
+  try{const data=collect();const prev=latest?JSON.parse(JSON.stringify(latest)):null;ownStamp=data.updatedAt;
+    const {error}=await db.from(TABLE).upsert({date:day,data,updated_at:data.updatedAt});if(error)throw error;latest=data;dirty=false;$('reload').hidden=true;showSaved();refreshSummary();
+    toast('บันทึกวันที่ '+dmy(day)+' แล้ว',async()=>{
+      const now=new Date().toISOString();ownStamp=now;
+      const back=prev?{...prev,updatedAt:now}:{date:day,deleted:true,updatedAt:now};
+      const r=await db.from(TABLE).upsert({date:day,data:back,updated_at:now});if(r.error)throw r.error;
+      latest=prev?back:null;refreshSummary();
+      if($('day').value===day){dirty=true;setStatus('dirty','ยกเลิกการบันทึกแล้ว ข้อมูลในระบบกลับเป็นแบบเดิม (ตัวเลขในฟอร์มยังไม่ได้บันทึก)')}
+      else toast('ยกเลิกการบันทึกวันที่ '+dmy(day)+' แล้ว');
+    })}
   catch(e){
     if(e&&e.code==='invalid_argument'){canWrite=false;lockInputs();setStatus('err','บัญชีนี้ดูได้อย่างเดียว ต้องได้สิทธิ์ Contributor ขึ้นไปจึงจะบันทึกได้')}
     else toast('บันทึกไม่สำเร็จ ลองกดบันทึกอีกครั้ง');
@@ -677,12 +695,18 @@ $('moveGo').onclick=async()=>{
   const go=$('moveGo');go.disabled=true;
   try{
     if(!moveConfirm&&await fetchDay(to)){moveConfirm=true;go.textContent='วันที่ '+dmy(to)+' มีข้อมูลแล้ว กดอีกครั้งเพื่อเขียนทับ';return}
-    const now=new Date().toISOString();
+    const now=new Date().toISOString();ownStamp=now;
+    const fromSaved=latest?JSON.parse(JSON.stringify(latest)):null,toBefore=await fetchDay(to);
     const data={...collect(),date:to,updatedAt:now};
     let r=await db.from(TABLE).upsert({date:to,data,updated_at:now});if(r.error)throw r.error;
     r=await db.from(TABLE).upsert({date:from,data:{date:from,deleted:true,movedTo:to,updatedAt:now},updated_at:now});if(r.error)throw r.error;
     dirty=false;$('day').value=to;watchDay(to);refreshSummary();
-    toast('ย้ายข้อมูลจาก '+dmy(from)+' ไป '+dmy(to)+' แล้ว');
+    toast('ย้ายข้อมูลจาก '+dmy(from)+' ไป '+dmy(to)+' แล้ว',async()=>{
+      const t2=new Date().toISOString();ownStamp=t2;
+      let q=await db.from(TABLE).upsert({date:from,data:fromSaved?{...fromSaved,date:from,updatedAt:t2}:{date:from,deleted:true,updatedAt:t2},updated_at:t2});if(q.error)throw q.error;
+      q=await db.from(TABLE).upsert({date:to,data:toBefore?{...toBefore,updatedAt:t2}:{date:to,deleted:true,updatedAt:t2},updated_at:t2});if(q.error)throw q.error;
+      dirty=false;$('day').value=from;watchDay(from);refreshSummary();toast('ย้ายกลับไปวันที่ '+dmy(from)+' แล้ว');
+    });
   }catch(e){toast('ย้ายไม่สำเร็จ ลองใหม่อีกครั้ง')}
   finally{go.disabled=false}
 };
@@ -782,10 +806,10 @@ function renderTransfers(){
   const pickable=rows.filter(r=>!r.paid);
   $('tAll').checked=pickable.length>0&&pickable.every(r=>tSel.has(r.key));$('tAll').disabled=!pickable.length;
 }
-async function setPaid(keys,paid){
+async function setPaid(keys,paid,at){
   if(!owner)throw new Error('not owner');
   const r=paid
-    ?await db.from(PAID).upsert(keys.map(k=>({bill_key:k,date:k.slice(0,k.indexOf('|')),paid_at:today(),paid_by:owner})))
+    ?await db.from(PAID).upsert(keys.map(k=>({bill_key:k,date:k.slice(0,k.indexOf('|')),paid_at:at||today(),paid_by:owner})))
     :await db.from(PAID).delete().in('bill_key',keys);
   if(r.error)throw r.error;
 }
@@ -796,12 +820,13 @@ $('tBody').addEventListener('change',e=>{if(e.target.classList.contains('tPick')
 $('tAll').onchange=()=>{const vis=tRows.filter(r=>!r.paid&&(tFilter!=='paid'));vis.forEach(r=>$('tAll').checked?tSel.add(r.key):tSel.delete(r.key));renderTransfers()};
 $('tBody').addEventListener('click',async e=>{
   const b=e.target.closest('.tUndo');if(!b)return;b.disabled=true;
-  try{await setPaid([b.dataset.key],false);toast('ยกเลิกสถานะโอนแล้ว');await loadTransfers()}
+  const row=tRows.find(r=>r.key===b.dataset.key),at=row&&row.paidAt;
+  try{await setPaid([b.dataset.key],false);await loadTransfers();toast('ยกเลิกสถานะโอนแล้ว',async()=>{await setPaid([b.dataset.key],true,at);await loadTransfers()})}
   catch(err){toast('ทำรายการไม่สำเร็จ ลองใหม่อีกครั้ง');b.disabled=false}
 });
 $('tMark').onclick=async()=>{
   const keys=[...tSel];if(!keys.length)return;const btn=$('tMark');btn.disabled=true;btn.textContent='กำลังบันทึก…';
-  try{await setPaid(keys,true);tSel.clear();toast('ทำเครื่องหมายโอนแล้ว '+keys.length+' บิล');await loadTransfers()}
+  try{await setPaid(keys,true);tSel.clear();await loadTransfers();toast('ทำเครื่องหมายโอนแล้ว '+keys.length+' บิล',async()=>{await setPaid(keys,false);await loadTransfers()})}
   catch(err){toast('บันทึกไม่สำเร็จ ลองใหม่อีกครั้ง')}
   finally{btn.textContent='ทำเครื่องหมายโอนแล้ว';btn.disabled=!tSel.size}
 };
