@@ -444,7 +444,7 @@ select.t{font:inherit;width:100%;padding:9px 10px;border:1px solid var(--line);b
 <main id="loginView" hidden>
   <section class="login">
     <h2>เข้าสู่ระบบเจ้าของร้าน</h2>
-    <p class="sub">หน้ารายการโอน Dashboard กระทบยอด P&L และหุ้นส่วน เปิดได้เฉพาะเจ้าของร้าน</p>
+    <p class="sub">หน้ารายการโอน กระทบยอด P&L และหุ้นส่วน เปิดได้เฉพาะเจ้าของร้าน</p>
     <form id="tLoginForm" class="loginf">
       <label class="f">อีเมล<input type="email" id="tEmail" class="t" autocomplete="username" required></label>
       <label class="f">รหัสผ่าน<input type="password" id="tPass" class="t" autocomplete="current-password" required></label>
@@ -455,7 +455,7 @@ select.t{font:inherit;width:100%;padding:9px 10px;border:1px solid var(--line);b
 </main>
 
 <main id="dashView" hidden>
-  <div class="tuser">เข้าสู่ระบบเป็น <b class="who"></b> · <button type="button" class="linkbtn logout">ออกจากระบบ</button></div>
+  <div class="tuser" id="dashUser" hidden>เข้าสู่ระบบเป็น <b class="who"></b> · <button type="button" class="linkbtn logout">ออกจากระบบ</button></div>
   <div class="range dhead">
     <label class="f">ตั้งแต่<input type="date" id="dFrom" class="t"></label>
     <label class="f">ถึง<input type="date" id="dTo" class="t"></label>
@@ -1102,11 +1102,16 @@ function showView(v){
   $('dailyCtl').hidden=curView!=='daily';
   Object.values(VIEWS).forEach(id=>$(id).hidden=true);$('loginView').hidden=true;
   if(curView==='daily'){$('dailyView').hidden=false;return}
+  /* Dashboard เปิดดูได้ทุกคนที่มีลิงก์ ไม่ต้องล็อกอิน */
+  if(curView==='dash'){$('dashView').hidden=false;$('dashUser').hidden=true;
+    if(db){loadDash();db.auth.getSession().then(({data})=>{const e=data&&data.session&&data.session.user&&data.session.user.email;if(e&&curView==='dash'){$('dashUser').hidden=false;document.querySelectorAll('.who').forEach(el=>el.textContent=e)}}).catch(()=>{})}
+    return}
   checkOwner();
 }
 let owner=null;
 async function checkOwner(){
   const v=curView;if(v==='daily')return;
+  if(v==='dash'){showView('dash');return}
   if(!db){$('loginView').hidden=false;$('tLoginErr').textContent='ยังไม่ได้เชื่อมฐานข้อมูล';return}
   let email=null;try{const {data}=await db.auth.getSession();email=data&&data.session&&data.session.user&&data.session.user.email}catch(e){}
   const allowed=(window.TAMNUA_CONFIG&&window.TAMNUA_CONFIG.ownerEmail||'').toLowerCase();
@@ -1245,7 +1250,7 @@ function dayMetrics(raw){
   return {date:d.date,ch,sales,ex,bills:num(d.bills),mk,mt,pt,exp:mt+pt,d};
 }
 async function loadDash(){
-  if(!db||!owner)return;
+  if(!db)return;
   const f=$('dFrom').value,t=$('dTo').value;if(!f||!t){$('dNote').textContent='เลือกช่วงวันที่ให้ครบ';return}
   $('dNote').textContent='กำลังโหลด…';
   const [days,paid]=await Promise.all([
