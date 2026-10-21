@@ -276,8 +276,6 @@ select.t{font:inherit;width:100%;padding:9px 10px;border:1px solid var(--line);b
       <label class="f">จำนวนบิล<input class="n" id="bills" inputmode="numeric"></label>
     </div>
     <div class="totrow">
-      <label class="chk"><input type="checkbox" id="vat" checked> ยอดรวม VAT 7%</label>
-      <span id="exWrap">ก่อน VAT <b id="salesEx">0.00</b></span>
       <span>ยอดขายรวม <b id="salesTot">0.00</b> บาท</span>
     </div>
   </section>
@@ -391,7 +389,7 @@ select.t{font:inherit;width:100%;padding:9px 10px;border:1px solid var(--line);b
   </div>
   <section>
     <h2>ยอดขายรายวัน</h2>
-    <p class="sub">แท่ง = ยอดขายแยกช่องทาง (รวม VAT) · เส้น = ค่าใช้จ่ายของวันนั้น</p>
+    <p class="sub">แท่ง = ยอดขายแยกช่องทาง · เส้น = ค่าใช้จ่ายของวันนั้น</p>
     <div class="chartbox tall"><canvas id="cDaily" aria-label="กราฟยอดขายรายวัน"></canvas></div>
   </section>
   <div class="grid2">
@@ -402,7 +400,7 @@ select.t{font:inherit;width:100%;padding:9px 10px;border:1px solid var(--line);b
     </section>
     <section>
       <h2>ค่าใช้จ่ายแยกประเภท</h2>
-      <p class="sub">% เทียบยอดขายก่อน VAT</p>
+      <p class="sub">% เทียบยอดขาย</p>
       <div id="expBars" class="ebars"></div>
     </section>
   </div>
@@ -414,7 +412,7 @@ select.t{font:inherit;width:100%;padding:9px 10px;border:1px solid var(--line);b
   <section>
     <h2>รายละเอียดรายวัน</h2>
     <div class="scroll"><table class="dtable">
-      <thead><tr><th>วันที่</th><th class="r">ยอดขาย</th><th class="r">ก่อน VAT</th><th class="r">บิล</th><th class="r">เฉลี่ย/บิล</th><th class="r">บิลตลาด</th><th class="r">เงินสดย่อย</th><th class="r">ค่าใช้จ่าย %</th></tr></thead>
+      <thead><tr><th>วันที่</th><th class="r">ยอดขาย</th><th class="r">บิล</th><th class="r">เฉลี่ย/บิล</th><th class="r">บิลตลาด</th><th class="r">เงินสดย่อย</th><th class="r">ค่าใช้จ่าย %</th></tr></thead>
       <tbody id="dBody"></tbody><tfoot id="dFoot"></tfoot>
     </table></div>
   </section>
@@ -433,7 +431,7 @@ select.t{font:inherit;width:100%;padding:9px 10px;border:1px solid var(--line);b
   <p class="sub" id="rNote" style="margin:-10px 0 0">กำลังโหลด…</p>
   <section>
     <h2>กระทบยอดตามช่องทางรับเงิน</h2>
-    <p class="sub">ยอดขาย (รวม VAT) เทียบเงินเข้าที่บันทึกไว้ · ส่วนต่าง = ยอดขาย − รับแล้ว − ค่าธรรมเนียม · เงินเข้าแต่ละรายการนับในช่วงที่ "งวดยอดขายถึงวันที่" อยู่</p>
+    <p class="sub">ยอดขายเทียบเงินเข้าที่บันทึกไว้ · ส่วนต่าง = ยอดขาย − รับแล้ว − ค่าธรรมเนียม · เงินเข้าแต่ละรายการนับในช่วงที่ "งวดยอดขายถึงวันที่" อยู่</p>
     <div class="scroll"><table class="rtable">
       <thead><tr><th>ช่องทาง</th><th class="r">ยอดขาย</th><th class="r">รับแล้ว</th><th class="r">ค่าธรรมเนียม/GP</th><th class="r">ส่วนต่าง</th><th>สถานะ</th></tr></thead>
       <tbody id="rBody"></tbody><tfoot id="rFoot"></tfoot>
@@ -471,7 +469,7 @@ select.t{font:inherit;width:100%;padding:9px 10px;border:1px solid var(--line);b
   <p class="sub" id="plNote" style="margin:-10px 0 0">กำลังโหลด…</p>
   <div class="uncbox" id="plUnc" hidden></div>
   <div class="summary kp4">
-    <div><span>รายได้จากการขาย (ก่อน VAT)</span><strong id="kpSales">0</strong><em>100%</em></div>
+    <div><span>รายได้จากการขาย</span><strong id="kpSales">0</strong><em>100%</em></div>
     <div><span>กำไรขั้นต้น</span><strong id="kpGross">0</strong><em id="kpGrossP"></em></div>
     <div><span>กำไรจากการดำเนินงาน</span><strong id="kpOp">0</strong><em id="kpOpP"></em></div>
     <div><span>กำไร (ขาดทุน) สุทธิ</span><strong id="kpNet">0</strong><em id="kpNetP"></em></div>
@@ -579,7 +577,7 @@ function mktRow(r={}){
 
 function collect(){
   const sales={cash:num($('cash').value),lineman:num($('lineman').value),grab:num($('grab').value),credit:num($('credit').value),kplus:num($('kplus').value)};
-  const bills=num($('bills').value), vat=$('vat').checked;
+  const bills=num($('bills').value), vat=false; /* ร้านไม่มี VAT */
   const petty=[...$('pettyBills').querySelectorAll('.pbill')].map(b=>({id:b.dataset.id,...paidOf(b),payee:b.querySelector('.pay').value.trim(),
     items:[...b.querySelector('.pitems').rows].map(tr=>{const i=tr.querySelectorAll('input');const c=tr.querySelector('select.cat').value;const o={item:i[0].value.trim(),amount:num(i[1].value)};if(c)o.cat=c;return o}).filter(r=>r.item||r.amount)}))
     .filter(b=>b.payee||b.items.length);
@@ -588,13 +586,12 @@ function collect(){
   const salesTotal=Object.values(sales).reduce((a,b)=>a+b,0);
   const marketByCat={};CATS.forEach(c=>marketByCat[c]=market.reduce((a,o)=>a+o[c],0));
   return {date:$('day').value,vat,sales,bills,petty,market,
-    totals:{sales:salesTotal,salesExVat:vat?+(salesTotal/1.07).toFixed(2):salesTotal,
+    totals:{sales:salesTotal,salesExVat:salesTotal,
       petty:petty.reduce((a,b)=>a+b.items.reduce((x,r)=>x+r.amount,0),0),market:Object.values(marketByCat).reduce((a,b)=>a+b,0),marketByCat},
     updatedAt:new Date().toISOString()};
 }
 function load(d){
   d=ensureIds(d)||{};
-  $('vat').checked=d.vat!==false;
   const s=d.sales||{};['cash','lineman','grab','credit','kplus'].forEach(k=>$(k).value=blank(s[k]));
   $('bills').value=blank(d.bills);
   $('pettyBills').innerHTML='';const pb=pettyBillsOf(d);(pb.length?pb:[{}]).forEach(b=>pettyBill(b));
@@ -604,16 +601,16 @@ function load(d){
 }
 function calc(){
   const s=['cash','lineman','grab','credit','kplus'].reduce((a,k)=>a+num($(k).value),0);
-  const bills=num($('bills').value), vat=$('vat').checked, ex=vat?s/1.07:s;
-  $('salesTot').textContent=fmt(s);$('salesEx').textContent=fmt(ex);$('exWrap').hidden=!vat;
+  const bills=num($('bills').value), ex=s;
+  $('salesTot').textContent=fmt(s);
   let p=0;$('pettyBills').querySelectorAll('.pbill').forEach(b=>{let t=0;b.querySelectorAll('.pitems tr').forEach(tr=>t+=num(tr.querySelectorAll('input')[1].value));b.querySelector('.pbt').textContent=fmt(t);p+=t});
   $('pettyTot').textContent=fmt(p);
   const col=Array(CATS.length).fill(0);let m=0;
   [...$('mktBody').rows].forEach(tr=>{let r=0;tr.querySelectorAll('input.n').forEach((el,c)=>{const v=num(el.value);col[c]+=v;r+=v});
     tr.querySelector('.rowtot').textContent=fmt(r);m+=r});
   col.forEach((v,c)=>$('m'+c).textContent=fmt(v));$('mTot').textContent=fmt(m);
-  const pct=v=>ex?(v/ex*100).toFixed(1)+'% ของยอดขาย'+(vat?' (ก่อน VAT)':''):'';
-  $('sSales').textContent=fmt0(s);$('sSalesEx').textContent=vat&&s?'ก่อน VAT '+fmt0(ex):'';
+  const pct=v=>ex?(v/ex*100).toFixed(1)+'% ของยอดขาย':'';
+  $('sSales').textContent=fmt0(s);$('sSalesEx').textContent='';
   $('sMarket').textContent=fmt0(m);$('sMarketPct').textContent=pct(m);
   $('sPetty').textContent=fmt0(p);$('sPettyPct').textContent=pct(p);
   $('sAvg').textContent=bills?fmt0(s/bills):'–';$('sBills').textContent=bills?fmt0(bills)+' บิล':'';
@@ -1018,7 +1015,7 @@ $('dFrom').onchange=$('dTo').onchange=()=>{document.querySelectorAll('#dPreset b
 function dayMetrics(raw){
   const d=ensureIds(raw),s=d.sales||{};
   const ch={};CH.forEach(([k])=>ch[k]=num(s[k]));
-  const sales=Object.values(ch).reduce((a,b)=>a+b,0),ex=d.vat===false?sales:sales/1.07;
+  const sales=Object.values(ch).reduce((a,b)=>a+b,0),ex=sales; /* ร้านไม่มี VAT */
   const mk=CATS.map(c=>d.market.reduce((a,m)=>a+num(m[c]),0)),mt=mk.reduce((a,b)=>a+b,0);
   const pt=d.petty.reduce((a,b)=>a+(b.items||[]).reduce((x,r)=>x+num(r.amount),0),0);
   return {date:d.date,ch,sales,ex,bills:num(d.bills),mk,mt,pt,exp:mt+pt,d};
@@ -1046,9 +1043,9 @@ async function renderDash(pend,pendN){
   const R=dashRows,S=k=>R.reduce((a,r)=>a+r[k],0);
   const sales=S('sales'),ex=S('ex'),exp=S('exp'),mt=S('mt'),pt=S('pt'),bills=S('bills');
   const pct=v=>ex?(v/ex*100).toFixed(1)+'%':'–';
-  $('kSales').textContent=fmt0(sales);$('kSalesEx').textContent='ก่อน VAT '+fmt0(ex);
-  $('kExp').textContent=fmt0(exp);$('kExpPct').textContent=pct(exp)+' ของยอดขายก่อน VAT';
-  $('kNet').textContent=fmt0(ex-exp);$('kNetPct').textContent=pct(ex-exp)+' ของยอดขายก่อน VAT';
+  $('kSales').textContent=fmt0(sales);$('kSalesEx').textContent=R.length?'จาก '+R.length+' วันที่บันทึก':'';
+  $('kExp').textContent=fmt0(exp);$('kExpPct').textContent=pct(exp)+' ของยอดขาย';
+  $('kNet').textContent=fmt0(ex-exp);$('kNetPct').textContent=pct(ex-exp)+' ของยอดขาย';
   $('kAvg').textContent=bills?fmt0(sales/bills):'–';$('kBills').textContent=bills?fmt0(bills)+' บิล · เฉลี่ย '+fmt0(R.length?sales/R.length:0)+'/วัน':'ยังไม่มีจำนวนบิล';
   $('kPend').textContent=fmt0(pend||0);$('kPendN').textContent=(pendN||0)+' บิล';
 
@@ -1063,8 +1060,8 @@ async function renderDash(pend,pendN){
   $('mixTable').innerHTML=mix.map(([n,c,v])=>`<tr><td><i class="sw" style="background:${c}"></i>${n}</td><td class="r">${fmt0(v)}</td><td class="r">${sales?(v/sales*100).toFixed(1)+'%':'–'}</td></tr>`).join('');
 
   // daily table
-  $('dBody').innerHTML=R.map(r=>`<tr><td>${dmy(r.date)} <span class="muted">${DOW[new Date(r.date+'T00:00:00').getDay()].slice(0,2)}</span></td><td>${fmt0(r.sales)}</td><td>${fmt0(r.ex)}</td><td>${r.bills?fmt0(r.bills):'–'}</td><td>${r.bills?fmt0(r.sales/r.bills):'–'}</td><td>${fmt0(r.mt)}</td><td>${fmt0(r.pt)}</td><td>${r.ex?(r.exp/r.ex*100).toFixed(1)+'%':'–'}</td></tr>`).join('');
-  $('dFoot').innerHTML=R.length?`<tr><td class="lbl">รวม</td><td>${fmt0(sales)}</td><td>${fmt0(ex)}</td><td>${bills?fmt0(bills):'–'}</td><td>${bills?fmt0(sales/bills):'–'}</td><td>${fmt0(mt)}</td><td>${fmt0(pt)}</td><td>${pct(exp)}</td></tr>`:'';
+  $('dBody').innerHTML=R.map(r=>`<tr><td>${dmy(r.date)} <span class="muted">${DOW[new Date(r.date+'T00:00:00').getDay()].slice(0,2)}</span></td><td>${fmt0(r.sales)}</td><td>${r.bills?fmt0(r.bills):'–'}</td><td>${r.bills?fmt0(r.sales/r.bills):'–'}</td><td>${fmt0(r.mt)}</td><td>${fmt0(r.pt)}</td><td>${r.ex?(r.exp/r.ex*100).toFixed(1)+'%':'–'}</td></tr>`).join('');
+  $('dFoot').innerHTML=R.length?`<tr><td class="lbl">รวม</td><td>${fmt0(sales)}</td><td>${bills?fmt0(bills):'–'}</td><td>${bills?fmt0(sales/bills):'–'}</td><td>${fmt0(mt)}</td><td>${fmt0(pt)}</td><td>${pct(exp)}</td></tr>`:'';
 
   // charts
   try{if(!window.Chart)await loadScript('https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js')}
@@ -1226,7 +1223,7 @@ function renderPL(){
   const line=(k,n)=>`<tr><td class="ind">${n}</td><td>${D.auto[k]?fmt(D.auto[k]):'–'}</td><td><input class="n plm" data-k="${k}" inputmode="decimal" value="${plManual[k]?escH(plManual[k]):''}" aria-label="กรอกเพิ่ม ${n}"></td><td class="tv">${fmt(T.tot(k))}</td><td class="pc">${pc(T.tot(k))}</td></tr>`;
   const sum=(label,v,cls)=>`<tr class="${cls}"><td>${label}</td><td></td><td></td><td class="tv">${fmt(v)}</td><td class="pc">${pc(v)}</td></tr>`;
   $('plBody').innerHTML=
-    `<tr class="rev"><td>รายได้จากการขาย <span class="muted">(ก่อน VAT · รวม VAT ${fmt(D.salesInc)})</span></td><td>${fmt(D.sales)}</td><td></td><td class="tv">${fmt(D.sales)}</td><td class="pc">100.00</td></tr>`
+    `<tr class="rev"><td>รายได้จากการขาย</td><td>${fmt(D.sales)}</td><td></td><td class="tv">${fmt(D.sales)}</td><td class="pc">100.00</td></tr>`
     +`<tr class="hd"><td colspan="5">หักต้นทุนทางตรง</td></tr>`+PL_COGS.map(([k,n])=>line(k,n)).join('')
     +sum('รวมต้นทุนทางตรง',T.cogs,'sub')+sum('กำไรขั้นต้น',T.gross,'key')
     +`<tr class="hd"><td colspan="5">ค่าใช้จ่ายในการบริหาร</td></tr>`+PL_OPEX.map(([k,n])=>line(k,n)).join('')
@@ -1277,7 +1274,7 @@ $('plXls').onclick=async()=>{
   push([`ตำนัว · งบกำไรขาดทุน ${monLabel(D.ym)}`],'title');
   push([`บันทึกยอดแล้ว ${D.n}/${D.dim} วัน`],'note');
   push(['รายการ','จากบันทึกรายวัน','กรอกเพิ่ม','รวม','% ของยอดขาย'],'head');
-  push(['รายได้จากการขาย (ก่อน VAT)',D.sales,'',D.sales,1],'rev');
+  push(['รายได้จากการขาย',D.sales,'',D.sales,1],'rev');
   push(['หักต้นทุนทางตรง'],'hd');
   PL_COGS.forEach(([k,n])=>push(['   '+n,D.auto[k],num(plManual[k])||'',T.tot(k),pc(T.tot(k))]));
   push(['รวมต้นทุนทางตรง','','',T.cogs,pc(T.cogs)],'sub');push(['กำไรขั้นต้น','','',T.gross,pc(T.gross)],'key');
