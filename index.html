@@ -216,6 +216,25 @@ select.t{font:inherit;width:100%;padding:9px 10px;border:1px solid var(--line);b
   .pitems td:first-child{grid-column:1/-1}
 }
 
+.pctable{min-width:560px}
+.pctable td{font-size:14px;text-align:right;font-family:var(--num);padding:4px 6px}
+.pctable td:first-child{text-align:left}
+.pctable input.n{width:130px}.pctable input.t{min-width:140px}
+.pctable tr.subrow td{border-bottom:0;padding-top:2px}
+.pctable td.ind{padding-left:18px;font-family:var(--body);color:var(--muted)}
+.pctable tfoot td{font-weight:600}
+.potable{min-width:780px}
+.potable td{font-size:14px;text-align:right;font-family:var(--num);font-variant-numeric:tabular-nums;vertical-align:top;padding:6px}
+.potable td:first-child{text-align:left;font-family:var(--body)}
+.potable .src{font-size:11.5px;color:var(--muted);font-family:var(--body);margin-top:2px}
+.potable td.pin input{width:120px;padding:5px 8px;font-size:14px}
+.potable tfoot td{font-weight:600}
+.potable.hist{min-width:900px}
+.potable.hist td{vertical-align:baseline;padding:3px 6px;font-size:13px}
+.pdk{display:flex;gap:4px;align-items:center;justify-content:flex-end;font-size:12px;font-family:var(--body);color:var(--muted);margin-top:4px;white-space:nowrap}
+.filebtn{position:relative;overflow:hidden}
+.filebtn input{position:absolute;inset:0;opacity:0;cursor:pointer}
+#pcSum{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
 .nowrap{white-space:nowrap}
 .tcontent{display:grid;gap:22px}
 .tcontent[hidden]{display:none}
@@ -280,7 +299,7 @@ select.t{font:inherit;width:100%;padding:9px 10px;border:1px solid var(--line);b
 
 <div class="bar"><div class="bar-in">
   <div class="brand">ร้านตำนัว<small>บันทึกยอดประจำวัน · Daily P&amp;L input</small></div>
-  <nav class="tabs" aria-label="เลือกหน้า"><button type="button" data-view="daily" aria-current="page">บันทึกรายวัน</button><button type="button" data-view="transfer" aria-current="false">รายการโอน</button><button type="button" data-view="dash" aria-current="false">Dashboard</button><button type="button" data-view="recon" aria-current="false">กระทบยอด</button><button type="button" data-view="pl" aria-current="false">P&amp;L</button></nav>
+  <nav class="tabs" aria-label="เลือกหน้า"><button type="button" data-view="daily" aria-current="page">บันทึกรายวัน</button><button type="button" data-view="transfer" aria-current="false">รายการโอน</button><button type="button" data-view="dash" aria-current="false">Dashboard</button><button type="button" data-view="recon" aria-current="false">กระทบยอด</button><button type="button" data-view="pl" aria-current="false">P&amp;L</button><button type="button" data-view="partner" aria-current="false">หุ้นส่วน</button></nav>
   <div class="bar-ctl" id="dailyCtl">
     <label class="datebtn empty" id="dayBtn"><span id="dayText">เลือกวัน/เดือน/ปี</span><input type="date" id="day" aria-label="เลือกวันที่"></label>
     <button class="btn btn-ghost" id="clear" type="button">ล้างฟอร์ม</button>
@@ -406,7 +425,7 @@ select.t{font:inherit;width:100%;padding:9px 10px;border:1px solid var(--line);b
 <main id="loginView" hidden>
   <section class="login">
     <h2>เข้าสู่ระบบเจ้าของร้าน</h2>
-    <p class="sub">หน้ารายการโอน Dashboard กระทบยอด และ P&L เปิดได้เฉพาะเจ้าของร้าน</p>
+    <p class="sub">หน้ารายการโอน Dashboard กระทบยอด P&L และหุ้นส่วน เปิดได้เฉพาะเจ้าของร้าน</p>
     <form id="tLoginForm" class="loginf">
       <label class="f">อีเมล<input type="email" id="tEmail" class="t" autocomplete="username" required></label>
       <label class="f">รหัสผ่าน<input type="password" id="tPass" class="t" autocomplete="current-password" required></label>
@@ -529,6 +548,38 @@ select.t{font:inherit;width:100%;padding:9px 10px;border:1px solid var(--line);b
       <thead><tr><th>รายการ</th><th class="r">จากบันทึกรายวัน</th><th class="r">กรอกเพิ่ม</th><th class="r">รวม</th><th class="r">%</th></tr></thead>
       <tbody id="plBody"></tbody>
     </table></div>
+  </section>
+</main>
+<main id="partnerView" hidden>
+  <div class="tuser">เข้าสู่ระบบเป็น <b class="who"></b> · <button type="button" class="linkbtn logout">ออกจากระบบ</button></div>
+  <div class="range dhead">
+    <label class="f">เริ่มคำนวณปันผลจากเดือน<select id="pcStart" class="t"></select></label>
+    <label class="f">ขาดทุนสะสมยกมา (บาท)<input id="pcOpen" class="n" inputmode="decimal" placeholder="0"></label>
+    <div class="dl"><label class="btn btn-dl filebtn">นำเข้าไฟล์ Excel<input type="file" id="pcFile" accept=".xlsx,.xls"></label><button class="btn btn-save" id="pcSave" type="button" disabled>บันทึก</button></div>
+  </div>
+  <p class="sub" id="pcNote" style="margin:-10px 0 0">กำลังโหลด…</p>
+  <div class="summary kp4" id="pcSum" hidden></div>
+  <section>
+    <h2>หุ้นส่วน</h2>
+    <p class="sub">% ปันผล ใช้แบ่งกำไรแต่ละเดือน (อาจไม่เท่ากับสัดส่วนเงินลงทุน) · แบ่งส่วนของหุ้นส่วนต่อให้ผู้ร่วมลงทุนได้</p>
+    <p class="sub" id="pcEmpty">ยังไม่มีข้อมูลหุ้นส่วน กด "นำเข้าไฟล์ Excel" เพื่อดึงรายชื่อและประวัติปันผลจากไฟล์เดิม หรือเพิ่มเอง</p>
+    <div class="scroll"><table class="pctable">
+      <thead><tr><th>ชื่อ</th><th class="r">เงินลงทุน</th><th class="r">% ทุน</th><th class="r">% ปันผล</th><th></th></tr></thead>
+      <tbody id="pcBody"></tbody><tfoot id="pcFoot"></tfoot>
+    </table></div>
+    <p class="sub uncnote" id="pcShareWarn" hidden></p>
+    <div class="toolbar"><button class="btn btn-add" id="pcAddP" type="button">+ เพิ่มหุ้นส่วน</button></div>
+  </section>
+  <section>
+    <h2>ปันผลรายเดือน</h2>
+    <p class="sub">กำไรสุทธิดึงจากหน้า P&amp;L อัตโนมัติ เดือนที่ยังไม่มีข้อมูลในระบบให้กรอกเอง · เดือนที่ขาดทุนจะยกไปหักกำไรเดือนถัดไปก่อนแบ่ง · ติ๊ก "จ่ายแล้ว" เมื่อโอนให้หุ้นส่วน</p>
+    <div class="scroll"><table class="potable"><thead id="pcHead"></thead><tbody id="pcRows"></tbody><tfoot id="pcRowsFoot"></tfoot></table></div>
+  </section>
+  <section id="pcHistBox" hidden>
+    <details><summary><h2 style="display:inline">ประวัติปันผล (จากไฟล์เดิม)</h2></summary>
+      <p class="sub" id="pcHistMeta"></p>
+      <div class="scroll"><table class="potable hist"><thead id="pcHistHead"></thead><tbody id="pcHistBody"></tbody><tfoot id="pcHistFoot"></tfoot></table></div>
+    </details>
   </section>
 </main>
 <datalist id="dlPettyPayee"></datalist><datalist id="dlMktPayee"></datalist><datalist id="dlItem"></datalist>
@@ -840,6 +891,7 @@ function initDb(){
   else if(location.hash==='#dashboard')showView('dash');
   else if(location.hash==='#recon')showView('recon');
   else if(location.hash==='#pl')showView('pl');
+  else if(location.hash==='#partner')showView('partner');
   db.auth.onAuthStateChange&&db.auth.onAuthStateChange(()=>{});
 }
 /* ---------- สรุป + ดาวน์โหลด Excel / PDF ---------- */
@@ -1011,11 +1063,11 @@ function firstOfPrevMonth(){const d=new Date();d.setDate(1);d.setMonth(d.getMont
 $('tFrom').value=firstOfPrevMonth();$('tTo').value=today();
 
 let curView='daily';
-const VIEWS={daily:'dailyView',transfer:'transferView',dash:'dashView',recon:'reconView',pl:'plView'};
+const VIEWS={daily:'dailyView',transfer:'transferView',dash:'dashView',recon:'reconView',pl:'plView',partner:'partnerView'};
 function showView(v){
   curView=VIEWS[v]?v:'daily';
   document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-current',b.dataset.view===curView?'page':'false'));
-  try{history.replaceState(null,'',curView==='transfer'?'#transfer':curView==='dash'?'#dashboard':curView==='recon'?'#recon':curView==='pl'?'#pl':location.pathname)}catch(e){}
+  try{history.replaceState(null,'',curView==='transfer'?'#transfer':curView==='dash'?'#dashboard':curView==='recon'?'#recon':curView==='pl'?'#pl':curView==='partner'?'#partner':location.pathname)}catch(e){}
   $('dailyCtl').hidden=curView!=='daily';
   Object.values(VIEWS).forEach(id=>$(id).hidden=true);$('loginView').hidden=true;
   if(curView==='daily'){$('dailyView').hidden=false;return}
@@ -1030,7 +1082,7 @@ async function checkOwner(){
   owner=email&&(!allowed||email.toLowerCase()===allowed)?email:null;
   if(curView!==v)return;
   $('loginView').hidden=!!owner;$(VIEWS[v]).hidden=!owner;
-  if(owner){document.querySelectorAll('.who').forEach(el=>el.textContent=owner);v==='transfer'?loadTransfers():v==='dash'?loadDash():v==='recon'?loadRecon():loadPL()}
+  if(owner){document.querySelectorAll('.who').forEach(el=>el.textContent=owner);v==='transfer'?loadTransfers():v==='dash'?loadDash():v==='recon'?loadRecon():v==='pl'?loadPL():loadPartner()}
   else if(email){$('tLoginErr').textContent='บัญชี '+email+' ไม่มีสิทธิ์เปิดหน้านี้';try{await db.auth.signOut()}catch(e){}}
 }
 $('tLoginForm').addEventListener('submit',async e=>{
@@ -1313,17 +1365,16 @@ const monLabel=ym=>{const [y,m]=ym.split('-').map(Number);return TH_MON[m-1]+' '
   const ym=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');h+=`<option value="${ym}">${monLabel(ym)}</option>`}$('plMonth').innerHTML=h})();
 let plData=null,plManual={},plOther=[],plDirty=false;
 $('plMonth').onchange=loadPL;
-async function loadPL(){
-  if(!db||!owner)return;
-  const ym=$('plMonth').value,[y,m]=ym.split('-').map(Number);
+/* ดึงตัวเลข P&L ของเดือนหนึ่ง ใช้ทั้งหน้า P&L และหน้าหุ้นส่วน */
+async function plFetch(ym){
+  const [y,m]=ym.split('-').map(Number);
   const f=ym+'-01',t=ym+'-'+String(new Date(y,m,0).getDate()).padStart(2,'0'),dim=new Date(y,m,0).getDate();
-  $('plNote').textContent='กำลังโหลด…';
   const [days,rc,mo]=await Promise.all([
     db.from(TABLE).select('date,data').gte('date',f).lte('date',t).limit(40),
     db.from(RCPT).select('channel,fee,period_to').gte('period_to',f).lte('period_to',t).limit(1000),
     db.from(MONTHLY).select('data').eq('month',ym).maybeSingle()]);
-  if(days.error){$('plNote').textContent='โหลดยอดขายไม่ได้ ลองใหม่อีกครั้ง';return}
-  const moMissing=mo.error&&/does not exist|relation|schema cache/i.test(mo.error.message||'');
+  if(days.error)return{error:true};
+  const moMissing=!!(mo.error&&/does not exist|relation|schema cache/i.test(mo.error.message||''));
   const auto={};[...PL_COGS,...PL_OPEX].forEach(([k])=>auto[k]=0);
   let sales=0,salesInc=0,n=0,uncN=0,uncAmt=0;const unc=[];
   (days.data||[]).filter(r=>r.data&&!r.data.deleted).forEach(r=>{
@@ -1334,6 +1385,21 @@ async function loadPL(){
   if(!rc.error)(rc.data||[]).forEach(r=>{const fe=num(r.fee);if(!fe)return;
     const k=r.channel==='lineman'||r.channel==='grab'?'gp':r.channel==='credit'||r.channel==='kplus'?'cardfee':'misc';auto[k]+=fe});
   const md=(!mo.error&&mo.data&&mo.data.data)||{};
+  return{ym,sales,salesInc,n,dim,auto,uncN,uncAmt,unc,md,moMissing};
+}
+function plNetOf(R){
+  const man=R.md.manual||{},tot=k=>R.auto[k]+num(man[k]);
+  const cogs=PL_COGS.reduce((a,[k])=>a+tot(k),0),opex=PL_OPEX.reduce((a,[k])=>a+tot(k),0);
+  const other=(R.md.other||[]).reduce((a,o)=>a+num(o.amount),0);
+  return R.sales-cogs-opex-other;
+}
+async function loadPL(){
+  if(!db||!owner)return;
+  const ym=$('plMonth').value;
+  $('plNote').textContent='กำลังโหลด…';
+  const R=await plFetch(ym);
+  if(R.error){$('plNote').textContent='โหลดยอดขายไม่ได้ ลองใหม่อีกครั้ง';return}
+  const {sales,salesInc,n,dim,auto,uncN,uncAmt,unc,md,moMissing}=R;
   plManual={...(md.manual||{})};plOther=(md.other||[]).map(o=>({...o}));plDirty=false;
   plData={ym,sales,salesInc,n,dim,auto,uncN,uncAmt,moMissing};
   $('plNote').textContent=`${monLabel(ym)} · บันทึกยอดแล้ว ${n}/${dim} วัน`+(moMissing?' · ยังไม่ได้สร้างตาราง tamnua_monthly (ช่องกรอกเพิ่มจะบันทึกไม่ได้)':'');
@@ -1480,6 +1546,161 @@ $('plPdf').onclick=async()=>{
   }catch(e){toast('สร้างไฟล์ไม่สำเร็จ ลองใหม่อีกครั้ง')}
   finally{pb.disabled=false;pb.textContent='ดาวน์โหลด PDF'}
 };
+
+/* ---------- บัญชีหุ้นส่วน ----------
+   ข้อมูลทั้งหมดเก็บใน tamnua_monthly แถว month='partners' (อ่าน/แก้ได้เฉพาะเจ้าของ) ไม่มีตัวเลขฝังในหน้าเว็บ
+   กำไรรายเดือน = กำไรสุทธิจาก P&L (หรือกรอกเอง) · ขาดทุนยกไปหักกำไรเดือนถัดไป */
+const PKEY='partners';
+let pc=null,pcDirty=false,pcRows=[];
+const pid=()=>'p'+Math.random().toString(36).slice(2,8);
+function ymAdd(ym,k){const [y,m]=ym.split('-').map(Number);const d=new Date(y,m-1+k,1);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')}
+function curYM(){return today().slice(0,7)}
+function pcDefault(){return{partners:[],startMonth:ymAdd(curYM(),-1),opening:0,overrides:{},paid:{},hist:[],histMeta:null}}
+function pcMark(){pcDirty=true;$('pcSave').disabled=false}
+async function loadPartner(){
+  if(!db||!owner)return;
+  $('pcNote').textContent='กำลังโหลด…';
+  const r=await db.from(MONTHLY).select('data').eq('month',PKEY).maybeSingle();
+  if(r.error){$('pcNote').textContent=/does not exist|relation|schema cache/i.test(r.error.message||'')?'ยังไม่ได้สร้างตาราง tamnua_monthly (รัน supabase/monthly.sql)':'โหลดไม่ได้ ลองใหม่อีกครั้ง';return}
+  pc={...pcDefault(),...((r.data&&r.data.data)||{})};pcDirty=false;$('pcSave').disabled=true;
+  renderPartners();await computePartner();
+}
+function renderPartners(){
+  const P=pc.partners,inv=P.reduce((a,p)=>a+num(p.invest),0),sh=P.reduce((a,p)=>a+num(p.share),0);
+  $('pcEmpty').hidden=P.length>0;
+  $('pcBody').innerHTML=P.map((p,i)=>`<tr><td><input class="t pce" data-i="${i}" data-f="name" value="${escH(p.name)}" aria-label="ชื่อหุ้นส่วน"></td>
+    <td><input class="n pce" data-i="${i}" data-f="invest" inputmode="decimal" value="${escH(p.invest??'')}" aria-label="เงินลงทุน"></td>
+    <td class="pcv">${inv?(num(p.invest)/inv*100).toFixed(1)+'%':'–'}</td>
+    <td><input class="n pce pcs" data-i="${i}" data-f="share" inputmode="decimal" value="${escH(p.share??'')}" aria-label="% ปันผล"></td>
+    <td><button type="button" class="del pcDelP" data-i="${i}" aria-label="ลบหุ้นส่วน">×</button></td></tr>`
+    +(p.subs||[]).map((s,j)=>`<tr class="subrow"><td class="ind">↳ <input class="t pcsub" data-i="${i}" data-j="${j}" data-f="name" value="${escH(s.name)}" aria-label="ชื่อผู้ร่วมลงทุน"></td>
+      <td><input class="n pcsub" data-i="${i}" data-j="${j}" data-f="invest" inputmode="decimal" value="${escH(s.invest??'')}" aria-label="เงินลงทุน"></td><td></td>
+      <td><input class="n pcsub" data-i="${i}" data-j="${j}" data-f="pct" inputmode="decimal" value="${escH(s.pct??'')}" aria-label="% ของส่วน ${escH(p.name)}"></td>
+      <td><button type="button" class="del pcDelS" data-i="${i}" data-j="${j}" aria-label="ลบ">×</button></td></tr>`).join('')
+    +`<tr class="subrow"><td class="ind" colspan="5"><button type="button" class="linkbtn pcAddS" data-i="${i}">+ แบ่งส่วนของ ${escH(p.name||'หุ้นส่วนนี้')} ต่อให้ผู้ร่วมลงทุน</button></td></tr>`).join('');
+  $('pcFoot').innerHTML=P.length?`<tr><td class="lbl">รวม</td><td>${fmt0(inv)}</td><td>100%</td><td class="${Math.abs(sh-100)>0.01?'grand':''}">${sh.toFixed(1)}%</td><td></td></tr>`:'';
+  $('pcShareWarn').hidden=!P.length||Math.abs(sh-100)<=0.01;$('pcShareWarn').textContent=`% ปันผลรวมกันได้ ${sh.toFixed(1)}% (ควรเป็น 100%)`;
+  $('pcStart').value=pc.startMonth;$('pcOpen').value=pc.opening||'';
+}
+async function computePartner(){
+  const P=pc.partners,months=[];let ym=pc.startMonth;const end=curYM();
+  if(!/^\d{4}-\d{2}$/.test(ym))ym=end;
+  for(let i=0;i<36&&ym<=end;i++){months.push(ym);ym=ymAdd(ym,1)}
+  $('pcNote').textContent='กำลังคำนวณจาก P&L…';
+  const res=await Promise.all(months.map(m=>plFetch(m)));
+  let deficit=num(pc.opening);pcRows=[];
+  months.forEach((m,i)=>{
+    const R=res[i],ov=(pc.overrides||{})[m],hasOv=ov&&ov.profit!==''&&ov.profit!=null;
+    const auto=R.error?null:(R.n?plNetOf(R):null);
+    const profit=hasOv?num(ov.profit):(auto==null?null:auto);
+    const carryIn=deficit;let dist=0,used=0;
+    if(profit!=null){if(profit<0)deficit+=-profit;else{used=Math.min(profit,deficit);deficit-=used;dist=profit-used}}
+    const shares=P.map(p=>dist*num(p.share)/100);
+    pcRows.push({ym:m,sales:R.error?0:R.sales,n:R.error?0:R.n,dim:R.dim||0,auto,profit,hasOv,carryIn,used,dist,deficit,shares,running:m===end});
+  });
+  $('pcNote').textContent=`คำนวณ ${months.length} เดือน ตั้งแต่ ${monLabel(months[0]||end)} · ขาดทุนสะสมคงเหลือ ${fmt(deficit)} บาท`;
+  renderPayouts();renderHist();
+}
+function renderPayouts(){
+  const P=pc.partners;
+  $('pcHead').innerHTML=`<tr><th>เดือน</th><th class="r">ยอดขาย</th><th class="r">กำไรสุทธิ</th><th class="r">หักขาดทุนยกมา</th><th class="r">กำไรที่แบ่งได้</th>${P.map(p=>`<th class="r">${escH(p.name||'-')} ${num(p.share)}%</th>`).join('')}</tr>`;
+  $('pcRows').innerHTML=pcRows.map(r=>{
+    const paid=(pc.paid||{})[r.ym]||{};
+    const prof=`<input class="n pco" data-ym="${r.ym}" inputmode="decimal" value="${r.hasOv?escH(pc.overrides[r.ym].profit):''}" placeholder="${r.auto==null?'กรอกกำไร':fmt(r.auto)}" aria-label="กำไรสุทธิ ${monLabel(r.ym)}">`
+      +`<div class="src">${r.hasOv?'กรอกเอง':r.auto==null?'ยังไม่มีข้อมูลในระบบ':'จาก P&L'+(r.running?' (เดือนนี้ยังไม่จบ)':'')}</div>`;
+    return `<tr><td class="nowrap"><b>${monLabel(r.ym)}</b>${r.n?`<div class="src">บันทึก ${r.n}/${r.dim} วัน</div>`:''}</td><td>${r.sales?fmt0(r.sales):'–'}</td><td class="pin">${prof}</td>
+      <td>${r.used?'−'+fmt0(r.used):r.profit<0?'<span class="grand">ขาดทุน '+fmt0(-r.profit)+'</span>':'–'}</td><td><b>${fmt0(r.dist)}</b></td>`
+      +P.map((p,i)=>{const amt=(r.dist*num(p.share)/100),pd=paid[p.id];
+        const subs=(p.subs||[]).map(s=>`<div class="src">${escH(s.name)} ${fmt0(amt*num(s.pct)/100)}</div>`).join('');
+        return `<td><b>${fmt0(amt)}</b>${subs}${amt>0?`<label class="pdk"><input type="checkbox" class="pcPaid" data-ym="${r.ym}" data-p="${p.id}"${pd?' checked':''}> ${pd?'จ่ายแล้ว '+dmyS(pd):'ยังไม่จ่าย'}</label>`:''}</td>`}).join('')+`</tr>`}).join('');
+  const tot=P.map((p,i)=>pcRows.reduce((a,r)=>a+(r.dist*num(p.share)/100),0));
+  $('pcRowsFoot').innerHTML=pcRows.length?`<tr><td class="lbl">รวม</td><td>${fmt0(pcRows.reduce((a,r)=>a+r.sales,0))}</td><td>${fmt0(pcRows.reduce((a,r)=>a+(r.profit||0),0))}</td><td></td><td>${fmt0(pcRows.reduce((a,r)=>a+r.dist,0))}</td>${tot.map(v=>`<td>${fmt0(v)}</td>`).join('')}</tr>`:'';
+  // สรุปต่อหุ้นส่วน: ปันผลสะสม (ประวัติ + ระบบ) และผลตอบแทนต่อเงินลงทุน
+  const hist=pc.hist||[];
+  $('pcSum').innerHTML=P.map((p,i)=>{
+    const h=hist.reduce((a,r)=>a+num((r.shares||{})[p.id]),0),now=tot[i],all=h+now,unpaid=pcRows.reduce((a,r)=>a+(((pc.paid||{})[r.ym]||{})[p.id]?0:(r.dist*num(p.share)/100)),0);
+    return `<div><span>${escH(p.name||'-')} · ลงทุน ${fmt0(num(p.invest))}</span><strong>${fmt0(all)}</strong><em>ปันผลสะสม · ${num(p.invest)?(all/num(p.invest)*100).toFixed(1)+'% ของเงินลงทุน':''}${unpaid>0?` · ค้างจ่าย ${fmt0(unpaid)}`:''}</em></div>`}).join('');
+  $('pcSum').hidden=!P.length;
+}
+function renderHist(){
+  const H=pc.hist||[],P=pc.partners;
+  $('pcHistBox').hidden=!H.length;
+  $('pcHistMeta').textContent=pc.histMeta?`นำเข้าจาก ${pc.histMeta.file} เมื่อ ${dmy(String(pc.histMeta.at).slice(0,10))} · ${H.length} เดือน`:'';
+  const subsOf=P.flatMap(p=>(p.subs||[]).map(s=>s.name));
+  $('pcHistHead').innerHTML=`<tr><th>เดือน</th><th class="r">ยอดขาย</th><th class="r">%COG</th><th class="r">กำไร</th><th class="r">%</th>${P.map(p=>`<th class="r">${escH(p.name)}</th>`).join('')}${subsOf.map(n=>`<th class="r">${escH(n)}</th>`).join('')}</tr>`;
+  $('pcHistBody').innerHTML=H.map(r=>`<tr><td>${escH(r.label)}</td><td>${r.sales?fmt0(r.sales):'–'}</td><td>${r.cogs?(r.cogs*100).toFixed(1)+'%':'–'}</td><td class="${r.profit<0?'grand':''}">${fmt0(r.profit||0)}</td><td>${r.pct!=null?Number(r.pct).toFixed(1):'–'}</td>${P.map(p=>`<td>${fmt0(num((r.shares||{})[p.id]))}</td>`).join('')}${subsOf.map(n=>`<td>${fmt0(num((r.subs||{})[n]))}</td>`).join('')}</tr>`).join('');
+  const S=k=>H.reduce((a,r)=>a+num(r[k]),0);
+  $('pcHistFoot').innerHTML=H.length?`<tr><td class="lbl">รวม</td><td>${fmt0(S('sales'))}</td><td></td><td>${fmt0(S('profit'))}</td><td></td>${P.map(p=>`<td>${fmt0(H.reduce((a,r)=>a+num((r.shares||{})[p.id]),0))}</td>`).join('')}${subsOf.map(n=>`<td>${fmt0(H.reduce((a,r)=>a+num((r.subs||{})[n]),0))}</td>`).join('')}</tr>`:'';
+}
+/* แก้ไขข้อมูล */
+$('pcBody').addEventListener('input',e=>{
+  const t=e.target,i=+t.dataset.i;if(!pc||isNaN(i))return;
+  if(t.classList.contains('pce'))pc.partners[i][t.dataset.f]=t.value;
+  else if(t.classList.contains('pcsub'))pc.partners[i].subs[+t.dataset.j][t.dataset.f]=t.value;else return;
+  pcMark();
+  if(t.dataset.f!=='name'){const P=pc.partners,inv=P.reduce((a,p)=>a+num(p.invest),0),sh=P.reduce((a,p)=>a+num(p.share),0);
+    $('pcShareWarn').hidden=Math.abs(sh-100)<=0.01;$('pcShareWarn').textContent=`% ปันผลรวมกันได้ ${sh.toFixed(1)}% (ควรเป็น 100%)`;
+    [...$('pcBody').querySelectorAll('td.pcv')].forEach((td,k)=>td.textContent=inv?(num(P[k].invest)/inv*100).toFixed(1)+'%':'–')}
+});
+$('pcBody').addEventListener('change',()=>{if(pc){renderPayouts()}});
+$('pcBody').addEventListener('click',e=>{
+  const t=e.target;if(!pc)return;
+  if(t.classList.contains('pcDelP')){const snap=JSON.stringify(pc.partners);pc.partners.splice(+t.dataset.i,1);pcMark();renderPartners();renderPayouts();toast('ลบหุ้นส่วนแล้ว',()=>{pc.partners=JSON.parse(snap);pcMark();renderPartners();renderPayouts()})}
+  else if(t.classList.contains('pcDelS')){pc.partners[+t.dataset.i].subs.splice(+t.dataset.j,1);pcMark();renderPartners();renderPayouts()}
+  else if(t.classList.contains('pcAddS')){const p=pc.partners[+t.dataset.i];(p.subs=p.subs||[]).push({name:'',invest:'',pct:''});pcMark();renderPartners()}
+});
+$('pcAddP').onclick=()=>{if(!pc)return;pc.partners.push({id:pid(),name:'',invest:'',share:'',subs:[]});pcMark();renderPartners();const els=$('pcBody').querySelectorAll('.pce[data-f="name"]');els[els.length-1].focus()};
+$('pcStart').onchange=()=>{if(!pc)return;pc.startMonth=$('pcStart').value;pcMark();computePartner()};
+$('pcOpen').onchange=()=>{if(!pc)return;pc.opening=num($('pcOpen').value);pcMark();computePartner()};
+$('pcRows').addEventListener('change',e=>{
+  const t=e.target;if(!pc)return;
+  if(t.classList.contains('pco')){const v=t.value.trim();pc.overrides=pc.overrides||{};if(v)pc.overrides[t.dataset.ym]={profit:v};else delete pc.overrides[t.dataset.ym];pcMark();computePartner()}
+  if(t.classList.contains('pcPaid')){pc.paid=pc.paid||{};const m=pc.paid[t.dataset.ym]=pc.paid[t.dataset.ym]||{};if(t.checked)m[t.dataset.p]=today();else delete m[t.dataset.p];pcMark();renderPayouts()}
+});
+$('pcSave').onclick=async()=>{
+  if(!pc)return;const btn=$('pcSave');btn.disabled=true;
+  const clean={...pc,partners:pc.partners.map(p=>({id:p.id||pid(),name:String(p.name||'').trim(),invest:num(p.invest),share:num(p.share),subs:(p.subs||[]).filter(s=>String(s.name||'').trim()).map(s=>({name:String(s.name).trim(),invest:num(s.invest),pct:num(s.pct)}))})).filter(p=>p.name)};
+  try{
+    const prev=await db.from(MONTHLY).select('data').eq('month',PKEY).maybeSingle();
+    const r=await db.from(MONTHLY).upsert({month:PKEY,data:clean,updated_at:new Date().toISOString()});if(r.error)throw r.error;
+    pc=clean;pcDirty=false;renderPartners();renderPayouts();renderHist();
+    toast('บันทึกบัญชีหุ้นส่วนแล้ว',async()=>{const back=(prev.data&&prev.data.data)||pcDefault();const q=await db.from(MONTHLY).upsert({month:PKEY,data:back,updated_at:new Date().toISOString()});if(q.error)throw q.error;loadPartner()});
+  }catch(e){toast('บันทึกไม่สำเร็จ ลองใหม่อีกครั้ง');btn.disabled=false}
+};
+/* นำเข้าไฟล์ Excel บัญชีหุ้นส่วน (รูปแบบเดิม: แถว 8–10 หัวตาราง, แถว 11 เป็นต้นไปรายเดือน จนถึงแถว "รวม") */
+const xnum=v=>{if(typeof v==='number')return v;const s=String(v??'').replace(/[^0-9.\-]/g,'');const x=parseFloat(s);return isFinite(x)?x:0};
+$('pcFile').onchange=async e=>{
+  const f=e.target.files&&e.target.files[0];e.target.value='';if(!f||!pc)return;
+  try{
+    if(!window.XLSX)await loadScript('https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js');
+    const wb=window.XLSX.read(await f.arrayBuffer(),{type:'array'}),ws=wb.Sheets[wb.SheetNames[0]];
+    const A=window.XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:null});
+    const cell=(r,c)=>(A[r]||[])[c];
+    // หัวตาราง: แถว 8 (index 7) คอลัมน์ F–H = ชื่อหุ้นส่วน, แถว 9 = %ปันผล; K–L = ผู้ร่วมลงทุนในส่วนของหุ้นส่วนคนแรก
+    const names=[5,6,7].map(c=>String(cell(7,c)||'').trim()).filter(Boolean);
+    if(!names.length)throw new Error('format');
+    const invByName={};[1,2,3,4,5].forEach(c=>{const n=String(cell(0,c)||'').trim();if(n)invByName[n]=xnum(cell(1,c))});
+    const ex=Object.fromEntries(pc.partners.map(p=>[p.name,p]));
+    const partners=names.map((n,k)=>ex[n]||{id:pid(),name:n,invest:invByName[n]||0,share:xnum(cell(8,5+k)),subs:[]});
+    const subNames=[10,11].map(c=>String(cell(7,c)||'').trim()).filter(Boolean);
+    if(subNames.length&&!(partners[0].subs||[]).length)partners[0].subs=subNames.map((n,j)=>({name:n,invest:xnum(cell(8,10+j)),pct:xnum(cell(9,10+j))}));
+    const hist=[];
+    for(let r=10;r<A.length;r++){
+      const label=String(cell(r,0)??'').trim();if(!label)continue;if(/^รวม/.test(label))break;
+      const sales=xnum(cell(r,1)),profit=xnum(cell(r,3));if(!sales&&!profit)continue;
+      const c2=cell(r,2);const cogs=typeof c2==='number'?c2:(()=>{const t=String(c2??'').replace(',','.').replace(/[^0-9.\-]/g,'');const x=parseFloat(t);return isFinite(x)?(x>1?x/100:x):0})();
+      const shares={};partners.forEach((p,k)=>{if(k<3)shares[p.id]=xnum(cell(r,5+k))});
+      const subs={};subNames.forEach((n,j)=>subs[n]=xnum(cell(r,10+j)));
+      hist.push({label,sales,cogs,profit,pct:cell(r,4)!=null&&cell(r,4)!==''?xnum(cell(r,4)):null,shares,subs});
+    }
+    pc.partners=partners;pc.hist=hist;pc.histMeta={file:f.name,at:new Date().toISOString()};
+    pcMark();renderPartners();renderPayouts();renderHist();
+    toast(`อ่านไฟล์แล้ว ${hist.length} เดือน · กด "บันทึก" เพื่อเก็บเข้าระบบ`);
+  }catch(err){toast('อ่านไฟล์ไม่ได้ ตรวจว่าเป็นไฟล์บัญชีหุ้นส่วนรูปแบบเดิม')}
+};
+
+(function(){const now=new Date();let h='';for(let i=0;i<36;i++){const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+  const ym=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');h+=`<option value="${ym}">${monLabel(ym)}</option>`}$('pcStart').innerHTML=h})();
 function dmyS(iso){const p=String(iso).split('-');return p.length===3?p[2]+'/'+p[1]:iso}
 initDb();
 </script>
