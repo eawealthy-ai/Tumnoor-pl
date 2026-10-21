@@ -100,6 +100,9 @@ input.n,input.t{font:inherit;width:100%;padding:9px 10px;border:1px solid var(--
 input.n{font-family:var(--num);text-align:right;font-variant-numeric:tabular-nums}
 input:disabled{opacity:.7}
 .totrow{display:flex;flex-wrap:wrap;gap:6px 24px;justify-content:flex-end;margin-top:14px;padding-top:12px;border-top:1px dashed var(--line);font-size:14px}
+.incw{flex-basis:100%;text-align:right}
+.incw b{color:var(--ok)!important}
+.inch{font-size:13px;color:var(--muted)}
 .totrow b{font-family:var(--num);font-size:17px;font-variant-numeric:tabular-nums;color:var(--leaf)}
 .scroll{overflow-x:auto;margin:0 -4px;padding:0 4px}
 table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
@@ -320,6 +323,7 @@ select.t{font:inherit;width:100%;padding:9px 10px;border:1px solid var(--line);b
     </div>
     <div class="totrow">
       <span>ยอดขายรวม <b id="salesTot">0.00</b> บาท</span>
+      <span class="incw" id="incWrap" hidden>Incentive <b id="incAmt">0</b> บาท <span class="inch" id="incHint"></span></span>
     </div>
   </section>
 
@@ -564,6 +568,26 @@ function guessCat(item){
   for(const [re,k] of CAT_RULES)if(re.test(item))return k;
   return'';
 }
+
+/* ---------- Incentive รายวัน (ตามยอดขายรวมของวัน) ----------
+   จ.–พฤ.: ยอด ≥ 30,000 = 1,000 · ≥ 26,000 = 800 · ≥ 22,000 = 500 · ต่ำกว่านั้น = 0
+   ศ.–อา.: ยังไม่ได้ตั้งเกณฑ์ (เพิ่มขั้นใน INC_TIERS.friSun ได้) */
+const INC_TIERS={monThu:[[30000,1000],[26000,800],[22000,500]],friSun:null};
+function incentiveFor(iso,sales){
+  if(!iso)return{amt:0,tiers:null};
+  const g=new Date(iso+'T00:00:00').getDay(),tiers=g>=1&&g<=4?INC_TIERS.monThu:INC_TIERS.friSun;
+  if(!tiers)return{amt:0,tiers:null};
+  for(const [min,amt] of tiers)if(sales>=min)return{amt,tiers};
+  return{amt:0,tiers};
+}
+function showIncentive(s){
+  const day=$('day').value,r=incentiveFor(day,s);
+  $('incWrap').hidden=!day;if(!day)return;
+  if(!r.tiers){$('incAmt').textContent='–';$('incHint').textContent='(ยังไม่มีเกณฑ์วันศุกร์–อาทิตย์)';return}
+  $('incAmt').textContent=fmt0(r.amt);
+  const next=[...r.tiers].reverse().find(([min])=>s<min);
+  $('incHint').textContent=next?`· ขายอีก ${fmt0(next[0]-s)} ได้ ${fmt0(next[1])}`:'· ถึงขั้นสูงสุดแล้ว';
+}
 function pettyRow(tbody,r={item:'',amount:''}){
   const tr=document.createElement('tr');
   tr.innerHTML=`<td><input class="t" placeholder="เช่น น้ำแข็ง" aria-label="รายการ" list="dlItem" autocomplete="off"></td>
@@ -645,7 +669,7 @@ function load(d){
 function calc(){
   const s=['cash','lineman','grab','credit','kplus'].reduce((a,k)=>a+num($(k).value),0);
   const bills=num($('bills').value), ex=s;
-  $('salesTot').textContent=fmt(s);
+  $('salesTot').textContent=fmt(s);showIncentive(s);
   let p=0;$('pettyBills').querySelectorAll('.pbill').forEach(b=>{let t=0;b.querySelectorAll('.pitems tr').forEach(tr=>t+=num(tr.querySelectorAll('input')[1].value));b.querySelector('.pbt').textContent=fmt(t);p+=t});
   $('pettyTot').textContent=fmt(p);
   const col=Array(CATS.length).fill(0);let m=0;
@@ -1287,7 +1311,7 @@ async function loadPL(){
   const auto={};[...PL_COGS,...PL_OPEX].forEach(([k])=>auto[k]=0);
   let sales=0,salesInc=0,n=0,uncN=0,uncAmt=0;const unc=[];
   (days.data||[]).filter(r=>r.data&&!r.data.deleted).forEach(r=>{
-    const d=ensureIds({...r.data,date:r.date}),mm=dayMetrics(d);n++;sales+=mm.ex;salesInc+=mm.sales;
+    const d=ensureIds({...r.data,date:r.date}),mm=dayMetrics(d);n++;sales+=mm.ex;salesInc+=mm.sales;auto.incentive+=incentiveFor(r.date,mm.sales).amt;
     d.market.forEach(x=>Object.entries(MKT_TO_PL).forEach(([c,k])=>auto[k]+=num(x[c])));
     d.petty.forEach(b=>(b.items||[]).forEach((i,ix)=>{const a=num(i.amount);if(!a)return;if(i.cat&&auto[i.cat]!=null)auto[i.cat]+=a;else{auto.misc+=a;uncN++;uncAmt+=a;unc.push({date:d.date,bill:b.id,ix,payee:b.payee||'',item:i.item||'',a})}}));
   });
