@@ -145,7 +145,8 @@ tfoot td.lbl{font-family:var(--body);text-align:left;font-weight:600}
 .tdlist tfoot td{border-bottom:0;font-weight:600}
 .tdmeta{font-size:13px;color:var(--muted)}
 .tdmeta .linkbtn{font-size:13px;color:var(--leaf);font-weight:600}
-.kpis{grid-template-columns:repeat(5,1fr)}
+.kpis{grid-template-columns:repeat(3,1fr)}
+.fcast strong{color:var(--leaf)}
 @media (max-width:900px){.kpis{grid-template-columns:repeat(2,1fr)}}
 .warnnum{color:var(--chili)}
 .dhead{margin:0}
@@ -471,6 +472,7 @@ select.t{font:inherit;width:100%;padding:9px 10px;border:1px solid var(--line);b
     <div><span>ยอดขายหักค่าใช้จ่าย</span><strong id="kNet">0</strong><em id="kNetPct"></em></div>
     <div><span>ยอดเฉลี่ย/บิล</span><strong id="kAvg">–</strong><em id="kBills"></em></div>
     <div><span>ค้างโอน</span><strong id="kPend" class="warnnum">0</strong><em id="kPendN"></em></div>
+    <div class="fcast"><span id="kFcL">ประมาณการยอดขายสิ้นเดือน</span><strong id="kFc">–</strong><em id="kFcN"></em></div>
   </div>
   <section>
     <h2>ยอดขายรายวัน</h2>
@@ -554,7 +556,7 @@ select.t{font:inherit;width:100%;padding:9px 10px;border:1px solid var(--line);b
   <p class="sub" id="plNote" style="margin:-10px 0 0">กำลังโหลด…</p>
   <div class="uncbox" id="plUnc" hidden></div>
   <div class="summary kp4">
-    <div><span>รายได้จากการขาย</span><strong id="kpSales">0</strong><em>100%</em></div>
+    <div><span>รายได้จากการขาย</span><strong id="kpSales">0</strong><em id="kpSalesFc">100%</em></div>
     <div><span>กำไรขั้นต้น</span><strong id="kpGross">0</strong><em id="kpGrossP"></em></div>
     <div><span>กำไรจากการดำเนินงาน</span><strong id="kpOp">0</strong><em id="kpOpP"></em></div>
     <div><span>กำไร (ขาดทุน) สุทธิ</span><strong id="kpNet">0</strong><em id="kpNetP"></em></div>
@@ -1270,6 +1272,7 @@ async function renderDash(pend,pendN){
   $('kNet').textContent=fmt0(ex-exp);$('kNetPct').textContent=pct(ex-exp)+' ของยอดขาย';
   $('kAvg').textContent=bills?fmt0(sales/bills):'–';$('kBills').textContent=bills?fmt0(bills)+' บิล · เฉลี่ย '+fmt0(R.length?sales/R.length:0)+'/วัน':'ยังไม่มีจำนวนบิล';
   $('kPend').textContent=fmt0(pend||0);$('kPendN').textContent=(pendN||0)+' บิล';
+  showForecast(curYM(),'kFc','kFcN','kFcL');
 
   // expense breakdown (HTML bars)
   const items=[...CAT_TH.map((n,i)=>[n,R.reduce((a,r)=>a+r.mk[i],0)]),['เงินสดย่อย',pt]];
@@ -1477,7 +1480,7 @@ function renderPL(){
     +`<tr><td class="ind" colspan="5"><button type="button" class="btn btn-add" id="plAddOther">+ เพิ่มรายการอื่นๆ</button></td></tr>`
     +sum('กำไร (ขาดทุน) สุทธิ',T.net,'net '+(T.net<0?'neg':''));
   $('plSave').disabled=!plDirty||D.moMissing;
-  $('kpSales').textContent=fmt0(D.sales);$('kpGross').textContent=fmt0(T.gross);$('kpGrossP').textContent=pc(T.gross)+'%';
+  $('kpSales').textContent=fmt0(D.sales);$('kpSalesFc').textContent='100%';if(D.ym>=curYM())forecastMonth(D.ym).then(F=>{if(plData&&plData.ym===D.ym&&F&&F.remaining)$('kpSalesFc').textContent=`100% · ประมาณการสิ้นเดือน ${fmt0(F.fc)}`});$('kpGross').textContent=fmt0(T.gross);$('kpGrossP').textContent=pc(T.gross)+'%';
   $('kpOp').textContent=fmt0(T.op);$('kpOpP').textContent=pc(T.op)+'%';$('kpNet').textContent=fmt0(T.net);$('kpNetP').textContent=pc(T.net)+'%';
   $('kpNet').classList.toggle('warnnum',T.net<0);
 }
@@ -1759,6 +1762,33 @@ $('pcFile').onchange=async e=>{
 
 (function(){const now=new Date();let h='';for(let i=0;i<36;i++){const d=new Date(now.getFullYear(),now.getMonth()-i,1);
   const ym=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');h+=`<option value="${ym}">${monLabel(ym)}</option>`}$('pcStart').innerHTML=h})();
+
+/* ---------- ประมาณการยอดขายสิ้นเดือน (DoW run rate) ----------
+   วันที่ยังไม่ถึง = ค่าเฉลี่ยยอดขายของวันในสัปดาห์เดียวกันที่บันทึกแล้วในเดือนนั้น
+   ถ้าเดือนนี้ยังไม่มีวันนั้น ใช้ค่าเฉลี่ยวันเดียวกันย้อนหลัง 8 สัปดาห์ · วันหยุดนักขัตฤกษ์ (จ.–พฤ.) ใช้ค่าเฉลี่ย ศ.–อา. */
+async function forecastMonth(ym){
+  if(!db)return null;
+  const [y,m]=ym.split('-').map(Number),dim=new Date(y,m,0).getDate(),f=ym+'-01',t=ym+'-'+String(dim).padStart(2,'0');
+  const hf=isoOf(new Date(new Date(f+'T00:00:00').getTime()-56*864e5));
+  const {data,error}=await db.from(TABLE).select('date,data').gte('date',hf).lte('date',t).limit(120);
+  if(error)return null;
+  const S={};(data||[]).filter(r=>r.data&&!r.data.deleted).forEach(r=>{S[r.date]=dayMetrics(ensureIds({...r.data,date:r.date})).sales});
+  const inM=Object.keys(S).filter(d=>d>=f&&d<=t),actual=inM.reduce((a,d)=>a+S[d],0);
+  const avg=arr=>arr.length?arr.reduce((a,b)=>a+b,0)/arr.length:null,dow=d=>new Date(d+'T00:00:00').getDay();
+  const byDow=(days,g)=>days.filter(d=>g.includes(dow(d))).map(d=>S[d]);
+  const prev=Object.keys(S).filter(d=>d<f);
+  const rate=g=>avg(byDow(inM,g))??avg(byDow(prev,g))??avg(inM.map(d=>S[d]))??avg(prev.map(d=>S[d]))??0;
+  const t0=today(),rem=[];
+  for(let i=1;i<=dim;i++){const d=ym+'-'+String(i).padStart(2,'0');if(S[d]==null&&d>=t0)rem.push(d)}
+  let est=0;rem.forEach(d=>{const g=dow(d),hol=TH_HOLIDAYS.has(d)&&g>=1&&g<=4;est+=hol?rate([5,6,0]):rate([g])});
+  return{ym,actual,fc:actual+est,est,remaining:rem.length,recorded:inM.length,dim};
+}
+async function showForecast(ym,idV,idN,idL){
+  const F=await forecastMonth(ym);if(!F){$(idV).textContent='–';return}
+  $(idL).textContent='ประมาณการยอดขายสิ้นเดือน '+monLabel(ym);
+  $(idV).textContent=fmt0(F.fc);
+  $(idN).textContent=F.remaining?`ขายแล้ว ${fmt0(F.actual)} (${F.recorded} วัน) + ประมาณการอีก ${F.remaining} วัน ตามค่าเฉลี่ยรายวันในสัปดาห์`:`ครบเดือนแล้ว ${fmt0(F.actual)}`;
+}
 function dmyS(iso){const p=String(iso).split('-');return p.length===3?p[2]+'/'+p[1]:iso}
 initDb();
 </script>
