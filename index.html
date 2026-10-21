@@ -485,7 +485,7 @@ const blank=v=>v===0||v==null?'':v;
 let db=null, unsub=null, dirty=false, latest=null, canWrite=true;
 
 /* ---------- หมวด P&L ---------- */
-const PL_COGS=[['raw_fresh','ค่าวัตถุดิบ ของสด+ผักสด'],['raw_dry','ค่าวัตถุดิบ เครื่องปรุง ของแห้ง'],['rice','ข้าวสาร ข้าวเหนียว'],['oil','น้ำมัน'],['gas','ค่าแก๊ส'],['beer','ค่าเบียร์'],['water','น้ำดื่ม'],['coke','โค้ก'],['ice','ค่าน้ำแข็ง'],['dessert','ค่าของหวาน']];
+const PL_COGS=[['raw_fresh','ค่าวัตถุดิบ ของสด+ผักสด'],['raw_dry','ค่าวัตถุดิบ เครื่องปรุง ของแห้ง'],['rice','ข้าวสาร ข้าวเหนียว'],['oil','น้ำมัน'],['gas','ค่าแก๊ส'],['beer','ค่าเบียร์'],['water','น้ำดื่ม'],['coke','น้ำอัดลม'],['ice','ค่าน้ำแข็ง'],['dessert','ค่าของหวาน']];
 const PL_OPEX=[['salary','เงินเดือน และ O/T'],['parttime','พนักงานพาร์ทไทม์'],['staffmeal','ค่าอาหารพนักงาน'],['incentive','Incentive'],['welfare','สวัสดิการอื่นๆ'],['rent','ค่าเช่า ค่าบริการส่วนกลาง ค่าบริการอื่นๆ'],['utility','ค่าไฟ ค่าน้ำ ค่าโทรศัพท์'],['dishwasher','ค่าเช่าเครื่องล้างจาน'],['transport','ค่าขนส่ง'],['police','ตม. ตำรวจ ปคม.'],['equipment','อุปกรณ์ภาชนะ เครื่องครัวเพิ่มเติม'],['cardfee','ค่าธรรมเนียมบัตร'],['gp','LINE MAN & GRAB'],['misc','ค่าใช้จ่ายเบ็ดเตล็ดและวัสดุสิ้นเปลือง']];
 const PL_NAME=Object.fromEntries([...PL_COGS,...PL_OPEX]);
 const CAT_OPTS='<option value="">— เลือกหมวด —</option><optgroup label="ต้นทุนทางตรง">'+PL_COGS.map(([k,n])=>`<option value="${k}">${n}</option>`).join('')+'</optgroup><optgroup label="ค่าใช้จ่ายบริหาร">'+PL_OPEX.map(([k,n])=>`<option value="${k}">${n}</option>`).join('')+'</optgroup>';
