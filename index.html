@@ -1517,6 +1517,7 @@ const ACCESS='tamnua_access';
 async function checkOwner(){
   const v=curView;if(v==='daily'||v==='home')return;
   if(!db){$('loginView').hidden=false;$('tLoginErr').textContent='ยังไม่ได้เชื่อมฐานข้อมูล';return}
+  $('tLoginErr').textContent='';
   let email=null;try{const {data}=await db.auth.getSession();email=data&&data.session&&data.session.user&&data.session.user.email}catch(e){}
   const allowed=(window.TAMNUA_CONFIG&&window.TAMNUA_CONFIG.ownerEmail||'').toLowerCase();
   owner=email&&(!allowed||email.toLowerCase()===allowed)?email:null;
@@ -1553,7 +1554,8 @@ async function markPaidChips(day){
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>showView(b.dataset.view));
 document.querySelectorAll('.home-tile').forEach(b=>b.onclick=()=>{showView(b.dataset.go);window.scrollTo(0,0)});
 $('brandHome').onclick=$('homeBtn').onclick=()=>{showView('home');window.scrollTo(0,0)};$('brandHome').onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();showView('home')}};
-{const H={'#daily':'daily','#transfer':'transfer','#recent':'recent','#history':'hist','#dashboard':'dash','#recon':'recon','#pl':'pl','#partner':'partner'};showView(H[location.hash]||'home')}
+/* หน้าที่ต้องใช้ฐานข้อมูล/ล็อกอิน ให้ initDb เป็นคนเปิดหลังเชื่อมต่อเสร็จ */
+{const H={'#daily':'daily','#recent':'recent','#history':'hist'},L=['#transfer','#dashboard','#recon','#pl','#partner'];if(!L.includes(location.hash))showView(H[location.hash]||'home')}
 
 async function loadTransfers(){
   if(!db){$('tNote').textContent='ยังไม่ได้เชื่อมฐานข้อมูล';return}
