@@ -57,7 +57,20 @@ main{max-width:880px;margin:0 auto;display:grid;gap:22px;
 .move .btn{font-size:13px;padding:6px 12px;text-decoration:none}
 .move .btn-save{color:#fff}
 /*daypick*/
-.daypick{display:grid;gap:8px;min-width:0}
+.daypick{display:grid;gap:10px;min-width:0}
+.daypick[hidden]{display:none}
+.histbar{display:flex}
+.hrange{display:flex;flex-wrap:wrap;gap:8px;align-items:end}
+.hrange label.f{flex:1 1 140px}
+.hact{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.hact #histShow{margin-left:auto}
+#histOut{display:grid;gap:12px}
+.hcard{border:1px solid var(--line);border-radius:12px;padding:12px;display:grid;gap:10px}
+.hgrp{border-top:1px solid var(--line);padding-top:8px}
+.hgh{display:flex;justify-content:space-between;font-size:14px;font-weight:600}
+.hgh b{font-family:var(--num)}
+.summary.hsum{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media (max-width:640px){.summary.hsum strong{font-size:16px}.summary.hsum div{padding:10px}}
 .dphead{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
 .dplabel{font-family:var(--display);font-weight:500;font-size:16px}
 .dplegend{font-size:12px;color:var(--muted);display:inline-flex;align-items:center;gap:5px}
@@ -529,10 +542,18 @@ table.market:not(:has(#mktBody tr:not(.viewing))) tfoot tr{display:flex;justify-
 </div></div>
 
 <main id="dailyView">
-  <div class="daypick" id="daypick">
-    <div class="dphead"><span class="dplabel">เลือกวันที่</span><span class="dplegend"><i class="lg"></i> บันทึกแล้ว</span><button type="button" class="linkbtn" id="dpCal">วันที่เก่ากว่านี้ ›</button></div>
-    <div class="dstrip" id="dstrip" role="group" aria-label="เลือกวันที่"></div>
-  </div>
+  <div class="histbar"><button type="button" class="btn btn-add" id="histBtn" aria-expanded="false">ดูรายการย้อนหลัง</button></div>
+  <section class="daypick" id="daypick" hidden>
+    <div class="dphead"><span class="dplabel">ดูรายการย้อนหลัง</span><span class="dplegend"><i class="lg"></i> บันทึกแล้ว · แตะเลือกได้หลายวัน</span><button type="button" class="linkbtn" id="histClose">ปิด</button></div>
+    <div class="dstrip" id="dstrip" role="group" aria-label="เลือกวันที่ดูย้อนหลัง"></div>
+    <div class="hrange">
+      <label class="f">หรือเลือกช่วง ตั้งแต่<input type="date" id="hFrom" class="t"></label>
+      <label class="f">ถึง<input type="date" id="hTo" class="t"></label>
+      <button type="button" class="btn btn-add" id="hAddRange">เลือกช่วงนี้</button>
+    </div>
+    <div class="hact"><span id="histSelN" class="muted">ยังไม่ได้เลือกวัน</span><button type="button" class="linkbtn" id="histClear" hidden>ล้างที่เลือก</button><button type="button" class="btn btn-save" id="histShow" disabled>ดูรายการ</button></div>
+    <div id="histOut"></div>
+  </section>
   <div class="status" id="status" data-s="load"><span class="dot"></span><span id="statusText">กำลังเชื่อมต่อฐานข้อมูล…</span><button id="reload" type="button" hidden>โหลดข้อมูลล่าสุด</button>
     <button id="moveBtn" type="button" hidden>บันทึกผิดวัน? ย้ายไปวันอื่น</button>
     <span class="move" id="moveBox" hidden>ย้ายไปวันที่ <input type="date" id="moveTo" aria-label="ย้ายไปวันที่">
@@ -1110,25 +1131,55 @@ function goDay(v,force){
   clearSec();setDay(v);lockInputs();watchDay(v);
 }
 $('day').onchange=()=>{const v=$('day').value;if(v)goDay(v);else if(dirty&&curDay)setDay(curDay);else{setDay('');noDayState()}};
-$('dpCal').onclick=()=>{try{$('day').showPicker()}catch(e){$('day').focus();$('day').click()}};
-let recSet=new Set();
+
+let recSet=new Set();const histSel=new Set();
 function renderStrip(){
   const el=$('dstrip');if(!el)return;
   const today0=today(),days=[];
-  for(let i=13;i>=0;i--)days.push(isoOf(new Date(Date.now()-i*864e5)));
-  if(curDay&&!days.includes(curDay))days.unshift(curDay);
+  for(let i=30;i>=0;i--)days.push(isoOf(new Date(Date.now()-i*864e5)));
   const DW=['อา.','จ.','อ.','พ.','พฤ.','ศ.','ส.'],MO=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
-  el.innerHTML=days.map(d=>{const x=new Date(d+'T00:00:00');const cls=['dchip',recSet.has(d)?'has':'',d===curDay?'sel':'',d===today0?'today':''].join(' ');
-    return `<button type="button" class="${cls}" data-d="${d}" aria-pressed="${d===curDay}" aria-label="${dmy(d)}${recSet.has(d)?' บันทึกแล้ว':''}"><span class="dw">${d===today0?'วันนี้':DW[x.getDay()]}</span><span class="dn">${x.getDate()}</span><span class="dm">${MO[x.getMonth()]}</span><i class="dot"></i></button>`}).join('');
-  const sel=el.querySelector('.sel')||el.lastElementChild;
-  if(sel)el.scrollLeft=Math.max(0,sel.offsetLeft-el.clientWidth/2+sel.offsetWidth/2);
+  el.innerHTML=days.map(d=>{const x=new Date(d+'T00:00:00');const cls=['dchip',recSet.has(d)?'has':'',histSel.has(d)?'sel':'',d===today0?'today':''].join(' ');
+    return `<button type="button" class="${cls}" data-d="${d}" aria-pressed="${histSel.has(d)}" aria-label="${dmy(d)}${recSet.has(d)?' บันทึกแล้ว':''}"><span class="dw">${d===today0?'วันนี้':DW[x.getDay()]}</span><span class="dn">${x.getDate()}</span><span class="dm">${MO[x.getMonth()]}</span><i class="dot"></i></button>`}).join('');
+  if(!el.dataset.scrolled&&!$('daypick').hidden){el.scrollLeft=el.scrollWidth;el.dataset.scrolled='1'}
+  updateHistSel();
   document.querySelectorAll('#recentList .rrow').forEach(r=>r.classList.toggle('sel',r.dataset.d===curDay));
 }
-$('dstrip').addEventListener('click',e=>{const b=e.target.closest('.dchip');if(b)goDay(b.dataset.d)});
+$('dstrip').addEventListener('click',e=>{const b=e.target.closest('.dchip');if(!b)return;const d=b.dataset.d;histSel.has(d)?histSel.delete(d):histSel.add(d);renderStrip()});
+/* ดูรายการย้อนหลัง: เลือกได้หลายวัน แล้วแสดงยอดขาย เงินสดย่อย และบิลตลาดของวันที่เลือก (ดูอย่างเดียว) */
+function updateHistSel(){const n=histSel.size;$('histSelN').textContent=n?`เลือก ${n} วัน`:'ยังไม่ได้เลือกวัน';$('histShow').disabled=!n||!db;$('histClear').hidden=!n}
+$('histBtn').onclick=()=>{const open=$('daypick').hidden;$('daypick').hidden=!open;$('histBtn').setAttribute('aria-expanded',open);$('histBtn').hidden=open;
+  if(open){$('dstrip').dataset.scrolled='';if(!$('hFrom').value){$('hFrom').value=today().slice(0,8)+'01';$('hTo').value=today()}renderStrip()}};
+$('histClose').onclick=()=>{$('daypick').hidden=true;$('histBtn').hidden=false;$('histBtn').setAttribute('aria-expanded','false')};
+$('histClear').onclick=()=>{histSel.clear();$('histOut').innerHTML='';renderStrip()};
+$('hAddRange').onclick=()=>{let f=$('hFrom').value,t=$('hTo').value;if(!f||!t){toast('เลือกวันที่ให้ครบ');return}if(f>t)[f,t]=[t,f];
+  let n=0;for(let x=new Date(f+'T00:00:00');isoOf(x)<=t&&n<93;x.setDate(x.getDate()+1),n++)histSel.add(isoOf(x));
+  if(n>=93)toast('เลือกได้สูงสุดครั้งละ 93 วัน');renderStrip()};
+$('histShow').onclick=async()=>{
+  if(!db||!histSel.size)return;const b=$('histShow');b.disabled=true;$('histOut').innerHTML='<p class="sub">กำลังโหลด…</p>';
+  const dates=[...histSel].sort();
+  const {data,error}=await db.from(TABLE).select('date,data').in('date',dates).order('date');
+  b.disabled=false;
+  if(error){$('histOut').innerHTML='<p class="sub uncnote">โหลดไม่ได้ ลองใหม่อีกครั้ง</p>';return}
+  const rows=(data||[]).filter(r=>r.data&&!r.data.deleted).map(r=>ensureIds({...r.data,date:r.date}));
+  const miss=dates.filter(d=>!rows.some(r=>r.date===d));
+  let S=0,P=0,M=0;
+  const card=d=>{const m=dayMetrics(d);S+=m.sales;P+=m.pt;M+=m.mt;
+    const sl=SALES_CH.filter(([k])=>num(d.sales&&d.sales[k])).map(([k,n])=>`<li><span class="pvi">${n}</span><span class="pva">${fmt(num(d.sales[k]))}</span></li>`).join('');
+    const pl=d.petty.map(b=>{const t=(b.items||[]).reduce((a,i)=>a+num(i.amount),0);return t?`<li><span class="pvi">${escH(b.payee||'ไม่ระบุผู้รับ')}<small>${escH((b.items||[]).map(i=>i.item).filter(Boolean).join(', '))}</small></span><span class="pva">${fmt(t)}</span></li>`:''}).join('');
+    const ml=d.market.map(x=>{const t=CATS.reduce((a,c)=>a+num(x[c]),0);return t?`<li><span class="pvi">${escH(x.payee||'ไม่ระบุผู้รับ')}<small>${CATS.map((c,i)=>num(x[c])?CAT_TH[i]+' '+fmt0(num(x[c])):'').filter(Boolean).join(' · ')}</small></span><span class="pva">${fmt(t)}</span></li>`:''}).join('');
+    return `<div class="hcard"><div class="pvh"><div class="pvn"><b>${dmy(d.date)}</b> <span class="muted">${DOW[new Date(d.date+'T00:00:00').getDay()]}</span></div><button type="button" class="editbtn hOpen" data-d="${d.date}">เปิด/แก้ไข</button></div>
+      <div class="hgrp"><div class="hgh"><span>ยอดขาย${num(d.bills)?` · ${fmt0(num(d.bills))} บิล`:''}</span><b>${fmt(m.sales)}</b></div>${sl?`<ul class="pvl">${sl}</ul>`:''}</div>
+      ${pl?`<div class="hgrp"><div class="hgh"><span>เงินสดย่อย</span><b>${fmt(m.pt)}</b></div><ul class="pvl">${pl}</ul></div>`:''}
+      ${ml?`<div class="hgrp"><div class="hgh"><span>บิลตลาด</span><b>${fmt(m.mt)}</b></div><ul class="pvl">${ml}</ul></div>`:''}</div>`};
+  const cards=rows.map(card).join('');
+  $('histOut').innerHTML=(rows.length>1?`<div class="summary three hsum"><div><span>ยอดขายรวม ${rows.length} วัน</span><strong>${fmt0(S)}</strong></div><div><span>เงินสดย่อยรวม</span><strong>${fmt0(P)}</strong></div><div><span>บิลตลาดรวม</span><strong>${fmt0(M)}</strong></div></div>`:'')
+    +cards+(miss.length?`<p class="sub">ไม่มีข้อมูล: ${miss.map(dmyS).join(', ')}</p>`:'');
+};
+$('histOut').addEventListener('click',e=>{const b=e.target.closest('.hOpen');if(!b)return;goDay(b.dataset.d);window.scrollTo({top:0,behavior:'smooth'})});
 $('recentList').addEventListener('click',e=>{const b=e.target.closest('.rrow');if(b){showView('daily');goDay(b.dataset.d)}});
 async function loadRecent(){
   if(!db)return;
-  const since=isoOf(new Date(Date.now()-13*864e5));
+  const since=isoOf(new Date(Date.now()-30*864e5));
   const [a,b]=await Promise.all([
     db.from(TABLE).select('date,data').gte('date',since).limit(40),
     db.from(TABLE).select('date,updated_at,data').order('updated_at',{ascending:false}).limit(40)]);
