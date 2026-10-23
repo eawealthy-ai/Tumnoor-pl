@@ -525,6 +525,24 @@ table.market:not(:has(#mktBody tr:not(.viewing))) tfoot tr{display:flex;justify-
 .rep.pl tr.net td{font-weight:700;background:#fdeadb;border-top:2px solid #2a1d14;font-size:12.5px}
 .rep.pl td.neg{color:#b3261e}
 .rep footer{position:absolute;bottom:28px;left:44px;right:44px;font-size:10px;color:#5f6d61;display:flex;justify-content:space-between}
+/* หน้าแรก: ไอคอนของแต่ละหน้า */
+#homeView{max-width:880px}
+.home-h{margin:4px 0 0;font-size:20px}
+.home-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.home-tile{position:relative;display:flex;flex-direction:column;align-items:center;gap:10px;padding:20px 10px 16px;background:var(--surface);border:1px solid var(--line);border-radius:16px;font:inherit;color:var(--fg);cursor:pointer;text-align:center;transition:transform .12s,box-shadow .12s,border-color .12s}
+.home-tile:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(196,88,15,.14);border-color:var(--leaf)}
+.home-tile:focus-visible{outline:3px solid var(--leaf);outline-offset:2px}
+.home-ic{width:60px;height:60px;border-radius:16px;display:grid;place-items:center;background:var(--leaf-soft);color:var(--leaf)}
+.home-ic svg{width:30px;height:30px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.home-tile b{font-size:15px}
+.home-tile small{font-size:12px;color:var(--muted);line-height:1.35}
+.home-tile .lock{position:absolute;top:10px;right:10px;width:15px;height:15px;color:var(--muted)}
+.home-tile .lock svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.home-tile .badge{position:absolute;top:8px;right:10px;min-width:20px;height:20px;line-height:20px;padding:0 6px;border-radius:999px;background:var(--chili);color:#fff;font-size:11.5px;font-weight:700;font-family:var(--num)}
+.home-note{font-size:12.5px;color:var(--muted);margin:0;display:flex;align-items:center;gap:6px}
+.home-note svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2}
+.brand{cursor:pointer}
+@media (max-width:640px){.home-grid{grid-template-columns:repeat(2,1fr);gap:10px}.home-tile{padding:16px 8px 14px}.home-ic{width:52px;height:52px}.home-ic svg{width:26px;height:26px}}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="config.js"></script>
@@ -532,8 +550,8 @@ table.market:not(:has(#mktBody tr:not(.viewing))) tfoot tr{display:flex;justify-
 <body>
 
 <div class="bar"><div class="bar-in">
-  <div class="brand">ร้านตำนัว<small>บันทึกยอดประจำวัน · Daily P&amp;L input</small></div>
-  <nav class="tabs" aria-label="เลือกหน้า"><button type="button" data-view="daily" aria-current="page">บันทึกรายวัน</button><button type="button" data-view="hist" aria-current="false">ดูย้อนหลัง</button><button type="button" data-view="recent" aria-current="false">อัปเดตล่าสุด<span class="badge" id="recentBadge" hidden></span></button><button type="button" data-view="transfer" aria-current="false">รายการโอน</button><button type="button" data-view="dash" aria-current="false">Dashboard</button><button type="button" data-view="recon" aria-current="false">กระทบยอด</button><button type="button" data-view="pl" aria-current="false">P&amp;L</button><button type="button" data-view="partner" aria-current="false">หุ้นส่วน</button></nav>
+  <div class="brand" id="brandHome" role="link" tabindex="0" title="กลับหน้าแรก">ร้านตำนัว<small>บันทึกยอดประจำวัน · Daily P&amp;L input</small></div>
+  <nav class="tabs" aria-label="เลือกหน้า"><button type="button" data-view="home" aria-current="page">หน้าแรก</button><button type="button" data-view="daily" aria-current="false">บันทึกรายวัน</button><button type="button" data-view="hist" aria-current="false">ดูย้อนหลัง</button><button type="button" data-view="recent" aria-current="false">อัปเดตล่าสุด<span class="badge" id="recentBadge" hidden></span></button><button type="button" data-view="transfer" aria-current="false">รายการโอน</button><button type="button" data-view="dash" aria-current="false">Dashboard</button><button type="button" data-view="recon" aria-current="false">กระทบยอด</button><button type="button" data-view="pl" aria-current="false">P&amp;L</button><button type="button" data-view="partner" aria-current="false">หุ้นส่วน</button></nav>
   <div class="bar-ctl" id="dailyCtl">
     <label class="datebtn empty" id="dayBtn"><span id="dayText">เลือกวัน/เดือน/ปี</span><input type="date" id="day" aria-label="เลือกวันที่"></label>
     <button class="btn btn-ghost" id="clear" type="button">ล้างฟอร์ม</button>
@@ -541,7 +559,22 @@ table.market:not(:has(#mktBody tr:not(.viewing))) tfoot tr{display:flex;justify-
   </div>
 </div></div>
 
-<main id="dailyView">
+<main id="homeView" hidden>
+  <h1 class="home-h">เลือกหน้าที่ต้องการ</h1>
+  <div class="home-grid">
+    <button type="button" class="home-tile" data-go="daily"><span class="home-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span><b>บันทึกรายวัน</b><small>ยอดขาย เงินสดย่อย บิลตลาด</small></button>
+    <button type="button" class="home-tile" data-go="hist"><span class="home-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><b>ดูย้อนหลัง</b><small>เลือกดูข้อมูลวันที่ผ่านมา</small></button>
+    <button type="button" class="home-tile" data-go="recent"><span class="badge" id="homeBadge" hidden></span><span class="home-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></span><b>อัปเดตล่าสุด</b><small>รายการที่เพิ่งบันทึก/แก้ไข</small></button>
+    <button type="button" class="home-tile" data-go="transfer"><span class="lock" aria-label="ต้องเข้าสู่ระบบ"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span><span class="home-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h13l-3-3M20 16H7l3 3"/></svg></span><b>รายการโอน</b><small>บิลที่ต้องโอนและสถานะ</small></button>
+    <button type="button" class="home-tile" data-go="dash"><span class="lock" aria-label="ต้องเข้าสู่ระบบ"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span><span class="home-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></span><b>Dashboard</b><small>ภาพรวมยอดขาย ค่าใช้จ่าย</small></button>
+    <button type="button" class="home-tile" data-go="recon"><span class="lock" aria-label="ต้องเข้าสู่ระบบ"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span><span class="home-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M5 7h14M5 7l-3 7a3 3 0 0 0 6 0zM19 7l-3 7a3 3 0 0 0 6 0z"/></svg></span><b>กระทบยอด</b><small>เงินเข้าเทียบยอดขาย</small></button>
+    <button type="button" class="home-tile" data-go="pl"><span class="lock" aria-label="ต้องเข้าสู่ระบบ"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span><span class="home-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg></span><b>P&amp;L</b><small>กำไรขาดทุนรายเดือน</small></button>
+    <button type="button" class="home-tile" data-go="partner"><span class="lock" aria-label="ต้องเข้าสู่ระบบ"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span><span class="home-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><circle cx="17" cy="9" r="2.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M15 14.2A5 5 0 0 1 21.5 19"/></svg></span><b>หุ้นส่วน</b><small>ส่วนแบ่งและปันผล</small></button>
+  </div>
+  <p class="home-note"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>ต้องเข้าสู่ระบบก่อนเปิด</p>
+</main>
+
+<main id="dailyView" hidden>
   <div class="status" id="status" data-s="load"><span class="dot"></span><span id="statusText">กำลังเชื่อมต่อฐานข้อมูล…</span><button id="reload" type="button" hidden>โหลดข้อมูลล่าสุด</button>
     <button id="moveBtn" type="button" hidden>บันทึกผิดวัน? ย้ายไปวันอื่น</button>
     <span class="move" id="moveBox" hidden>ย้ายไปวันที่ <input type="date" id="moveTo" aria-label="ย้ายไปวันที่">
@@ -1191,7 +1224,7 @@ async function loadRecent(){
     const t0=today(),seen=seenAt();
     const isNew=r=>Date.parse(r.updated_at)>seen&&!ownStamps.has(r.data.updatedAt);
     const unread=rows.filter(isNew).length;
-    $('recentBadge').hidden=!unread||curView==='recent';$('recentBadge').textContent=unread>9?'9+':String(unread);
+    $('recentBadge').hidden=!unread||curView==='recent';$('recentBadge').textContent=unread>9?'9+':String(unread);$('homeBadge').hidden=$('recentBadge').hidden;$('homeBadge').textContent=$('recentBadge').textContent;
     $('recentList').innerHTML=rows.length?rows.map(r=>{
       const d=ensureIds({...r.data,date:r.date}),m=dayMetrics(d),u=new Date(r.updated_at);
       const ud=isoOf(u),hm=u.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
@@ -1199,7 +1232,7 @@ async function loadRecent(){
       const parts=[m.sales?'ยอดขาย '+fmt0(m.sales):'',d.market.length?'บิลตลาด '+d.market.length:'',d.petty.length?'สดย่อย '+d.petty.length+' บิล':''].filter(Boolean).join(' · ')||'ยังไม่มีตัวเลข';
       return `<button type="button" class="rrow${r.date===curDay?' sel':''}${isNew(r)?' unread':''}" data-d="${r.date}"><span class="rd">${dmy(r.date)}${isNew(r)?' <span class="newchip">ใหม่</span>':''}</span><span class="rs2">${parts}</span><span class="rt">แก้ไข ${when}</span></button>`}).join('')
       :'<p class="sub" style="margin:0">ยังไม่มีข้อมูลที่บันทึก</p>';
-    if(curView==='recent'){lsSet(LS_SEEN,String(Date.now()));$('recentBadge').hidden=true}
+    if(curView==='recent'){lsSet(LS_SEEN,String(Date.now()));$('recentBadge').hidden=true;$('homeBadge').hidden=true}
   }
   renderStrip();
 }
@@ -1267,7 +1300,8 @@ function initDb(){
     setStatus('err','ยังไม่ได้ตั้งค่าฐานข้อมูล (ไฟล์ config.js)');$('sumNote').textContent='ยังไม่ได้ตั้งค่าฐานข้อมูล';return}
   db=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey);
   lockInputs();if($('day').value)watchDay($('day').value);else noDayState();refreshSummary();loadSuggestions();watchRecent();
-  if(location.hash==='#transfer')showView('transfer');
+  if(location.hash==='#daily')showView('daily');
+  else if(location.hash==='#transfer')showView('transfer');
   else if(location.hash==='#recent')showView('recent');
   else if(location.hash==='#history')showView('hist');
   else if(location.hash==='#dashboard')showView('dash');
@@ -1454,14 +1488,15 @@ function tDetail(r){
 function firstOfPrevMonth(){const d=new Date();d.setDate(1);d.setMonth(d.getMonth()-1);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-01'}
 $('tFrom').value=firstOfPrevMonth();$('tTo').value=today();
 
-let curView='daily';
-const VIEWS={daily:'dailyView',hist:'histView',recent:'recentView',transfer:'transferView',dash:'dashView',recon:'reconView',pl:'plView',partner:'partnerView'};
+let curView='home';
+const VIEWS={home:'homeView',daily:'dailyView',hist:'histView',recent:'recentView',transfer:'transferView',dash:'dashView',recon:'reconView',pl:'plView',partner:'partnerView'};
 function showView(v){
-  curView=VIEWS[v]?v:'daily';
+  curView=VIEWS[v]?v:'home';
   document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-current',b.dataset.view===curView?'page':'false'));
-  try{history.replaceState(null,'',curView==='transfer'?'#transfer':curView==='dash'?'#dashboard':curView==='recon'?'#recon':curView==='pl'?'#pl':curView==='partner'?'#partner':curView==='recent'?'#recent':curView==='hist'?'#history':location.pathname)}catch(e){}
+  try{history.replaceState(null,'',curView==='transfer'?'#transfer':curView==='dash'?'#dashboard':curView==='recon'?'#recon':curView==='pl'?'#pl':curView==='partner'?'#partner':curView==='recent'?'#recent':curView==='hist'?'#history':curView==='daily'?'#daily':location.pathname)}catch(e){}
   $('dailyCtl').hidden=curView!=='daily';
   Object.values(VIEWS).forEach(id=>$(id).hidden=true);$('loginView').hidden=true;
+  if(curView==='home'){$('homeView').hidden=false;return}
   if(curView==='daily'){$('dailyView').hidden=false;return}
   if(curView==='recent'){$('recentView').hidden=false;loadRecent();return}
   if(curView==='hist'){$('histView').hidden=false;histOpen();return}
@@ -1471,7 +1506,7 @@ let owner=null;
 const ACCESS='tamnua_access';
 /* สิทธิ์: เจ้าของ (ownerEmail) เปิดได้ทุกหน้า · คนที่อยู่ในตาราง tamnua_access เปิดได้เฉพาะ Dashboard */
 async function checkOwner(){
-  const v=curView;if(v==='daily')return;
+  const v=curView;if(v==='daily'||v==='home')return;
   if(!db){$('loginView').hidden=false;$('tLoginErr').textContent='ยังไม่ได้เชื่อมฐานข้อมูล';return}
   let email=null;try{const {data}=await db.auth.getSession();email=data&&data.session&&data.session.user&&data.session.user.email}catch(e){}
   const allowed=(window.TAMNUA_CONFIG&&window.TAMNUA_CONFIG.ownerEmail||'').toLowerCase();
@@ -1507,6 +1542,9 @@ async function markPaidChips(day){
   });
 }
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>showView(b.dataset.view));
+document.querySelectorAll('.home-tile').forEach(b=>b.onclick=()=>{showView(b.dataset.go);window.scrollTo(0,0)});
+$('brandHome').onclick=()=>showView('home');$('brandHome').onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();showView('home')}};
+{const H={'#daily':'daily','#transfer':'transfer','#recent':'recent','#history':'hist','#dashboard':'dash','#recon':'recon','#pl':'pl','#partner':'partner'};showView(H[location.hash]||'home')}
 
 async function loadTransfers(){
   if(!db){$('tNote').textContent='ยังไม่ได้เชื่อมฐานข้อมูล';return}
