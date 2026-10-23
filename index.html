@@ -347,6 +347,29 @@ select.t{font:inherit;width:100%;padding:9px 10px;border:1px solid var(--line);b
 
 .pitems select.cat{font:inherit;font-size:13px;width:100%;min-width:0;padding:8px 6px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg)}
 .pitems select.cat.need{border-color:var(--chili)}
+.pview{display:none}
+.pbill.viewing>.phead,.pbill.viewing>.scroll,.pbill.viewing>.addItem{display:none}
+.pbill.viewing{padding:10px 12px}
+.pbill.viewing .pview{display:block}
+.pvh{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.pvn{flex:1 1 auto;min-width:0;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.pvt{font-family:var(--num);font-size:16px;font-variant-numeric:tabular-nums}
+.editbtn,button.editbtn{font:inherit;background:none;cursor:pointer;color:var(--leaf);font-weight:600;font-size:14px;text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:3px 12px}
+.editbtn:hover{border-color:var(--leaf)}
+.pvl{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:2px}
+.pvl li{display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-top:1px dashed var(--line);font-size:14px}
+.pvi{min-width:0}
+.pvi small{display:block;font-size:11.5px;color:var(--muted)}
+.pva{font-family:var(--num);white-space:nowrap;font-variant-numeric:tabular-nums}
+#mktBody td.mvc{display:none}
+#mktBody tr.viewing>td{display:none}
+#mktBody tr.viewing>td.mvc{display:table-cell;padding:6px 0;border-bottom:0}
+.mcard{border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+table.market:not(:has(#mktBody tr:not(.viewing))){min-width:0}
+table.market:not(:has(#mktBody tr:not(.viewing))) thead{display:none}
+table.market:not(:has(#mktBody tr:not(.viewing))) tfoot td:not(:first-child):not(#mTot){display:none}
+table.market:not(:has(#mktBody tr:not(.viewing))) tfoot tr{display:flex;justify-content:space-between}
+
 /* รายการเงินสดย่อย: ช่องรายการกว้างขึ้น บนมือถือขึ้นบรรทัดของตัวเอง */
 .pbill>*{min-width:0}
 .pbill .scroll{overflow:visible;margin:0;padding:0}
@@ -851,12 +874,42 @@ function pettyBill(b={}){
       <thead><tr><th style="width:42%">รายการ</th><th>หมวด P&amp;L</th><th class="r">ยอดเงิน (บาท)</th><th></th></tr></thead>
       <tbody class="pitems"></tbody>
     </table></div>
-    <button class="btn btn-add addItem" type="button">+ เพิ่มรายการ</button>`;
+    <button class="btn btn-add addItem" type="button">+ เพิ่มรายการ</button>
+    <div class="pview"></div>`;
   el.querySelector('.pay').value=b.payee??'';
   const tb=el.querySelector('.pitems');(b.items&&b.items.length?b.items:[{}]).forEach(r=>pettyRow(tb,r));
   $('pettyBills').appendChild(el);return el;
 }
 /* old records saved items without a payee: group them into one bill */
+
+/* โหมดแสดงผลของบิลที่บันทึกแล้ว: เห็นเป็นรายการอ่านง่าย กด "แก้ไข" เพื่อเปิดช่องกรอก (ช่องกรอกยังอยู่ในหน้า ซ่อนไว้) */
+function renderView(el){
+  if(el.classList.contains('pbill')){
+    const pay=el.querySelector('.pay').value.trim(),chip=el.querySelector('.paidchip');
+    const rows=[...el.querySelectorAll('.pitems tr')].map(tr=>{const i=tr.querySelectorAll('input'),c=tr.querySelector('select.cat');
+      return{n:i[0].value.trim(),a:num(i[1].value),c:c.value?c.options[c.selectedIndex].text:''}}).filter(r=>r.n||r.a);
+    const tot=rows.reduce((x,r)=>x+r.a,0);
+    el.querySelector('.pview').innerHTML=`<div class="pvh"><div class="pvn"><b>${escH(pay||'ไม่ระบุผู้รับ')}</b>${chip&&!chip.hidden?` <span class="paidchip">${escH(chip.textContent)}</span>`:''}</div>
+      <b class="pvt">${fmt(tot)}</b><button class="editbtn pEdit" type="button">แก้ไข</button></div>
+      <ul class="pvl">${rows.map(r=>`<li><span class="pvi">${escH(r.n||'(ไม่มีชื่อรายการ)')}${r.c?`<small>${escH(r.c)}</small>`:'<small class="grand">ยังไม่ระบุหมวด</small>'}</span><span class="pva">${fmt(r.a)}</span></li>`).join('')}</ul>`;
+  }else{
+    const pay=el.querySelector('.mpay').value.trim(),chip=el.querySelector('.paidchip');
+    const rows=[...el.querySelectorAll('input.n')].map((i,k)=>({n:CAT_TH[k],a:num(i.value)})).filter(r=>r.a);
+    const tot=rows.reduce((x,r)=>x+r.a,0);
+    el.querySelector('.mvc').innerHTML=`<div class="mcard"><div class="pvh"><div class="pvn"><b>${escH(pay||'ไม่ระบุผู้รับ')}</b>${chip&&!chip.hidden?` <span class="paidchip">${escH(chip.textContent)}</span>`:''}</div>
+      <b class="pvt">${fmt(tot)}</b><button class="editbtn mEdit" type="button">แก้ไข</button></div>
+      <ul class="pvl">${rows.map(r=>`<li><span class="pvi">${escH(r.n)}</span><span class="pva">${fmt(r.a)}</span></li>`).join('')}</ul></div>`;
+  }
+  lockInputs();
+}
+function hasContent(el){return el.classList.contains('pbill')?(el.querySelector('.pay').value.trim()||[...el.querySelectorAll('.pitems input')].some(i=>i.value.trim())):[...el.querySelectorAll('input')].some(i=>i.value.trim())}
+function setView(el,on){el.classList.toggle('viewing',!!on);if(on)renderView(el)}
+function viewAllSaved(){document.querySelectorAll('#pettyBills .pbill, #mktBody tr').forEach(el=>{if(hasContent(el))setView(el,true)})}
+document.addEventListener('click',e=>{
+  const b=e.target.closest('.pEdit,.mEdit');if(!b)return;
+  const el=b.closest('.pbill')||b.closest('tr');setView(el,false);lockInputs();
+  const f=el.querySelector('input');if(f)f.focus();
+});
 function pettyBillsOf(d){
   const p=(d&&d.petty)||[];
   if(p.length&&!p[0].items)return [{payee:'',items:p}];
@@ -866,7 +919,7 @@ function mktRow(r={}){
   const tr=document.createElement('tr');setPaidData(tr,r);
   let h=`<td class="idx"><button class="del" type="button" aria-label="ลบบิล">×</button></td><td><input class="t mpay" placeholder="ร้าน / คนรับเงิน" aria-label="จ่ายให้" list="dlMktPayee" autocomplete="off"><div class="paidchip" style="display:inline-block;margin-top:4px" hidden></div></td>`;
   CATS.forEach(c=>h+=`<td><input class="n" inputmode="decimal"></td>`);
-  h+=`<td class="rowtot" style="text-align:right;font-family:var(--num)">0</td>`;
+  h+=`<td class="rowtot" style="text-align:right;font-family:var(--num)">0</td><td class="mvc" colspan="8"></td>`;
   tr.innerHTML=h;tr.querySelector('.mpay').value=r.payee??'';tr.querySelectorAll('input.n').forEach((el,k)=>el.value=blank(r[CATS[k]]));
   $('mktBody').appendChild(tr);
 }
@@ -892,8 +945,8 @@ function load(d){
   $('hol').dataset.manual=d.holiday!=null?'1':'';$('hol').checked=d.holiday!=null?!!d.holiday:TH_HOLIDAYS.has($('day').value);
   const s=d.sales||{};['cash','lineman','grab','credit','kplus'].forEach(k=>$(k).value=blank(s[k]));
   $('bills').value=blank(d.bills);
-  $('pettyBills').innerHTML='';const pb=pettyBillsOf(d);(pb.length?pb:[{}]).forEach(b=>pettyBill(b));
-  $('mktBody').innerHTML='';(d.market&&d.market.length?d.market:[{}]).forEach(mktRow);
+  $('pettyBills').innerHTML='';const pb=pettyBillsOf(d);if(pb.length)pb.forEach(b=>setView(pettyBill(b),true));else pettyBill();
+  $('mktBody').innerHTML='';if(d.market&&d.market.length)d.market.forEach(r=>{mktRow(r);setView($('mktBody').lastElementChild,true)});else mktRow();
   dirty=false;$('reload').hidden=true;
   calc();lockInputs();
 }
@@ -921,7 +974,7 @@ function showSaved(){
   $('moveBtn').hidden=!latest||!canWrite;$('moveBox').hidden=true;
 }
 function lockInputs(){
-  document.querySelectorAll('#dailyView section:not(#exportSec) input, #dailyView section:not(#exportSec) select, #dailyView .btn-add, #dailyView .del').forEach(el=>el.disabled=!canWrite||!db);
+  document.querySelectorAll('#dailyView section:not(#exportSec) input, #dailyView section:not(#exportSec) select, #dailyView .btn-add, #dailyView .del, #dailyView .editbtn').forEach(el=>el.disabled=!canWrite||!db);
   const noDay=!$('day').value;
   if(noDay)document.querySelectorAll('#dailyView section:not(#exportSec) input, #dailyView section:not(#exportSec) select, #dailyView .btn-add, #dailyView .del').forEach(el=>el.disabled=true);
   $('save').disabled=!canWrite||!db||noDay;$('clear').disabled=!canWrite||!db||noDay;
@@ -1026,7 +1079,7 @@ $('save').onclick=async()=>{
   if(!db)return;const day=$('day').value;if(!day){toast('เลือกวันที่ก่อนบันทึก');return}
   const btn=$('save');btn.disabled=true;btn.textContent='กำลังบันทึก…';
   try{const data=collect();const prev=latest?JSON.parse(JSON.stringify(latest)):null;ownStamp=data.updatedAt;
-    const {error}=await db.from(TABLE).upsert({date:day,data,updated_at:data.updatedAt});if(error)throw error;latest=data;dirty=false;$('reload').hidden=true;showSaved();refreshSummary();sugFrom(data);renderSug();
+    const {error}=await db.from(TABLE).upsert({date:day,data,updated_at:data.updatedAt});if(error)throw error;latest=data;dirty=false;$('reload').hidden=true;showSaved();refreshSummary();viewAllSaved();sugFrom(data);renderSug();
     toast('บันทึกวันที่ '+dmy(day)+' แล้ว',async()=>{
       const now=new Date().toISOString();ownStamp=now;
       const back=prev?{...prev,updatedAt:now}:{date:day,deleted:true,updatedAt:now};
@@ -1282,6 +1335,7 @@ async function markPaidChips(day){
   document.querySelectorAll('#dailyView .pbill, #mktBody tr').forEach(el=>{
     const chip=el.querySelector('.paidchip');if(!chip)return;const at=m[day+'|'+el.dataset.id];
     chip.hidden=!at;chip.textContent=at?'โอนแล้ว '+dmyS(at):'';
+    if(el.classList.contains('viewing'))renderView(el);
   });
 }
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>showView(b.dataset.view));
