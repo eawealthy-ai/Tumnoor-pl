@@ -11,6 +11,7 @@
 - `supabase/receipts.sql` – ตารางเงินเข้า `tamnua_receipts` สำหรับหน้ากระทบยอด (เฉพาะ ownerEmail)
 - `supabase/monthly.sql` – ตัวเลขรายเดือนที่กรอกในหน้า P&L `tamnua_monthly` (เฉพาะ ownerEmail)
 - `supabase/access.sql` – รายชื่อคนที่ดู Dashboard ได้ `tamnua_access`
+- `supabase/notify.sql` + `supabase/functions/tamnua-notify` – แจ้งเตือน Telegram (secret `TELEGRAM_BOT_TOKEN`)
 
 ## ตั้งค่าครั้งแรก
 1. Supabase: สร้างโปรเจกต์ → SQL Editor → วางเนื้อหา `supabase/schema.sql` → Run
