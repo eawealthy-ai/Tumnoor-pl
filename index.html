@@ -145,6 +145,32 @@ table.market input.n{min-width:92px}
 .tdlist tfoot td{border-bottom:0;font-weight:600}
 .tdmeta{font-size:13px;color:var(--muted)}
 .tdmeta .linkbtn{font-size:13px;color:var(--leaf);font-weight:600}
+/* หุ้นส่วนบนมือถือ: ปันผลแต่ละเดือนเป็นการ์ด */
+@media (max-width:640px){
+  #partnerView .dhead{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  #partnerView .dhead label.f{width:auto}
+  #partnerView .dhead .dl{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0}
+  #partnerView #pcSum{grid-template-columns:1fr}
+  #partnerView #pcSum em{display:block;font-family:var(--body)}
+  #partnerView section:not(#pcHistBox) .scroll{overflow:visible;margin:0;padding:0}
+  #partnerView .potable:not(.hist){min-width:0;display:block;width:100%}
+  #partnerView .potable:not(.hist) thead{display:none}
+  #partnerView .potable:not(.hist) tbody,#partnerView .potable:not(.hist) tfoot{display:block}
+  #partnerView .potable:not(.hist) tr{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px 8px;padding:12px 2px;border-bottom:1px solid var(--line);align-items:start}
+  #partnerView .potable:not(.hist) tr>td{display:block;padding:0;border:0;min-width:0;text-align:left}
+  #partnerView .potable:not(.hist) td[data-l]::before{content:attr(data-l);display:block;font-family:var(--body);font-size:11px;color:var(--muted);font-weight:400}
+  #partnerView .potable:not(.hist) .c-m{grid-column:1/3;font-size:16px}
+  #partnerView .potable:not(.hist) .c-dist{grid-column:3;grid-row:1;text-align:right;font-size:16px}
+  #partnerView .potable:not(.hist) .c-cy:empty{display:none}
+  #partnerView .potable:not(.hist) td.pin input{width:100%;padding:5px 6px;font-size:13.5px}
+  #partnerView .potable:not(.hist) .c-p{grid-column:1/-1;display:grid;grid-template-columns:1fr auto;align-items:center;column-gap:8px;background:var(--bg);border-radius:8px;padding:8px 10px}
+  #partnerView .potable:not(.hist) .c-p::before{grid-column:1;font-size:13px;color:var(--fg);font-weight:600}
+  #partnerView .potable:not(.hist) .c-p>b{grid-column:2;grid-row:1;font-size:16px;text-align:right}
+  #partnerView .potable:not(.hist) .c-p>.src,#partnerView .potable:not(.hist) .c-p>.pdk{grid-column:1/-1;justify-content:flex-start;text-align:left}
+  #partnerView .potable:not(.hist) tfoot tr{background:var(--leaf-soft);border-radius:10px;border:0;padding:12px 10px;margin-top:6px}
+  #partnerView .potable:not(.hist) tfoot .c-p{background:var(--surface)}
+}
+
 /* กระทบยอดบนมือถือ */
 @media (max-width:640px){
   #reconView .dhead{display:grid;grid-template-columns:1fr 1fr;gap:8px}
@@ -1867,13 +1893,13 @@ function renderPayouts(){
     const paid=(pc.paid||{})[r.ym]||{};
     const prof=`<input class="n pco" data-ym="${r.ym}" inputmode="decimal" value="${r.hasOv?escH(pc.overrides[r.ym].profit):''}" placeholder="${r.auto==null?'กรอกกำไร':fmt(r.auto)}" aria-label="กำไรสุทธิ ${monLabel(r.ym)}">`
       +`<div class="src">${r.hasOv?'กรอกเอง':r.auto==null?'ยังไม่มีข้อมูลในระบบ':'จาก P&L'+(r.running?' (เดือนนี้ยังไม่จบ)':'')}</div>`;
-    return `<tr><td class="nowrap"><b>${monLabel(r.ym)}</b>${r.n?`<div class="src">บันทึก ${r.n}/${r.dim} วัน</div>`:''}</td><td class="pin">${r.n?(r.sales?fmt0(r.sales):'–'):`<input class="n pcx" data-ym="${r.ym}" data-f="sales" inputmode="decimal" value="${escH(((pc.overrides||{})[r.ym]||{}).sales??'')}" placeholder="ยอดขาย" aria-label="ยอดขาย ${monLabel(r.ym)}"><input class="n pcx" data-ym="${r.ym}" data-f="cogs" inputmode="decimal" value="${escH(((pc.overrides||{})[r.ym]||{}).cogs??'')}" placeholder="%COG" aria-label="%COG ${monLabel(r.ym)}" style="margin-top:4px">`}</td><td class="pin">${prof}</td>
-      <td>${r.used?'−'+fmt0(r.used):r.profit<0?'<span class="grand">ขาดทุน '+fmt0(-r.profit)+'</span>':'–'}</td><td><b>${fmt0(r.dist)}</b></td>`
+    return `<tr><td class="nowrap c-m"><b>${monLabel(r.ym)}</b>${r.n?`<div class="src">บันทึก ${r.n}/${r.dim} วัน</div>`:''}</td><td class="pin c-s" data-l="ยอดขาย">${r.n?(r.sales?fmt0(r.sales):'–'):`<input class="n pcx" data-ym="${r.ym}" data-f="sales" inputmode="decimal" value="${escH(((pc.overrides||{})[r.ym]||{}).sales??'')}" placeholder="ยอดขาย" aria-label="ยอดขาย ${monLabel(r.ym)}"><input class="n pcx" data-ym="${r.ym}" data-f="cogs" inputmode="decimal" value="${escH(((pc.overrides||{})[r.ym]||{}).cogs??'')}" placeholder="%COG" aria-label="%COG ${monLabel(r.ym)}" style="margin-top:4px">`}</td><td class="pin c-pr" data-l="กำไรสุทธิ">${prof}</td>
+      <td class="c-cy" data-l="หักขาดทุนยกมา">${r.used?'−'+fmt0(r.used):r.profit<0?'<span class="grand">ขาดทุน '+fmt0(-r.profit)+'</span>':'–'}</td><td class="c-dist" data-l="กำไรที่แบ่งได้"><b>${fmt0(r.dist)}</b></td>`
       +P.map((p,i)=>{const amt=(r.dist*num(p.share)/100),pd=paid[p.id];
         const subs=(p.subs||[]).map(s=>`<div class="src">${escH(s.name)} ${fmt0(amt*num(s.pct)/100)}</div>`).join('');
-        return `<td><b>${fmt0(amt)}</b>${subs}${amt>0?`<label class="pdk"><input type="checkbox" class="pcPaid" data-ym="${r.ym}" data-p="${p.id}"${pd?' checked':''}> ${pd?'จ่ายแล้ว '+dmyS(pd):'ยังไม่จ่าย'}</label>`:''}</td>`}).join('')+`</tr>`}).join('');
+        return `<td class="c-p" data-l="${escH(p.name||'-')} ${num(p.share)}%"><b>${fmt0(amt)}</b>${subs}${amt>0?`<label class="pdk"><input type="checkbox" class="pcPaid" data-ym="${r.ym}" data-p="${p.id}"${pd?' checked':''}> ${pd?'จ่ายแล้ว '+dmyS(pd):'ยังไม่จ่าย'}</label>`:''}</td>`}).join('')+`</tr>`}).join('');
   const tot=P.map((p,i)=>pcRows.reduce((a,r)=>a+(r.dist*num(p.share)/100),0));
-  $('pcRowsFoot').innerHTML=pcRows.length?`<tr><td class="lbl">รวม</td><td>${fmt0(pcRows.reduce((a,r)=>a+r.sales,0))}</td><td>${fmt0(pcRows.reduce((a,r)=>a+(r.profit||0),0))}</td><td></td><td>${fmt0(pcRows.reduce((a,r)=>a+r.dist,0))}</td>${tot.map(v=>`<td>${fmt0(v)}</td>`).join('')}</tr>`:'';
+  $('pcRowsFoot').innerHTML=pcRows.length?`<tr><td class="lbl c-m">รวม</td><td class="c-s" data-l="ยอดขาย">${fmt0(pcRows.reduce((a,r)=>a+r.sales,0))}</td><td class="c-pr" data-l="กำไรสุทธิ">${fmt0(pcRows.reduce((a,r)=>a+(r.profit||0),0))}</td><td class="c-cy"></td><td class="c-dist" data-l="กำไรที่แบ่งได้">${fmt0(pcRows.reduce((a,r)=>a+r.dist,0))}</td>${tot.map((v,i)=>`<td class="c-p" data-l="${escH(P[i].name||'-')}">${fmt0(v)}</td>`).join('')}</tr>`:'';
   // สรุปต่อหุ้นส่วน: ปันผลสะสม (ประวัติ + ระบบ) และผลตอบแทนต่อเงินลงทุน
   const hist=pc.hist||[];
   $('pcSum').innerHTML=P.map((p,i)=>{
