@@ -508,7 +508,7 @@ table.market:not(:has(#mktBody tr:not(.viewing))) tfoot tr{display:flex;justify-
 
 <div class="bar"><div class="bar-in">
   <div class="brand">ร้านตำนัว<small>บันทึกยอดประจำวัน · Daily P&amp;L input</small></div>
-  <nav class="tabs" aria-label="เลือกหน้า"><button type="button" data-view="daily" aria-current="page">บันทึกรายวัน</button><button type="button" data-view="transfer" aria-current="false">รายการโอน</button><button type="button" data-view="dash" aria-current="false">Dashboard</button><button type="button" data-view="recon" aria-current="false">กระทบยอด</button><button type="button" data-view="pl" aria-current="false">P&amp;L</button><button type="button" data-view="partner" aria-current="false">หุ้นส่วน</button></nav>
+  <nav class="tabs" aria-label="เลือกหน้า"><button type="button" data-view="daily" aria-current="page">บันทึกรายวัน</button><button type="button" data-view="recent" aria-current="false">อัปเดตล่าสุด</button><button type="button" data-view="transfer" aria-current="false">รายการโอน</button><button type="button" data-view="dash" aria-current="false">Dashboard</button><button type="button" data-view="recon" aria-current="false">กระทบยอด</button><button type="button" data-view="pl" aria-current="false">P&amp;L</button><button type="button" data-view="partner" aria-current="false">หุ้นส่วน</button></nav>
   <div class="bar-ctl" id="dailyCtl">
     <label class="datebtn empty" id="dayBtn"><span id="dayText">เลือกวัน/เดือน/ปี</span><input type="date" id="day" aria-label="เลือกวันที่"></label>
     <button class="btn btn-ghost" id="clear" type="button">ล้างฟอร์ม</button>
@@ -520,10 +520,6 @@ table.market:not(:has(#mktBody tr:not(.viewing))) tfoot tr{display:flex;justify-
   <div class="daypick" id="daypick">
     <div class="dphead"><span class="dplabel">เลือกวันที่</span><span class="dplegend"><i class="lg"></i> บันทึกแล้ว</span><button type="button" class="linkbtn" id="dpCal">วันที่เก่ากว่านี้ ›</button></div>
     <div class="dstrip" id="dstrip" role="group" aria-label="เลือกวันที่"></div>
-    <details class="recentbox" id="recentBox" open>
-      <summary>อัปเดตล่าสุด</summary>
-      <div class="recent" id="recentList"><p class="sub" style="margin:0">กำลังโหลด…</p></div>
-    </details>
   </div>
   <div class="status" id="status" data-s="load"><span class="dot"></span><span id="statusText">กำลังเชื่อมต่อฐานข้อมูล…</span><button id="reload" type="button" hidden>โหลดข้อมูลล่าสุด</button>
     <button id="moveBtn" type="button" hidden>บันทึกผิดวัน? ย้ายไปวันอื่น</button>
@@ -599,6 +595,14 @@ table.market:not(:has(#mktBody tr:not(.viewing))) tfoot tr{display:flex;justify-
       <tfoot id="sumFoot"></tfoot>
     </table></div>
     <p class="sub" id="sumNote" style="margin:10px 0 0">กำลังโหลด…</p>
+  </section>
+</main>
+
+<main id="recentView" hidden>
+  <section>
+    <h2>อัปเดตล่าสุด</h2>
+    <p class="sub">วันที่มีการบันทึกหรือแก้ไขล่าสุด · แตะเพื่อเปิดวันนั้นในหน้าบันทึกรายวัน</p>
+    <div class="recent" id="recentList"><p class="sub" style="margin:0">กำลังโหลด…</p></div>
   </section>
 </main>
 
@@ -1096,16 +1100,16 @@ function renderStrip(){
   document.querySelectorAll('#recentList .rrow').forEach(r=>r.classList.toggle('sel',r.dataset.d===curDay));
 }
 $('dstrip').addEventListener('click',e=>{const b=e.target.closest('.dchip');if(b)goDay(b.dataset.d)});
-$('recentList').addEventListener('click',e=>{const b=e.target.closest('.rrow');if(b)goDay(b.dataset.d)});
+$('recentList').addEventListener('click',e=>{const b=e.target.closest('.rrow');if(b){showView('daily');goDay(b.dataset.d)}});
 async function loadRecent(){
   if(!db)return;
   const since=isoOf(new Date(Date.now()-13*864e5));
   const [a,b]=await Promise.all([
     db.from(TABLE).select('date,data').gte('date',since).limit(40),
-    db.from(TABLE).select('date,updated_at,data').order('updated_at',{ascending:false}).limit(12)]);
+    db.from(TABLE).select('date,updated_at,data').order('updated_at',{ascending:false}).limit(40)]);
   if(!a.error){recSet=new Set((a.data||[]).filter(r=>r.data&&!r.data.deleted).map(r=>r.date))}
   if(!b.error){
-    const rows=(b.data||[]).filter(r=>r.data&&!r.data.deleted).slice(0,6);
+    const rows=(b.data||[]).filter(r=>r.data&&!r.data.deleted).slice(0,30);
     const t0=today();
     $('recentList').innerHTML=rows.length?rows.map(r=>{
       const d=ensureIds({...r.data,date:r.date}),m=dayMetrics(d),u=new Date(r.updated_at);
@@ -1182,6 +1186,7 @@ function initDb(){
   db=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey);
   lockInputs();if($('day').value)watchDay($('day').value);else noDayState();refreshSummary();loadSuggestions();watchRecent();
   if(location.hash==='#transfer')showView('transfer');
+  else if(location.hash==='#recent')showView('recent');
   else if(location.hash==='#dashboard')showView('dash');
   else if(location.hash==='#recon')showView('recon');
   else if(location.hash==='#pl')showView('pl');
@@ -1366,14 +1371,15 @@ function firstOfPrevMonth(){const d=new Date();d.setDate(1);d.setMonth(d.getMont
 $('tFrom').value=firstOfPrevMonth();$('tTo').value=today();
 
 let curView='daily';
-const VIEWS={daily:'dailyView',transfer:'transferView',dash:'dashView',recon:'reconView',pl:'plView',partner:'partnerView'};
+const VIEWS={daily:'dailyView',recent:'recentView',transfer:'transferView',dash:'dashView',recon:'reconView',pl:'plView',partner:'partnerView'};
 function showView(v){
   curView=VIEWS[v]?v:'daily';
   document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-current',b.dataset.view===curView?'page':'false'));
-  try{history.replaceState(null,'',curView==='transfer'?'#transfer':curView==='dash'?'#dashboard':curView==='recon'?'#recon':curView==='pl'?'#pl':curView==='partner'?'#partner':location.pathname)}catch(e){}
+  try{history.replaceState(null,'',curView==='transfer'?'#transfer':curView==='dash'?'#dashboard':curView==='recon'?'#recon':curView==='pl'?'#pl':curView==='partner'?'#partner':curView==='recent'?'#recent':location.pathname)}catch(e){}
   $('dailyCtl').hidden=curView!=='daily';
   Object.values(VIEWS).forEach(id=>$(id).hidden=true);$('loginView').hidden=true;
   if(curView==='daily'){$('dailyView').hidden=false;return}
+  if(curView==='recent'){$('recentView').hidden=false;loadRecent();return}
   checkOwner();
 }
 let owner=null;
