@@ -874,7 +874,7 @@ function clearSec(sec){sec?dirtySec.delete(sec):dirtySec.clear();dirty=dirtySec.
 const PL_COGS=[['raw_fresh','ค่าวัตถุดิบ ของสด+ผักสด'],['raw_dry','ค่าวัตถุดิบ เครื่องปรุง ของแห้ง'],['rice','ข้าวสาร ข้าวเหนียว'],['oil','น้ำมัน'],['gas','ค่าแก๊ส'],['beer','ค่าเบียร์'],['water','น้ำดื่ม'],['coke','น้ำอัดลม'],['ice','ค่าน้ำแข็ง'],['dessert','ค่าของหวาน']];
 const PL_OPEX=[['salary','เงินเดือน และ O/T'],['parttime','พนักงานพาร์ทไทม์'],['staffmeal','ค่าอาหารพนักงาน'],['incentive','Incentive'],['welfare','สวัสดิการอื่นๆ'],['rent','ค่าเช่า ค่าบริการส่วนกลาง ค่าบริการอื่นๆ'],['utility','ค่าไฟ ค่าน้ำ ค่าโทรศัพท์'],['dishwasher','ค่าเช่าเครื่องล้างจาน'],['transport','ค่าขนส่ง'],['police','ตม. ตำรวจ ปคม.'],['equipment','อุปกรณ์ภาชนะ เครื่องครัวเพิ่มเติม'],['cardfee','ค่าธรรมเนียมบัตร'],['gp','LINE MAN & GRAB'],['misc','ค่าใช้จ่ายเบ็ดเตล็ดและวัสดุสิ้นเปลือง']];
 const PL_NAME=Object.fromEntries([...PL_COGS,...PL_OPEX]);
-const CAT_OPTS='<option value="">— เลือกหมวด —</option><optgroup label="ต้นทุนทางตรง">'+PL_COGS.map(([k,n])=>`<option value="${k}">${n}</option>`).join('')+'</optgroup><optgroup label="ค่าใช้จ่ายบริหาร">'+PL_OPEX.map(([k,n])=>`<option value="${k}">${n}</option>`).join('')+'</optgroup>';
+const CAT_OPTS='<option value="">— เลือกหมวด —</option><optgroup label="ต้นทุนอาหาร">'+PL_COGS.map(([k,n])=>`<option value="${k}">${n}</option>`).join('')+'</optgroup><optgroup label="ค่าใช้จ่ายบริหาร">'+PL_OPEX.map(([k,n])=>`<option value="${k}">${n}</option>`).join('')+'</optgroup>';
 /* เดาหมวดจากคำ: ใช้หมวดที่เคยเลือกให้รายการชื่อเดียวกันก่อน แล้วค่อยใช้คำสำคัญ */
 const CAT_HIST=new Map();
 const CAT_RULES=[
@@ -1849,8 +1849,8 @@ function renderPL(){
   const sum=(label,v,cls)=>`<tr class="${cls}"><td>${label}</td><td></td><td></td><td class="tv">${fmt(v)}</td><td class="pc">${pc(v)}</td></tr>`;
   $('plBody').innerHTML=
     `<tr class="rev"><td>รายได้จากการขาย</td><td>${fmt(D.sales)}</td><td></td><td class="tv">${fmt(D.sales)}</td><td class="pc">100.00</td></tr>`
-    +`<tr class="hd"><td colspan="5">หักต้นทุนทางตรง</td></tr>`+PL_COGS.map(([k,n])=>line(k,n)).join('')
-    +sum('รวมต้นทุนทางตรง',T.cogs,'sub')+sum('กำไรขั้นต้น',T.gross,'key')
+    +`<tr class="hd"><td colspan="5">หักต้นทุนอาหาร</td></tr>`+PL_COGS.map(([k,n])=>line(k,n)).join('')
+    +sum('รวมต้นทุนอาหาร',T.cogs,'sub')+sum('กำไรขั้นต้น',T.gross,'key')
     +`<tr class="hd"><td colspan="5">ค่าใช้จ่ายในการบริหาร</td></tr>`+PL_OPEX.map(([k,n])=>line(k,n)).join('')
     +sum('รวมค่าใช้จ่ายในการบริหาร',T.opex,'sub')+sum('กำไรจากการดำเนินงาน',T.op,'key')
     +`<tr class="hd"><td colspan="5">รายการอื่นๆ <span class="muted">(ใส่ค่าใช้จ่ายเป็นบวก รายรับ/เงินคืนเป็นลบ)</span></td></tr>`
@@ -1900,9 +1900,9 @@ $('plXls').onclick=async()=>{
   push([`บันทึกยอดแล้ว ${D.n}/${D.dim} วัน`],'note');
   push(['รายการ','จากบันทึกรายวัน','กรอกเพิ่ม','รวม','% ของยอดขาย'],'head');
   push(['รายได้จากการขาย',D.sales,'',D.sales,1],'rev');
-  push(['หักต้นทุนทางตรง'],'hd');
+  push(['หักต้นทุนอาหาร'],'hd');
   PL_COGS.forEach(([k,n])=>push(['   '+n,D.auto[k],num(plManual[k])||'',T.tot(k),pc(T.tot(k))]));
-  push(['รวมต้นทุนทางตรง','','',T.cogs,pc(T.cogs)],'sub');push(['กำไรขั้นต้น','','',T.gross,pc(T.gross)],'key');
+  push(['รวมต้นทุนอาหาร','','',T.cogs,pc(T.cogs)],'sub');push(['กำไรขั้นต้น','','',T.gross,pc(T.gross)],'key');
   push(['ค่าใช้จ่ายในการบริหาร'],'hd');
   PL_OPEX.forEach(([k,n])=>push(['   '+n,D.auto[k],num(plManual[k])||'',T.tot(k),pc(T.tot(k))]));
   push(['รวมค่าใช้จ่ายในการบริหาร','','',T.opex,pc(T.opex)],'sub');push(['กำไรจากการดำเนินงาน','','',T.op,pc(T.op)],'key');
@@ -1957,7 +1957,7 @@ $('plPdf').onclick=async()=>{
     const sum=(l,v,c)=>`<tr class="${c}"><td class="tx">${l}</td><td></td><td></td>${m(v)}<td>${pc(v)}</td></tr>`;
     const hd=l=>`<tr class="hd"><td class="tx" colspan="5">${l}</td></tr>`;
     const rows=`<tr class="key"><td class="tx">รายได้จากการขาย</td><td>${fmt(D.sales)}</td><td></td><td>${fmt(D.sales)}</td><td>100.00</td></tr>`
-      +hd('หักต้นทุนทางตรง')+PL_COGS.map(([k,n])=>line(k,n)).join('')+sum('รวมต้นทุนทางตรง',T.cogs,'sub')+sum('กำไรขั้นต้น',T.gross,'key')
+      +hd('หักต้นทุนอาหาร')+PL_COGS.map(([k,n])=>line(k,n)).join('')+sum('รวมต้นทุนอาหาร',T.cogs,'sub')+sum('กำไรขั้นต้น',T.gross,'key')
       +hd('ค่าใช้จ่ายในการบริหาร')+PL_OPEX.map(([k,n])=>line(k,n)).join('')+sum('รวมค่าใช้จ่ายในการบริหาร',T.opex,'sub')+sum('กำไรจากการดำเนินงาน',T.op,'key')
       +(plOther.length?hd('รายการอื่นๆ')+plOther.map(o=>`<tr><td class="tx ind">${escH(o.label||'')}</td><td></td><td>${fmt(num(o.amount))}</td>${m(num(o.amount))}<td>${pc(num(o.amount))}</td></tr>`).join(''):'')
       +sum('กำไร (ขาดทุน) สุทธิ',T.net,'net');
