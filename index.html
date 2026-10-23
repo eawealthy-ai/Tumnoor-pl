@@ -175,6 +175,14 @@ table.market input.n{min-width:92px}
   #partnerView .potable:not(.hist) tfoot .c-p{background:var(--surface)}
 }
 
+/* Dashboard บนมือถือ: ช่วงวันที่และปุ่มเลือกช่วงเต็มความกว้าง */
+@media (max-width:640px){
+  #dashView .dhead{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  #dashView .dhead label.f{width:auto}
+  #dashView .dhead .seg,#dashView .dhead .dl{grid-column:1/-1;margin:0}
+  #dashView .dhead .seg button{flex:1;padding:8px 4px}
+  #dashView .dhead .dl .btn{width:100%}
+}
 /* กระทบยอดบนมือถือ */
 @media (max-width:640px){
   #reconView .dhead{display:grid;grid-template-columns:1fr 1fr;gap:8px}
@@ -664,6 +672,12 @@ table.market:not(:has(#mktBody tr:not(.viewing))) tfoot tr{display:flex;justify-
       <button type="button" data-p="lastMonth" aria-pressed="false">เดือนก่อน</button>
       <button type="button" data-p="last7" aria-pressed="false">7 วันล่าสุด</button>
     </div>
+    <div class="seg" id="dPresetM" role="group" aria-label="ย้อนหลังหลายเดือน">
+      <button type="button" data-p="m3" aria-pressed="false">3 เดือน</button>
+      <button type="button" data-p="m6" aria-pressed="false">6 เดือน</button>
+      <button type="button" data-p="m9" aria-pressed="false">9 เดือน</button>
+      <button type="button" data-p="m12" aria-pressed="false">12 เดือน</button>
+    </div>
     <div class="dl"><button class="btn btn-dl" id="dPdf" type="button">ดาวน์โหลด PDF</button></div>
   </div>
   <div class="pdfhead" id="dPdfHead" hidden><div><b>ร้านตำนัว</b> · Dashboard</div><div id="dPdfRange"></div></div>
@@ -677,7 +691,7 @@ table.market:not(:has(#mktBody tr:not(.viewing))) tfoot tr{display:flex;justify-
     <div class="fcast"><span id="kFcL">ประมาณการยอดขายสิ้นเดือน</span><strong id="kFc">–</strong><em id="kFcN"></em></div>
   </div>
   <section>
-    <h2>ยอดขายรายวัน</h2>
+    <h2 id="dChartTitle">ยอดขายรายวัน</h2>
     <p class="sub">แท่ง = ยอดขายแยกช่องทาง · เส้น = ค่าใช้จ่ายของวันนั้น</p>
     <div class="chartbox tall"><canvas id="cDaily" aria-label="กราฟยอดขายรายวัน"></canvas></div>
   </section>
@@ -699,9 +713,9 @@ table.market:not(:has(#mktBody tr:not(.viewing))) tfoot tr{display:flex;justify-
     <div class="chartbox"><canvas id="cDow" aria-label="ยอดขายเฉลี่ยตามวัน"></canvas></div>
   </section>
   <section>
-    <h2>รายละเอียดรายวัน</h2>
+    <h2 id="dTableTitle">รายละเอียดรายวัน</h2>
     <div class="scroll"><table class="dtable">
-      <thead><tr><th>วันที่</th><th class="r">ยอดขาย</th><th class="r">บิล</th><th class="r">เฉลี่ย/บิล</th><th class="r">บิลตลาด</th><th class="r">เงินสดย่อย</th><th class="r">ค่าใช้จ่าย %</th></tr></thead>
+      <thead><tr><th id="dColDate">วันที่</th><th class="r">ยอดขาย</th><th class="r">บิล</th><th class="r">เฉลี่ย/บิล</th><th class="r">บิลตลาด</th><th class="r">เงินสดย่อย</th><th class="r">ค่าใช้จ่าย %</th></tr></thead>
       <tbody id="dBody"></tbody><tfoot id="dFoot"></tfoot>
     </table></div>
   </section>
@@ -1529,13 +1543,14 @@ function setPreset(p){
   const now=new Date();let f,t;
   if(p==='lastMonth'){f=new Date(now.getFullYear(),now.getMonth()-1,1);t=new Date(now.getFullYear(),now.getMonth(),0)}
   else if(p==='last7'){t=now;f=new Date(now);f.setDate(f.getDate()-6)}
+  else if(/^m\d+$/.test(p)){const k=+p.slice(1);f=new Date(now.getFullYear(),now.getMonth()-(k-1),1);t=now}  /* k เดือนย้อนหลัง รวมเดือนนี้ */
   else{f=new Date(now.getFullYear(),now.getMonth(),1);t=now}
   $('dFrom').value=isoOf(f);$('dTo').value=isoOf(t);
-  document.querySelectorAll('#dPreset button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.p===p?'true':'false'));
+  document.querySelectorAll('#dPreset button,#dPresetM button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.p===p?'true':'false'));
 }
 setPreset('thisMonth');
-document.querySelectorAll('#dPreset button').forEach(b=>b.onclick=()=>{setPreset(b.dataset.p);loadDash()});
-$('dFrom').onchange=$('dTo').onchange=()=>{document.querySelectorAll('#dPreset button').forEach(b=>b.setAttribute('aria-pressed','false'));loadDash()};
+document.querySelectorAll('#dPreset button,#dPresetM button').forEach(b=>b.onclick=()=>{setPreset(b.dataset.p);loadDash()});
+$('dFrom').onchange=$('dTo').onchange=()=>{document.querySelectorAll('#dPreset button,#dPresetM button').forEach(b=>b.setAttribute('aria-pressed','false'));loadDash()};
 
 function dayMetrics(raw){
   const d=ensureIds(raw),s=d.sales||{};
@@ -1585,8 +1600,14 @@ async function renderDash(pend,pendN){
   const mix=CH.map(([k,n,c])=>[n,c,R.reduce((a,r)=>a+r.ch[k],0)]);
   $('mixTable').innerHTML=mix.map(([n,c,v])=>`<tr><td><i class="sw" style="background:${c}"></i>${n}</td><td class="r">${fmt0(v)}</td><td class="r">${sales?(v/sales*100).toFixed(1)+'%':'–'}</td></tr>`).join('');
 
+  // ช่วงยาวเกิน 62 วัน: กราฟและตารางรวมเป็นรายเดือน
+  const span=(Date.parse($('dTo').value)-Date.parse($('dFrom').value))/864e5,monthly=span>62;
+  const V=monthly?Object.values(R.reduce((g,r)=>{const k=r.date.slice(0,7),x=g[k]||(g[k]={date:k,n:0,sales:0,ex:0,bills:0,mt:0,pt:0,exp:0,ch:Object.fromEntries(CH.map(([c])=>[c,0]))});
+      x.n++;['sales','ex','bills','mt','pt','exp'].forEach(f=>x[f]+=r[f]);CH.forEach(([c])=>x.ch[c]+=r.ch[c]);return g},{})).sort((a,b)=>a.date<b.date?-1:1):R;
+  $('dChartTitle').textContent=monthly?'ยอดขายรายเดือน':'ยอดขายรายวัน';$('dTableTitle').textContent=monthly?'รายละเอียดรายเดือน':'รายละเอียดรายวัน';
+  $('dColDate').textContent=monthly?'เดือน':'วันที่';
   // daily table
-  $('dBody').innerHTML=R.map(r=>`<tr><td>${dmy(r.date)} <span class="muted">${DOW[new Date(r.date+'T00:00:00').getDay()].slice(0,2)}</span></td><td>${fmt0(r.sales)}</td><td>${r.bills?fmt0(r.bills):'–'}</td><td>${r.bills?fmt0(r.sales/r.bills):'–'}</td><td>${fmt0(r.mt)}</td><td>${fmt0(r.pt)}</td><td>${r.ex?(r.exp/r.ex*100).toFixed(1)+'%':'–'}</td></tr>`).join('');
+  $('dBody').innerHTML=V.map(r=>`<tr><td>${monthly?`${monLabel(r.date)} <span class="muted">${r.n} วัน</span>`:`${dmy(r.date)} <span class="muted">${DOW[new Date(r.date+'T00:00:00').getDay()].slice(0,2)}</span>`}</td><td>${fmt0(r.sales)}</td><td>${r.bills?fmt0(r.bills):'–'}</td><td>${r.bills?fmt0(r.sales/r.bills):'–'}</td><td>${fmt0(r.mt)}</td><td>${fmt0(r.pt)}</td><td>${r.ex?(r.exp/r.ex*100).toFixed(1)+'%':'–'}</td></tr>`).join('');
   $('dFoot').innerHTML=R.length?`<tr><td class="lbl">รวม</td><td>${fmt0(sales)}</td><td>${bills?fmt0(bills):'–'}</td><td>${bills?fmt0(sales/bills):'–'}</td><td>${fmt0(mt)}</td><td>${fmt0(pt)}</td><td>${pct(exp)}</td></tr>`:'';
 
   // charts
@@ -1597,9 +1618,9 @@ async function renderDash(pend,pendN){
   const money=v=>Number(v).toLocaleString('th-TH',{maximumFractionDigits:0});
   const mk=(id,cfg)=>{if(charts[id])charts[id].destroy();charts[id]=new C($(id),cfg)};
   const grid={color:line},ticks={color:muted};
-  mk('cDaily',{type:'bar',data:{labels:R.map(r=>dmyS(r.date)),datasets:[
-      ...CH.map(([k,n,c])=>({type:'bar',label:n,data:R.map(r=>r.ch[k]),backgroundColor:c,stack:'s',borderRadius:2,order:2})),
-      {type:'line',label:'ค่าใช้จ่าย',data:R.map(r=>r.exp),borderColor:tok('--chili'),backgroundColor:tok('--chili'),pointRadius:3,tension:.25,order:1}]},
+  mk('cDaily',{type:'bar',data:{labels:V.map(r=>monthly?monLabel(r.date):dmyS(r.date)),datasets:[
+      ...CH.map(([k,n,c])=>({type:'bar',label:n,data:V.map(r=>r.ch[k]),backgroundColor:c,stack:'s',borderRadius:2,order:2})),
+      {type:'line',label:'ค่าใช้จ่าย',data:V.map(r=>r.exp),borderColor:tok('--chili'),backgroundColor:tok('--chili'),pointRadius:3,tension:.25,order:1}]},
     options:{maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
       scales:{x:{stacked:true,grid:{display:false},ticks},y:{stacked:true,grid,ticks:{...ticks,callback:money}}},
       plugins:{legend:{position:'bottom',labels:{boxWidth:12,color:fg}},tooltip:{callbacks:{label:c=>c.dataset.label+': '+money(c.parsed.y)}}}}});
