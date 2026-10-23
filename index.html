@@ -1919,7 +1919,7 @@ async function renderAna(){
   P.forEach((x,i)=>x.chg=i?dPct(x.avg,P[i-1].avg):null);
   $('aChartT').textContent=wk?`ยอดขายรายสัปดาห์ (${P.length} สัปดาห์)`:`ยอดขายรายเดือน (${P.length} เดือน)`;
   $('aTblT').textContent=wk?'รายละเอียดรายสัปดาห์ (จันทร์–อาทิตย์)':'รายละเอียดรายเดือน';
-  $('aBody').innerHTML=P.slice().reverse().map(x=>`<tr><td class="${x.cur?'cur':''}">${x.lab}${x.cur?' <small>(ถึงวันนี้)</small>':''} <small>${x.n}${wk?'':'/'+x.dim} วัน</small></td><td>${fmt0(x.sales)}</td><td>${fmt0(x.avg)}</td><td>${dTag(x.chg)}</td><td>${x.bills?fmt0(x.bills):'–'}</td><td>${x.bills?fmt0(x.tk):'–'}</td><td>${pc(x.food,x.sales)}</td><td>${pc(x.exp,x.sales)}</td></tr>`).join('')||'<tr><td colspan="8" class="muted">ยังไม่มีข้อมูล</td></tr>';
+  $('aBody').innerHTML=P.slice().reverse().map(x=>`<tr><td class="${x.cur?'cur':''}">${x.lab}${x.cur?' <small>(ถึงวันนี้)</small>':''} <small>บันทึก ${x.n}/${wk?7:x.dim} วัน</small></td><td>${fmt0(x.sales)}</td><td>${fmt0(x.avg)}</td><td>${dTag(x.chg)}</td><td>${x.bills?fmt0(x.bills):'–'}</td><td>${x.bills?fmt0(x.tk):'–'}</td><td>${pc(x.food,x.sales)}</td><td>${pc(x.exp,x.sales)}</td></tr>`).join('')||'<tr><td colspan="8" class="muted">ยังไม่มีข้อมูล</td></tr>';
   try{if(!window.Chart)await loadScript('https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js')}catch(e){return}
   const C=window.Chart,muted=tok('--muted'),line=tok('--line'),fg=tok('--fg'),money=v=>Number(v).toLocaleString('th-TH',{maximumFractionDigits:0});
   C.defaults.font.family=getComputedStyle(document.body).fontFamily;C.defaults.color=muted;
