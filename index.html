@@ -528,7 +528,11 @@ table.market:not(:has(#mktBody tr:not(.viewing))) tfoot tr{display:flex;justify-
 /* หน้าแรก: ไอคอนวงกลมแบบแอปธนาคาร */
 body.homebg{background:linear-gradient(165deg,#4a2a17 0%,#6e3a1a 38%,#3b2417 72%,#24170f 100%) fixed}
 body.homebg .bar{background:transparent;box-shadow:none}
-body.homebg .tabs{display:none}
+.bar .tabs{display:none!important}
+.homebtn{display:inline-flex;align-items:center;gap:6px;font:inherit;font-weight:600;font-size:14px;color:#fff;background:rgba(255,255,255,.16);border:0;border-radius:999px;padding:7px 14px 7px 10px;cursor:pointer;margin-top:8px}
+.homebtn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.homebtn .badge{display:inline-block;min-width:18px;height:18px;line-height:18px;padding:0 5px;border-radius:999px;background:#e5322d;color:#fff;font-size:11px;font-weight:700;text-align:center;font-family:var(--num)}
+body.homebg .homebtn{display:none}
 #homeView{max-width:620px;gap:6px;padding-top:6px}
 .home-sec{display:flex;align-items:center;gap:10px;margin:14px 4px 6px;color:#fff;font-size:18px;font-weight:700}
 .home-sec::before{content:"";width:5px;height:24px;border-radius:3px;background:#ff9a52}
@@ -552,6 +556,7 @@ body.homebg .tabs{display:none}
 
 <div class="bar"><div class="bar-in">
   <div class="brand" id="brandHome" role="link" tabindex="0" title="กลับหน้าแรก">ร้านตำนัว<small>บันทึกยอดประจำวัน · Daily P&amp;L input</small></div>
+  <button type="button" class="homebtn" id="homeBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>หน้าแรก<span class="badge" id="homeBtnBadge" hidden></span></button>
   <nav class="tabs" aria-label="เลือกหน้า"><button type="button" data-view="home" aria-current="page">หน้าแรก</button><button type="button" data-view="daily" aria-current="false">บันทึกรายวัน</button><button type="button" data-view="hist" aria-current="false">ดูย้อนหลัง</button><button type="button" data-view="recent" aria-current="false">อัปเดตล่าสุด<span class="badge" id="recentBadge" hidden></span></button><button type="button" data-view="transfer" aria-current="false">รายการโอน</button><button type="button" data-view="dash" aria-current="false">Dashboard</button><button type="button" data-view="recon" aria-current="false">กระทบยอด</button><button type="button" data-view="pl" aria-current="false">P&amp;L</button><button type="button" data-view="partner" aria-current="false">หุ้นส่วน</button></nav>
   <div class="bar-ctl" id="dailyCtl">
     <label class="datebtn empty" id="dayBtn"><span id="dayText">เลือกวัน/เดือน/ปี</span><input type="date" id="day" aria-label="เลือกวันที่"></label>
@@ -1227,7 +1232,7 @@ async function loadRecent(){
     const t0=today(),seen=seenAt();
     const isNew=r=>Date.parse(r.updated_at)>seen&&!ownStamps.has(r.data.updatedAt);
     const unread=rows.filter(isNew).length;
-    $('recentBadge').hidden=!unread||curView==='recent';$('recentBadge').textContent=unread>9?'9+':String(unread);$('homeBadge').hidden=$('recentBadge').hidden;$('homeBadge').textContent=$('recentBadge').textContent;
+    $('recentBadge').hidden=!unread||curView==='recent';$('recentBadge').textContent=unread>9?'9+':String(unread);$('homeBadge').hidden=$('homeBtnBadge').hidden=$('recentBadge').hidden;$('homeBadge').textContent=$('homeBtnBadge').textContent=$('recentBadge').textContent;
     $('recentList').innerHTML=rows.length?rows.map(r=>{
       const d=ensureIds({...r.data,date:r.date}),m=dayMetrics(d),u=new Date(r.updated_at);
       const ud=isoOf(u),hm=u.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
@@ -1235,7 +1240,7 @@ async function loadRecent(){
       const parts=[m.sales?'ยอดขาย '+fmt0(m.sales):'',d.market.length?'บิลตลาด '+d.market.length:'',d.petty.length?'สดย่อย '+d.petty.length+' บิล':''].filter(Boolean).join(' · ')||'ยังไม่มีตัวเลข';
       return `<button type="button" class="rrow${r.date===curDay?' sel':''}${isNew(r)?' unread':''}" data-d="${r.date}"><span class="rd">${dmy(r.date)}${isNew(r)?' <span class="newchip">ใหม่</span>':''}</span><span class="rs2">${parts}</span><span class="rt">แก้ไข ${when}</span></button>`}).join('')
       :'<p class="sub" style="margin:0">ยังไม่มีข้อมูลที่บันทึก</p>';
-    if(curView==='recent'){lsSet(LS_SEEN,String(Date.now()));$('recentBadge').hidden=true;$('homeBadge').hidden=true}
+    if(curView==='recent'){lsSet(LS_SEEN,String(Date.now()));$('recentBadge').hidden=true;$('homeBadge').hidden=true;$('homeBtnBadge').hidden=true}
   }
   renderStrip();
 }
@@ -1547,7 +1552,7 @@ async function markPaidChips(day){
 }
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>showView(b.dataset.view));
 document.querySelectorAll('.home-tile').forEach(b=>b.onclick=()=>{showView(b.dataset.go);window.scrollTo(0,0)});
-$('brandHome').onclick=()=>showView('home');$('brandHome').onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();showView('home')}};
+$('brandHome').onclick=$('homeBtn').onclick=()=>{showView('home');window.scrollTo(0,0)};$('brandHome').onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();showView('home')}};
 {const H={'#daily':'daily','#transfer':'transfer','#recent':'recent','#history':'hist','#dashboard':'dash','#recon':'recon','#pl':'pl','#partner':'partner'};showView(H[location.hash]||'home')}
 
 async function loadTransfers(){
