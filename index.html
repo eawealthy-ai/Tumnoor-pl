@@ -145,6 +145,50 @@ table.market input.n{min-width:92px}
 .tdlist tfoot td{border-bottom:0;font-weight:600}
 .tdmeta{font-size:13px;color:var(--muted)}
 .tdmeta .linkbtn{font-size:13px;color:var(--leaf);font-weight:600}
+/* กระทบยอดบนมือถือ */
+@media (max-width:640px){
+  #reconView .dhead{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  #reconView .dhead label.f{width:auto}
+  #reconView .dhead .seg{grid-column:1/-1}
+  #reconView .dhead .seg button{flex:1}
+  #reconView .scroll{overflow:visible;margin:0;padding:0}
+  #reconView .rtable,#reconView .rlist{min-width:0;display:block;width:100%}
+  .rtable tr>td:nth-child(n+2):nth-child(-n+5){font-size:13px}
+  .rtable thead,.rlist thead{display:none}
+  .rtable tbody,.rtable tfoot,.rlist tbody{display:block}
+  .rtable tr{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-template-areas:"ch ch ch st" "s g f d";gap:4px 6px;padding:10px 2px;border-bottom:1px solid var(--line)}
+  .rtable tr>td{display:block;padding:0;border:0;min-width:0;font-size:13.5px}
+  .rtable tr>td:nth-child(1){grid-area:ch;font-weight:600;font-size:15px}
+  .rtable tr>td:nth-child(2){grid-area:s}
+  .rtable tr>td:nth-child(3){grid-area:g}
+  .rtable tr>td:nth-child(4){grid-area:f}
+  .rtable tr>td:nth-child(5){grid-area:d;font-weight:600}
+  .rtable tr>td:nth-child(6){grid-area:st;text-align:right}
+  .rtable tr>td:nth-child(n+2):nth-child(-n+5){text-align:left;white-space:nowrap}
+  .rtable tr>td:nth-child(n+2):nth-child(-n+5)::before{display:block;font-family:var(--body);font-size:11px;font-weight:400;color:var(--muted)}
+  .rtable tr>td:nth-child(2)::before{content:"ยอดขาย"}
+  .rtable tr>td:nth-child(3)::before{content:"รับแล้ว"}
+  .rtable tr>td:nth-child(4)::before{content:"ค่าธรรมเนียม"}
+  .rtable tr>td:nth-child(5)::before{content:"ส่วนต่าง"}
+  .rtable tfoot tr>td:nth-child(n+2){font-size:12px}
+  .rtable tfoot tr{background:var(--leaf-soft);border-radius:8px;border:0;padding:10px 8px;margin-top:6px}
+  .rtable .chip{font-size:11px;padding:1px 7px}
+  #reconView .rform{grid-template-columns:1fr 1fr;gap:10px}
+  #reconView .rform .wide{grid-column:1/-1}
+  #reconView .rform .btn{grid-column:1/-1;justify-self:stretch}
+  .rlist tr{display:grid;grid-template-columns:minmax(0,1fr) auto 28px;grid-template-areas:"dt amt x" "ch amt x" "pd fee x" "nt nt x";gap:2px 8px;padding:10px 2px;border-bottom:1px solid var(--line);align-items:center}
+  .rlist tr>td{display:block;padding:0;border:0;min-width:0;font-size:13.5px}
+  .rlist tr>td:nth-child(1){grid-area:dt;font-weight:600}
+  .rlist tr>td:nth-child(2){grid-area:ch}
+  .rlist tr>td:nth-child(3){grid-area:pd;font-size:12px}
+  .rlist tr>td:nth-child(4){grid-area:amt;font-size:16px;font-weight:600}
+  .rlist tr>td:nth-child(5){grid-area:fee;font-size:12px;color:var(--muted)}
+  .rlist tr>td:nth-child(5)::before{content:"ค่าธรรมเนียม ";font-family:var(--body)}
+  .rlist tr>td:nth-child(6){grid-area:nt;font-size:12px}
+  .rlist tr>td:nth-child(6):empty{display:none}
+  .rlist tr>td:nth-child(7){grid-area:x}
+}
+
 /* รายการโอนบนมือถือ: แต่ละบิลเป็นการ์ดกะทัดรัด */
 @media (max-width:640px){
   #transferView .range{display:grid;grid-template-columns:1fr 1fr;gap:8px}
