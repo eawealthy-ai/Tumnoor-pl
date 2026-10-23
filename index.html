@@ -374,11 +374,18 @@ select.t{font:inherit;width:100%;padding:9px 10px;border:1px solid var(--line);b
 .pitems select.cat{font:inherit;font-size:13px;width:100%;min-width:0;padding:8px 6px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg)}
 .pitems select.cat.need{border-color:var(--chili)}
 .pview{display:none}
+#secSales .sview{display:none}
+#secSales.viewing .sview{display:block}
+#secSales.viewing .sales,#secSales.viewing #holWrap,#secSales.viewing .totrow>span:first-child,#secSales.viewing .secbar{display:none}
+#secSales.viewing .totrow{border-top:0;margin-top:8px;padding-top:0}
+.secbar{display:flex;justify-content:flex-end;margin-top:12px}
+.toolbar .secSave{margin-left:auto}
+.secSave:disabled{display:none}
 .pbill.viewing>.phead,.pbill.viewing>.scroll,.pbill.viewing>.addItem{display:none}
 .pbill.viewing{padding:10px 12px}
 .pbill.viewing .pview{display:block}
-.pvh{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.pvn{flex:1 1 auto;min-width:0;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.pvh{display:flex;align-items:center;gap:10px;flex-wrap:nowrap}
+.pvn{flex:1 1 0;min-width:0;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .pvt{font-family:var(--num);font-size:16px;font-variant-numeric:tabular-nums}
 .editbtn,button.editbtn{font:inherit;background:none;cursor:pointer;color:var(--leaf);font-weight:600;font-size:14px;text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:3px 12px}
 .editbtn:hover{border-color:var(--leaf)}
@@ -531,9 +538,10 @@ table.market:not(:has(#mktBody tr:not(.viewing))) tfoot tr{display:flex;justify-
     <div><span>ยอดเฉลี่ย/บิล</span><strong id="sAvg">–</strong><em id="sBills"></em></div>
   </div>
 
-  <section>
+  <section id="secSales">
     <h2>ยอดขาย</h2>
     <p class="sub">แยกตามช่องทางชำระเงิน (บาท)</p>
+    <div class="sview"></div>
     <div class="sales">
       <label class="f">เงินสด<input class="n" id="cash" inputmode="decimal"></label>
       <label class="f">LINE MAN<input class="n" id="lineman" inputmode="decimal"></label>
@@ -547,17 +555,18 @@ table.market:not(:has(#mktBody tr:not(.viewing))) tfoot tr{display:flex;justify-
       <label class="chk" id="holWrap" hidden><input type="checkbox" id="hol"> วันหยุดนักขัตฤกษ์ (ใช้เกณฑ์ Incentive แบบ ศ.–อา.)</label>
       <span class="incw" id="incWrap" hidden>Incentive <b id="incAmt">0</b> บาท <span class="inch" id="incHint"></span></span>
     </div>
+    <div class="secbar"><button class="btn btn-save secSave" type="button" data-sec="sales" disabled>บันทึกยอดขาย</button></div>
   </section>
 
-  <section>
+  <section id="secPetty">
     <h2>เงินสดย่อย</h2>
     <p class="sub">1 บิล = จ่ายให้ 1 คน/ร้าน · กรอกชื่อผู้รับเงินก่อน แล้วใส่รายการในบิลนั้น</p>
     <div class="pbills" id="pettyBills"></div>
-    <div class="toolbar"><button class="btn btn-add" id="addPetty" type="button">+ เพิ่มบิลเงินสดย่อย</button></div>
+    <div class="toolbar"><button class="btn btn-add" id="addPetty" type="button">+ เพิ่มบิลเงินสดย่อย</button><button class="btn btn-save secSave" type="button" data-sec="petty" disabled>บันทึกเงินสดย่อย</button></div>
     <div class="ptot">รวมเงินสดย่อยทั้งหมด <b id="pettyTot">0</b> บาท</div>
   </section>
 
-  <section>
+  <section id="secMkt">
     <h2>บิลตลาด</h2>
     <p class="sub">1 แถว = 1 บิล · ใส่ชื่อผู้รับเงินและยอดตามประเภท ระบบรวมให้อัตโนมัติ</p>
     <div class="scroll"><table class="market">
@@ -570,7 +579,7 @@ table.market:not(:has(#mktBody tr:not(.viewing))) tfoot tr{display:flex;justify-
         <td id="m0">0</td><td id="m1">0</td><td id="m2">0</td><td id="m3">0</td><td id="m4">0</td>
         <td id="mTot" class="grand">0</td></tr></tfoot>
     </table></div>
-    <div class="toolbar"><button class="btn btn-add" id="addMkt" type="button">+ เพิ่มบิล</button></div>
+    <div class="toolbar"><button class="btn btn-add" id="addMkt" type="button">+ เพิ่มบิล</button><button class="btn btn-save secSave" type="button" data-sec="market" disabled>บันทึกบิลตลาด</button></div>
   </section>
 
   <section id="exportSec">
@@ -808,6 +817,13 @@ const today=()=>{const d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOff
 const blank=v=>v===0||v==null?'':v;
 
 let db=null, unsub=null, dirty=false, latest=null, canWrite=true;
+/* แต่ละส่วน (ยอดขาย / เงินสดย่อย / บิลตลาด) บันทึกแยกกันได้ */
+const dirtySec=new Set();
+const SEC_OF={secSales:'sales',secPetty:'petty',secMkt:'market'},SEC_ALL=['sales','petty','market'];
+function secOf(el){const x=el&&el.closest&&el.closest('section');return x&&SEC_OF[x.id]}
+function updateSecBtns(){document.querySelectorAll('.secSave').forEach(b=>b.disabled=!canWrite||!db||!$('day').value||!dirtySec.has(b.dataset.sec))}
+function markSec(sec){if(sec)dirtySec.add(sec);dirty=dirtySec.size>0;updateSecBtns();if(dirty)setStatus('dirty','มีการแก้ไขที่ยังไม่ได้บันทึก')}
+function clearSec(sec){sec?dirtySec.delete(sec):dirtySec.clear();dirty=dirtySec.size>0;updateSecBtns()}
 
 /* ---------- หมวด P&L ---------- */
 const PL_COGS=[['raw_fresh','ค่าวัตถุดิบ ของสด+ผักสด'],['raw_dry','ค่าวัตถุดิบ เครื่องปรุง ของแห้ง'],['rice','ข้าวสาร ข้าวเหนียว'],['oil','น้ำมัน'],['gas','ค่าแก๊ส'],['beer','ค่าเบียร์'],['water','น้ำดื่ม'],['coke','น้ำอัดลม'],['ice','ค่าน้ำแข็ง'],['dessert','ค่าของหวาน']];
@@ -875,7 +891,7 @@ function pettyRow(tbody,r={item:'',amount:''}){
   const i=tr.querySelectorAll('input'),sel=tr.querySelector('select.cat');i[0].value=r.item??'';i[1].value=blank(r.amount);
   sel.value=r.cat&&PL_NAME[r.cat]?r.cat:'';sel.dataset.auto=r.cat?'0':'1';
   i[0].addEventListener('input',()=>{if(sel.dataset.auto==='1'){sel.value=guessCat(i[0].value);catMark(sel)}});
-  sel.addEventListener('change',()=>{sel.dataset.auto='0';catMark(sel);markDirty()});
+  sel.addEventListener('change',()=>{sel.dataset.auto='0';catMark(sel);markDirty('petty')});
   catMark(sel);tbody.appendChild(tr);
 }
 function catMark(sel){const tr=sel.closest('tr');const has=tr&&(tr.querySelector('input.t').value.trim()||num(tr.querySelector('input.n').value));sel.classList.toggle('need',!!has&&!sel.value)}
@@ -973,8 +989,9 @@ function load(d){
   $('bills').value=blank(d.bills);
   $('pettyBills').innerHTML='';const pb=pettyBillsOf(d);if(pb.length)pb.forEach(b=>setView(pettyBill(b),true));else pettyBill();
   $('mktBody').innerHTML='';if(d.market&&d.market.length)d.market.forEach(r=>{mktRow(r);setView($('mktBody').lastElementChild,true)});else mktRow();
-  dirty=false;$('reload').hidden=true;
+  clearSec();$('reload').hidden=true;
   calc();lockInputs();
+  setSalesView(salesHas());
 }
 function calc(){
   const s=['cash','lineman','grab','credit','kplus'].reduce((a,k)=>a+num($(k).value),0);
@@ -1004,6 +1021,7 @@ function lockInputs(){
   const noDay=!$('day').value;
   if(noDay)document.querySelectorAll('#dailyView section:not(#exportSec) input, #dailyView section:not(#exportSec) select, #dailyView .btn-add, #dailyView .del').forEach(el=>el.disabled=true);
   $('save').disabled=!canWrite||!db||noDay;$('clear').disabled=!canWrite||!db||noDay;
+  updateSecBtns();
 }
 function toast(t,undo,label){
   const el=$('toast');el.textContent='';const sp=document.createElement('span');sp.textContent=t;el.appendChild(sp);
@@ -1013,7 +1031,7 @@ function toast(t,undo,label){
 }
 /* เก็บสภาพฟอร์มก่อนลบ/ล้าง เพื่อกด "เลิกทำ" ได้ */
 function snapForm(){return JSON.parse(JSON.stringify(collect()))}
-function restoreForm(snap){load(snap);markPaidChips($('day').value);dirty=true;setStatus('dirty','กู้คืนแล้ว ยังไม่ได้บันทึก')}
+function restoreForm(snap){load(snap);markPaidChips($('day').value);SEC_ALL.forEach(markSec);setStatus('dirty','กู้คืนแล้ว ยังไม่ได้บันทึก')}
 let ownStamp='';
 
 const TABLE='tamnua_days';
@@ -1036,20 +1054,20 @@ function watchDay(day){
   }).subscribe();
 }
 
-document.addEventListener('input',e=>{if(e.target.closest('#dailyView')&&!e.target.closest('#exportSec')&&!e.target.closest('#status')&&e.target.matches('input')){calc();if(!dirty){dirty=true;setStatus('dirty','มีการแก้ไขที่ยังไม่ได้บันทึก')}}});
-function markDirty(){calc();dirty=true;setStatus('dirty','มีการแก้ไขที่ยังไม่ได้บันทึก')}
+document.addEventListener('input',e=>{if(e.target.closest('#dailyView')&&!e.target.closest('#exportSec')&&!e.target.closest('#status')&&e.target.matches('input')){calc();markSec(secOf(e.target))}});
+function markDirty(sec){calc();markSec(sec)}
 document.addEventListener('click',e=>{
   const t=e.target;if(!t.closest('#dailyView'))return;
-  if(t.classList.contains('delbill')){const snap=snapForm();t.closest('.pbill').remove();if(!$('pettyBills').children.length){pettyBill();lockInputs()}markDirty();toast('ลบบิลเงินสดย่อยแล้ว',()=>restoreForm(snap));return}
+  if(t.classList.contains('delbill')){const snap=snapForm();t.closest('.pbill').remove();if(!$('pettyBills').children.length){pettyBill();lockInputs()}markDirty('petty');toast('ลบบิลเงินสดย่อยแล้ว',()=>restoreForm(snap));return}
   if(t.classList.contains('addItem')){const tb=t.closest('.pbill').querySelector('.pitems');pettyRow(tb);lockInputs();tb.lastElementChild.querySelector('input').focus();return}
   if(t.classList.contains('del')){
     const snap=snapForm(),tb=t.closest('tbody'),isPetty=tb.classList.contains('pitems');t.closest('tr').remove();
     if(!tb.rows.length){if(isPetty)pettyRow(tb);else mktRow()}
-    lockInputs();markDirty();toast(isPetty?'ลบรายการแล้ว':'ลบบิลตลาดแล้ว',()=>restoreForm(snap))}});
+    lockInputs();markDirty(isPetty?'petty':'market');toast(isPetty?'ลบรายการแล้ว':'ลบบิลตลาดแล้ว',()=>restoreForm(snap))}});
 $('addPetty').onclick=()=>{const b=pettyBill();lockInputs();b.querySelector('.pay').focus()};
 $('addMkt').onclick=()=>{mktRow();$('mktBody').lastElementChild.querySelector('input').focus()};
 $('reload').onclick=()=>{load(latest);showSaved()};
-$('clear').onclick=()=>{const snap=snapForm();load(null);dirty=true;setStatus('dirty','ล้างฟอร์มแล้ว ยังไม่ได้บันทึก');toast('ล้างฟอร์มแล้ว',()=>restoreForm(snap))};
+$('clear').onclick=()=>{const snap=snapForm();load(null);SEC_ALL.forEach(markSec);setStatus('dirty','ล้างฟอร์มแล้ว ยังไม่ได้บันทึก');toast('ล้างฟอร์มแล้ว',()=>restoreForm(snap))};
 function updateDayText(){const v=$('day').value;$('dayText').textContent=v?dmy(v):'เลือกวัน/เดือน/ปี';$('dayBtn').classList.toggle('empty',!v)}
 function setDay(v){$('day').value=v;curDay=v;updateDayText();renderStrip()}
 function noDayState(){if(unsub&&db){db.removeChannel(unsub);unsub=null}latest=null;load(null);lockInputs();setStatus('pick','แตะเลือกวันที่ด้านบนก่อนเริ่มกรอก')}
@@ -1060,7 +1078,7 @@ function goDay(v,force){
   if(!v)return;const prev=curDay;
   if(v===prev&&!force)return;
   if(dirty&&prev&&!force){setDay(prev);toast('มีการแก้ไขวันที่ '+dmy(prev)+' ที่ยังไม่ได้บันทึก',()=>goDay(v,true),'ทิ้งการแก้ไขแล้วไปวันที่ '+dmyS(v));return}
-  dirty=false;setDay(v);lockInputs();watchDay(v);
+  clearSec();setDay(v);lockInputs();watchDay(v);
 }
 $('day').onchange=()=>{const v=$('day').value;if(v)goDay(v);else if(dirty&&curDay)setDay(curDay);else{setDay('');noDayState()}};
 $('dpCal').onclick=()=>{try{$('day').showPicker()}catch(e){$('day').focus();$('day').click()}};
@@ -1101,25 +1119,58 @@ async function loadRecent(){
 }
 let recentT=null;
 function watchRecent(){if(!db)return;db.channel('recent-all').on('postgres_changes',{event:'*',schema:'public',table:TABLE},()=>{clearTimeout(recentT);recentT=setTimeout(loadRecent,1200)}).subscribe()}
-$('save').onclick=async()=>{
+function totalsOf(d){
+  const sales=d.sales||{},st=Object.values(sales).reduce((a,v)=>a+num(v),0);
+  const mk={};CATS.forEach(c=>mk[c]=(d.market||[]).reduce((a,o)=>a+num(o[c]),0));
+  return{sales:st,salesExVat:st,petty:(d.petty||[]).reduce((a,b)=>a+(b.items||[]).reduce((x,r)=>x+num(r.amount),0),0),market:Object.values(mk).reduce((a,b)=>a+b,0),marketByCat:mk};
+}
+const SEC_FIELDS={sales:['sales','bills','holiday'],petty:['petty'],market:['market']};
+const SEC_NAME={sales:'ยอดขาย',petty:'เงินสดย่อย',market:'บิลตลาด'};
+function applySecs(target,src,secs){secs.forEach(x=>SEC_FIELDS[x].forEach(f=>{if(src&&f in src)target[f]=JSON.parse(JSON.stringify(src[f]));else delete target[f]}))}
+function viewSecs(secs){
+  if(secs.includes('sales'))setSalesView(salesHas());
+  if(secs.includes('petty'))document.querySelectorAll('#pettyBills .pbill').forEach(el=>{if(hasContent(el))setView(el,true)});
+  if(secs.includes('market'))document.querySelectorAll('#mktBody tr').forEach(el=>{if(hasContent(el))setView(el,true)});
+}
+/* บันทึกเฉพาะส่วนที่ระบุ: อ่านข้อมูลล่าสุดในระบบ แล้วแทนที่เฉพาะส่วนนั้น ส่วนอื่นไม่ถูกเขียนทับ */
+async function saveSections(secs,btn){
   if(!db)return;const day=$('day').value;if(!day){toast('เลือกวันที่ก่อนบันทึก');return}
-  const btn=$('save');btn.disabled=true;btn.textContent='กำลังบันทึก…';
-  try{const data=collect();const prev=latest?JSON.parse(JSON.stringify(latest)):null;ownStamp=data.updatedAt;
-    const {error}=await db.from(TABLE).upsert({date:day,data,updated_at:data.updatedAt});if(error)throw error;latest=data;dirty=false;$('reload').hidden=true;showSaved();refreshSummary();viewAllSaved();sugFrom(data);renderSug();
-    toast('บันทึกวันที่ '+dmy(day)+' แล้ว',async()=>{
+  const label=btn&&btn.textContent;if(btn){btn.disabled=true;btn.textContent='กำลังบันทึก…'}
+  try{
+    const form=collect(),cur=await fetchDay(day);
+    const prev=cur?JSON.parse(JSON.stringify(cur)):null;
+    const data=cur?JSON.parse(JSON.stringify(cur)):{sales:{},bills:0,petty:[],market:[]};
+    applySecs(data,form,secs);
+    data.date=day;data.vat=false;data.totals=totalsOf(data);data.updatedAt=new Date().toISOString();ownStamp=data.updatedAt;
+    const {error}=await db.from(TABLE).upsert({date:day,data,updated_at:data.updatedAt});if(error)throw error;
+    latest=data;secs.forEach(clearSec);viewSecs(secs);refreshSummary();sugFrom(data);renderSug();
+    if(!dirty){$('reload').hidden=true;showSaved()}else setStatus('dirty','บันทึกแล้วบางส่วน · ยังมีส่วนที่แก้ไขแต่ยังไม่บันทึก');
+    toast('บันทึก'+secs.map(x=>SEC_NAME[x]).join(' · ')+' วันที่ '+dmy(day)+' แล้ว',async()=>{
       const now=new Date().toISOString();ownStamp=now;
-      const back=prev?{...prev,updatedAt:now}:{date:day,deleted:true,updatedAt:now};
+      const back=(await fetchDay(day))||{date:day,sales:{},bills:0,petty:[],market:[]};
+      applySecs(back,prev,secs);back.totals=totalsOf(back);back.updatedAt=now;
       const r=await db.from(TABLE).upsert({date:day,data:back,updated_at:now});if(r.error)throw r.error;
-      latest=prev?back:null;refreshSummary();
-      if($('day').value===day){dirty=true;setStatus('dirty','ยกเลิกการบันทึกแล้ว ข้อมูลในระบบกลับเป็นแบบเดิม (ตัวเลขในฟอร์มยังไม่ได้บันทึก)')}
-      else toast('ยกเลิกการบันทึกวันที่ '+dmy(day)+' แล้ว');
-    })}
-  catch(e){
-    if(e&&e.code==='invalid_argument'){canWrite=false;lockInputs();setStatus('err','บัญชีนี้ดูได้อย่างเดียว ต้องได้สิทธิ์ Contributor ขึ้นไปจึงจะบันทึกได้')}
-    else toast('บันทึกไม่สำเร็จ ลองกดบันทึกอีกครั้ง');
-  }
-  finally{btn.textContent='บันทึก';btn.disabled=!canWrite}
-};
+      latest=back;refreshSummary();
+      if($('day').value===day&&!dirty){load(back);markPaidChips(day);showSaved()}
+      toast('ยกเลิกการบันทึก'+secs.map(x=>SEC_NAME[x]).join(' · ')+'แล้ว');
+    });
+  }catch(e){toast('บันทึกไม่สำเร็จ ลองกดบันทึกอีกครั้ง')}
+  finally{if(btn){btn.textContent=label}updateSecBtns();$('save').disabled=!canWrite||!db||!$('day').value}
+}
+$('save').onclick=()=>saveSections(dirtySec.size?[...dirtySec]:SEC_ALL,$('save'));
+document.addEventListener('click',e=>{const b=e.target.closest('.secSave');if(b)saveSections([b.dataset.sec],b)});
+/* ยอดขายที่บันทึกแล้ว: แสดงเป็นรายการ กด "แก้ไข" เพื่อเปิดช่องกรอก */
+const SALES_CH=[['cash','เงินสด'],['lineman','LINE MAN'],['grab','Grab Food'],['credit','Credit'],['kplus','KPlus']];
+function salesHas(){return SALES_CH.some(([k])=>num($(k).value))||num($('bills').value)>0}
+function setSalesView(on){
+  const sec=$('secSales');sec.classList.toggle('viewing',!!on);if(!on)return;
+  const tot=SALES_CH.reduce((a,[k])=>a+num($(k).value),0),bills=num($('bills').value);
+  sec.querySelector('.sview').innerHTML=`<div class="mcard"><div class="pvh"><div class="pvn"><b>ยอดขายรวม</b>${bills?` <span class="muted">· ${fmt0(bills)} บิล · เฉลี่ย ${fmt0(tot/bills)}/บิล</span>`:''}</div>
+    <b class="pvt">${fmt(tot)}</b><button class="editbtn sEdit" type="button">แก้ไข</button></div>
+    <ul class="pvl">${SALES_CH.filter(([k])=>num($(k).value)).map(([k,n])=>`<li><span class="pvi">${n}</span><span class="pva">${fmt(num($(k).value))}</span></li>`).join('')}</ul></div>`;
+  lockInputs();
+}
+document.addEventListener('click',e=>{if(e.target.closest('.sEdit')){setSalesView(false);lockInputs();$('cash').focus()}});
 
 $('day').value='';
 $('from').value=today().slice(0,8)+'01';$('to').value=today();
@@ -1288,12 +1339,12 @@ $('moveGo').onclick=async()=>{
     const data={...collect(),date:to,updatedAt:now};
     let r=await db.from(TABLE).upsert({date:to,data,updated_at:now});if(r.error)throw r.error;
     r=await db.from(TABLE).upsert({date:from,data:{date:from,deleted:true,movedTo:to,updatedAt:now},updated_at:now});if(r.error)throw r.error;
-    dirty=false;setDay(to);watchDay(to);refreshSummary();
+    clearSec();setDay(to);watchDay(to);refreshSummary();
     toast('ย้ายข้อมูลจาก '+dmy(from)+' ไป '+dmy(to)+' แล้ว',async()=>{
       const t2=new Date().toISOString();ownStamp=t2;
       let q=await db.from(TABLE).upsert({date:from,data:fromSaved?{...fromSaved,date:from,updatedAt:t2}:{date:from,deleted:true,updatedAt:t2},updated_at:t2});if(q.error)throw q.error;
       q=await db.from(TABLE).upsert({date:to,data:toBefore?{...toBefore,updatedAt:t2}:{date:to,deleted:true,updatedAt:t2},updated_at:t2});if(q.error)throw q.error;
-      dirty=false;setDay(from);watchDay(from);refreshSummary();toast('ย้ายกลับไปวันที่ '+dmy(from)+' แล้ว');
+      clearSec();setDay(from);watchDay(from);refreshSummary();toast('ย้ายกลับไปวันที่ '+dmy(from)+' แล้ว');
     });
   }catch(e){toast('ย้ายไม่สำเร็จ ลองใหม่อีกครั้ง')}
   finally{go.disabled=false}
