@@ -567,6 +567,19 @@ body.homebg .bar{display:none}
 .home-ic .badge{position:absolute;top:-3px;right:-5px;min-width:21px;height:21px;line-height:21px;padding:0 6px;border-radius:999px;background:#e5322d;color:#fff;font-size:11.5px;font-weight:700;font-family:var(--num);box-shadow:0 0 0 2px #fff}
 .c-or{--c:#e0661a;--t:#fff0e5}.c-am{--c:#d18a00;--t:#fff5d9}.c-gr{--c:#22936a;--t:#e3f5ec}.c-bl{--c:#2f74d0;--t:#e7f0fc}
 .c-pu{--c:#7652cc;--t:#efe9fb}.c-rd{--c:#d6443a;--t:#fdecea}.c-te{--c:#178f99;--t:#e0f4f5}.c-pk{--c:#cc4a88;--t:#fcebf3}.c-gy{--c:#5f5650;--t:#f2eeeb}
+/* วิเคราะห์ WoW / MoM */
+.ana-top{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.ana-top .seg button{min-width:120px}
+.lfl{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.lfl div{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;min-width:0}
+.lfl span{display:block;font-size:12px;color:var(--muted)}
+.lfl strong{display:block;font-family:var(--num);font-size:20px;font-variant-numeric:tabular-nums;margin-top:2px}
+.lfl em{display:block;font-style:normal;font-size:12px;color:var(--muted);font-family:var(--num);line-height:1.4}
+.dl-up{color:#1f8a57;font-weight:700}.dl-dn{color:#c62f25;font-weight:700}.dl-0{color:var(--muted)}
+.lfl .dl-up,.lfl .dl-dn,.lfl .dl-0{display:inline;font-size:13px}
+.atable td.cur{font-weight:600}
+.atable td small{color:var(--muted);font-weight:400}
+@media (max-width:640px){.lfl{grid-template-columns:repeat(2,1fr)}.lfl strong{font-size:17px}.ana-top .seg{width:100%}.ana-top .seg button{flex:1;min-width:0}}
 /* แถบเมนูล่าง */
 body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
 .toast{bottom:calc(96px + env(safe-area-inset-bottom,0px))!important}
@@ -621,13 +634,14 @@ body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
     <button type="button" class="home-tile c-gr" data-go="transfer"><span class="home-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect class="f" x="2.5" y="6" width="15" height="10" rx="2"/><rect x="2.5" y="6" width="15" height="10" rx="2"/><circle cx="10" cy="11" r="2.3"/><path d="M5.5 9v4M14.5 9v4"/><path d="M8 19.5h12.5M18 17l2.5 2.5L18 22"/></svg><span class="lock" aria-label="ต้องเข้าสู่ระบบ"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span></span><b>รายการโอน</b></button>
     <button type="button" class="home-tile c-te" data-go="recon"><span class="home-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="f" d="M3 14h6a3 3 0 0 1-6 0zM15 14h6a3 3 0 0 1-6 0z"/><path d="M12 4v16M7 20h10M5 7h14M12 4.2l-1 .8M6 7l-3 7a3 3 0 0 0 6 0zM18 7l-3 7a3 3 0 0 0 6 0z"/><circle class="d" cx="12" cy="4" r="1.3"/></svg><span class="lock" aria-label="ต้องเข้าสู่ระบบ"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span></span><b>กระทบยอด</b></button>
     <button type="button" class="home-tile c-bl" data-go="dash"><span class="home-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect class="f" x="3" y="3" width="18" height="18" rx="4"/><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M7.5 16.5v-3M12 16.5v-8M16.5 16.5v-5.5"/></svg><span class="lock" aria-label="ต้องเข้าสู่ระบบ"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span></span><b>Dashboard</b></button>
+    <button type="button" class="home-tile c-or" data-go="ana"><span class="home-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="f" d="M3 20l5-6 4 3 8-10v13z"/><path d="M3 16.5l5-5.5 4 3 8-9"/><path d="M15 5h5v5"/><path d="M3 20.5h18"/></svg><span class="lock" aria-label="ต้องเข้าสู่ระบบ"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span></span><b>วิเคราะห์ WoW/MoM</b></button>
     <button type="button" class="home-tile c-pu" data-go="pl"><span class="home-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="f" d="M12 3a9 9 0 0 1 9 9h-9z"/><path d="M21 12a9 9 0 1 1-9-9v9z"/><path d="M14.5 3.3A9 9 0 0 1 20.7 9.5H14.5z"/></svg><span class="lock" aria-label="ต้องเข้าสู่ระบบ"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span></span><b>P&amp;L</b></button>
     <button type="button" class="home-tile c-pk" data-go="partner"><span class="home-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><circle class="f" cx="9" cy="8" r="3.4"/><circle cx="9" cy="8" r="3.4"/><path d="M3 19.5a6 6 0 0 1 12 0"/><circle cx="17" cy="9.2" r="2.5"/><path d="M15.6 14a4.6 4.6 0 0 1 5.9 4.4"/></svg><span class="lock" aria-label="ต้องเข้าสู่ระบบ"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span></span><b>หุ้นส่วน</b></button>
-    <button type="button" class="home-tile c-rd" data-go="export"><span class="home-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="f" d="M6 3h8l5 5v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M11.5 11v6M9 14.5l2.5 2.5 2.5-2.5"/></svg></span><b>สรุปบิล Excel/PDF</b></button>
   </div>
   <div class="home-sec">บริการอื่น</div>
   <div class="home-grid">
     <button type="button" class="home-tile c-am" data-go="recent"><span class="home-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="f" d="M6.5 9.5a5.5 5.5 0 0 1 11 0c0 5.5 2.5 7.5 2.5 7.5H4s2.5-2 2.5-7.5"/><path d="M6.5 9.5a5.5 5.5 0 0 1 11 0c0 5.5 2.5 7.5 2.5 7.5H4s2.5-2 2.5-7.5"/><path d="M10.3 20.5a1.94 1.94 0 0 0 3.4 0M18.5 3.5a5 5 0 0 1 2.2 3.5M5.5 3.5A5 5 0 0 0 3.3 7"/></svg><span class="badge rbadge" hidden></span></span><b>อัปเดตล่าสุด</b></button>
+    <button type="button" class="home-tile c-rd" data-go="export"><span class="home-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="f" d="M6 3h8l5 5v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M11.5 11v6M9 14.5l2.5 2.5 2.5-2.5"/></svg></span><b>สรุปบิล Excel/PDF</b></button>
     <button type="button" class="home-tile c-bl" data-go="access"><span class="home-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="f" d="M12 3l7 3v5.5c0 4.4-3 8-7 9.5-4-1.5-7-5.1-7-9.5V6z"/><path d="M12 3l7 3v5.5c0 4.4-3 8-7 9.5-4-1.5-7-5.1-7-9.5V6z"/><path d="M9 12l2.2 2.2L15.5 10"/></svg><span class="lock" aria-label="ต้องเข้าสู่ระบบ"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span></span><b>สิทธิ์ดู Dashboard</b></button>
     <button type="button" class="home-tile c-gr" data-go="reload"><span class="home-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><circle class="f" cx="12" cy="12" r="8.5"/><path d="M19.5 8.5A8 8 0 0 0 5 7.5M4.5 15.5A8 8 0 0 0 19 16.5"/><path d="M5 3.5v4h4M19 20.5v-4h-4"/></svg></span><b>โหลดเวอร์ชันล่าสุด</b></button>
     <button type="button" class="home-tile c-gy" id="authTile"><span class="home-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><circle class="f" cx="12" cy="13" r="8"/><path d="M12 3v8M7.2 6.3a8 8 0 1 0 9.6 0"/></svg></span><b id="authTileT">เข้าสู่ระบบ</b></button>
@@ -842,6 +856,36 @@ body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
     <div id="accList" class="acclist"></div>
   </section>
 </main>
+<main id="anaView" hidden>
+  <div class="tuser">เข้าสู่ระบบเป็น <b class="who"></b> · <button type="button" class="linkbtn logout">ออกจากระบบ</button></div>
+  <div class="ana-top">
+    <h2 style="margin:0">วิเคราะห์การเติบโต</h2>
+    <div class="seg" id="aMode" role="group" aria-label="รูปแบบการเทียบ">
+      <button type="button" data-m="wow" aria-pressed="true">WoW รายสัปดาห์</button>
+      <button type="button" data-m="mom" aria-pressed="false">MoM รายเดือน</button>
+    </div>
+  </div>
+  <p class="sub" id="aNote" style="margin:-8px 0 0">กำลังโหลด…</p>
+  <section>
+    <h2 id="aLflT">เทียบช่วงเดียวกัน</h2>
+    <p class="sub" id="aLflS"></p>
+    <div class="lfl" id="aLfl"></div>
+  </section>
+  <section>
+    <h2 id="aChartT">ยอดขาย</h2>
+    <p class="sub">แท่ง = ยอดขายเฉลี่ยต่อวัน · เส้น = % เปลี่ยนแปลงจากช่วงก่อนหน้า</p>
+    <div class="chartbox tall"><canvas id="cAna" aria-label="กราฟการเติบโต"></canvas></div>
+  </section>
+  <section>
+    <h2 id="aTblT">รายละเอียด</h2>
+    <p class="sub">% เปลี่ยนแปลงเทียบจากยอดขายเฉลี่ยต่อวัน (ช่วงปัจจุบันยังไม่ครบจึงเทียบแบบเฉลี่ย) · ต้นทุนอาหาร = ของสด/ของแห้งจากบิลตลาด + เงินสดย่อยหมวดต้นทุนอาหาร</p>
+    <div class="scroll"><table class="dtable atable">
+      <thead><tr><th>ช่วง</th><th class="r">ยอดขาย</th><th class="r">เฉลี่ย/วัน</th><th class="r">% เปลี่ยน</th><th class="r">บิล</th><th class="r">เฉลี่ย/บิล</th><th class="r">ต้นทุนอาหาร</th><th class="r">ค่าใช้จ่ายรวม</th></tr></thead>
+      <tbody id="aBody"></tbody>
+    </table></div>
+  </section>
+</main>
+
 <main id="reconView" hidden>
   <div class="tuser">เข้าสู่ระบบเป็น <b class="who"></b> · <button type="button" class="linkbtn logout">ออกจากระบบ</button></div>
   <div class="range dhead">
@@ -1374,6 +1418,7 @@ function initDb(){
   else if(location.hash==='#history')showView('hist');
   else if(location.hash==='#dashboard')showView('dash');
   else if(location.hash==='#recon')showView('recon');
+  else if(location.hash==='#analyse')showView('ana');
   else if(location.hash==='#pl')showView('pl');
   else if(location.hash==='#partner')showView('partner');
   db.auth.onAuthStateChange&&db.auth.onAuthStateChange(()=>{});
@@ -1557,11 +1602,11 @@ function firstOfPrevMonth(){const d=new Date();d.setDate(1);d.setMonth(d.getMont
 $('tFrom').value=firstOfPrevMonth();$('tTo').value=today();
 
 let curView='home';
-const VIEWS={home:'homeView',daily:'dailyView',hist:'histView',recent:'recentView',transfer:'transferView',dash:'dashView',recon:'reconView',pl:'plView',partner:'partnerView'};
+const VIEWS={home:'homeView',daily:'dailyView',hist:'histView',recent:'recentView',transfer:'transferView',dash:'dashView',recon:'reconView',ana:'anaView',pl:'plView',partner:'partnerView'};
 function showView(v){
   curView=VIEWS[v]?v:'home';
   document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-current',b.dataset.view===curView?'page':'false'));
-  try{history.replaceState(null,'',curView==='transfer'?'#transfer':curView==='dash'?'#dashboard':curView==='recon'?'#recon':curView==='pl'?'#pl':curView==='partner'?'#partner':curView==='recent'?'#recent':curView==='hist'?'#history':curView==='daily'?'#daily':location.pathname)}catch(e){}
+  try{history.replaceState(null,'',curView==='transfer'?'#transfer':curView==='dash'?'#dashboard':curView==='recon'?'#recon':curView==='pl'?'#pl':curView==='partner'?'#partner':curView==='recent'?'#recent':curView==='hist'?'#history':curView==='daily'?'#daily':curView==='ana'?'#analyse':location.pathname)}catch(e){}
   $('dailyCtl').hidden=curView!=='daily';
   Object.values(VIEWS).forEach(id=>$(id).hidden=true);$('loginView').hidden=true;
   document.body.classList.toggle('homebg',curView==='home');
@@ -1584,13 +1629,13 @@ async function checkOwner(){
   const allowed=(window.TAMNUA_CONFIG&&window.TAMNUA_CONFIG.ownerEmail||'').toLowerCase();
   owner=email&&(!allowed||email.toLowerCase()===allowed)?email:null;
   let viewer=false;
-  if(email&&!owner&&v==='dash'){try{const r=await db.from(ACCESS).select('email').eq('email',email.toLowerCase()).maybeSingle();viewer=!r.error&&!!r.data}catch(e){}}
+  if(email&&!owner&&(v==='dash'||v==='ana')){try{const r=await db.from(ACCESS).select('email').eq('email',email.toLowerCase()).maybeSingle();viewer=!r.error&&!!r.data}catch(e){}}
   if(curView!==v)return;
   const ok=!!owner||viewer;
   $('loginView').hidden=ok;$(VIEWS[v]).hidden=!ok;
   if(ok){document.querySelectorAll('.who').forEach(el=>el.textContent=email);$('accBox').hidden=!owner;
-    v==='transfer'?loadTransfers():v==='dash'?(loadDash(),owner&&loadAccess()):v==='recon'?loadRecon():v==='pl'?loadPL():loadPartner()}
-  else if(email){$('tLoginErr').innerHTML='';const msg=document.createElement('span');msg.textContent=v==='dash'?'บัญชี '+email+' ยังไม่ได้รับสิทธิ์ดู Dashboard':'บัญชี '+email+' เปิดได้เฉพาะ Dashboard';$('tLoginErr').appendChild(msg);
+    v==='transfer'?loadTransfers():v==='ana'?loadAna():v==='dash'?(loadDash(),owner&&loadAccess()):v==='recon'?loadRecon():v==='pl'?loadPL():loadPartner()}
+  else if(email){$('tLoginErr').innerHTML='';const msg=document.createElement('span');msg.textContent=(v==='dash'||v==='ana')?'บัญชี '+email+' ยังไม่ได้รับสิทธิ์ดู Dashboard':'บัญชี '+email+' เปิดได้เฉพาะ Dashboard และหน้าวิเคราะห์';$('tLoginErr').appendChild(msg);
     const b=document.createElement('button');b.type='button';b.className='linkbtn';b.textContent=' ออกจากระบบ';b.onclick=async()=>{try{await db.auth.signOut()}catch(e){}$('tLoginErr').textContent='';checkOwner()};$('tLoginErr').appendChild(b)}
 }
 $('tLoginForm').addEventListener('submit',async e=>{
@@ -1642,7 +1687,7 @@ async function loadHome(){
 }
 $('brandHome').onclick=$('homeBtn').onclick=()=>{showView('home');window.scrollTo(0,0)};$('brandHome').onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();showView('home')}};
 /* หน้าที่ต้องใช้ฐานข้อมูล/ล็อกอิน ให้ initDb เป็นคนเปิดหลังเชื่อมต่อเสร็จ */
-{const H={'#daily':'daily','#recent':'recent','#history':'hist'},L=['#transfer','#dashboard','#recon','#pl','#partner'];if(!L.includes(location.hash))showView(H[location.hash]||'home')}
+{const H={'#daily':'daily','#recent':'recent','#history':'hist'},L=['#transfer','#dashboard','#recon','#pl','#partner','#analyse'];if(!L.includes(location.hash))showView(H[location.hash]||'home')}
 
 async function loadTransfers(){
   if(!db){$('tNote').textContent='ยังไม่ได้เชื่อมฐานข้อมูล';return}
@@ -1824,6 +1869,70 @@ async function renderDash(pend,pendN){
       plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'เฉลี่ย '+money(c.parsed.y)+' ('+dow[c.dataIndex].c+' วัน)'}}}}});
 }
 try{window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{if(!$('dashView').hidden&&dashRows.length)loadDash()})}catch(e){}
+
+/* ---------- วิเคราะห์ WoW / MoM ---------- */
+const COGS_KEYS=new Set(PL_COGS.map(([k])=>k));
+let anaMode='wow',anaRows=[];
+document.querySelectorAll('#aMode button').forEach(b=>b.onclick=()=>{anaMode=b.dataset.m;
+  document.querySelectorAll('#aMode button').forEach(x=>x.setAttribute('aria-pressed',x===b?'true':'false'));renderAna()});
+const addDays=(iso,n)=>{const d=new Date(iso+'T00:00:00');d.setDate(d.getDate()+n);return isoOf(d)};
+const monOf=iso=>{const d=new Date(iso+'T00:00:00'),g=(d.getDay()+6)%7;return addDays(iso,-g)};
+function anaDay(r){const m=dayMetrics({...r.data,date:r.date});
+  const food=m.d.market.reduce((a,x)=>a+num(x.fresh)+num(x.dry),0)+m.d.petty.reduce((a,b)=>a+(b.items||[]).reduce((x,i)=>x+(COGS_KEYS.has(i.cat)?num(i.amount):0),0),0);
+  return{date:r.date,sales:m.sales,bills:m.bills,exp:m.exp,food}}
+async function loadAna(){
+  if(!db)return;$('aNote').textContent='กำลังโหลด…';
+  const t=today(),d=new Date(t+'T00:00:00'),f=isoOf(new Date(d.getFullYear(),d.getMonth()-6,1)),f2=addDays(monOf(t),-7*12),from=f<f2?f:f2;
+  const {data,error}=await db.from(TABLE).select('date,data').gte('date',from).lte('date',t).order('date').limit(500);
+  if(error){$('aNote').textContent='โหลดข้อมูลไม่ได้ ลองใหม่อีกครั้ง';return}
+  anaRows=(data||[]).filter(r=>r.data&&!r.data.deleted).map(anaDay);
+  $('aNote').textContent=`ข้อมูล ${anaRows.length} วัน · อัปเดต ${new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})}`;
+  renderAna();
+}
+function aggr(rows){const o={n:rows.length,sales:0,bills:0,bs:0,exp:0,food:0};rows.forEach(r=>{o.sales+=r.sales;o.bills+=r.bills;if(r.bills)o.bs+=r.sales;o.exp+=r.exp;o.food+=r.food});o.avg=o.n?o.sales/o.n:0;o.tk=o.bills?o.bs/o.bills:0;return o}
+const dPct=(a,b)=>b?(a-b)/b*100:null;
+const dTag=v=>v==null?'<span class="dl-0">–</span>':`<span class="${Math.abs(v)<.05?'dl-0':v>0?'dl-up':'dl-dn'}">${v>0?'▲':v<0?'▼':''} ${Math.abs(v).toFixed(1)}%</span>`;
+async function renderAna(){
+  if(!anaRows.length&&$('aNote').textContent==='กำลังโหลด…')return;
+  const t=today(),wk=anaMode==='wow',R=anaRows,between=(a,b)=>R.filter(r=>r.date>=a&&r.date<=b);
+  /* like-for-like */
+  let cur,prev,lab,sub;
+  if(wk){const m0=monOf(t),k=Math.round((Date.parse(t)-Date.parse(m0))/864e5);cur=[m0,t];prev=[addDays(m0,-7),addDays(m0,-7+k)];
+    lab=['สัปดาห์นี้','สัปดาห์ก่อน'];sub=`จันทร์–${DOW[new Date(t+'T00:00:00').getDay()]} ${dmyS(cur[0])}–${dmyS(cur[1])} เทียบ ${dmyS(prev[0])}–${dmyS(prev[1])}`}
+  else{const d=new Date(t+'T00:00:00'),p=new Date(d.getFullYear(),d.getMonth()-1,1),dimP=new Date(d.getFullYear(),d.getMonth(),0).getDate(),k=Math.min(d.getDate(),dimP);
+    cur=[t.slice(0,8)+'01',t];prev=[isoOf(p),isoOf(new Date(p.getFullYear(),p.getMonth(),k))];
+    lab=['เดือนนี้','เดือนก่อน'];sub=`วันที่ 1–${d.getDate()} ${monLabel(t.slice(0,7))} เทียบ 1–${k} ${monLabel(prev[0].slice(0,7))}`}
+  const A=aggr(between(...cur)),B=aggr(between(...prev));
+  $('aLflT').textContent=`${lab[0]} เทียบ ${lab[1]} (ช่วงวันเดียวกัน)`;$('aLflS').textContent=sub;
+  const pc=(x,y)=>y?(x/y*100).toFixed(1)+'%':'–';
+  const card=(n,a,b,fmtF)=>{const v=dPct(a,b);return `<div><span>${n}</span><strong>${fmtF(a)}</strong><em>${dTag(v)}<br>เดิม ${fmtF(b)}</em></div>`};
+  const fpA=A.sales?A.food/A.sales*100:0,fpB=B.sales?B.food/B.sales*100:0,pt=v=>v.toFixed(1)+'%';
+  const dpt=fpA-fpB;
+  $('aLfl').innerHTML=card('ยอดขาย',A.sales,B.sales,fmt0)+card('จำนวนบิล',A.bills,B.bills,fmt0)+card('เฉลี่ย/บิล',A.tk,B.tk,fmt0)
+    +`<div><span>ต้นทุนอาหาร %</span><strong>${A.sales?pt(fpA):'–'}</strong><em><span class="${Math.abs(dpt)<.05?'dl-0':dpt>0?'dl-dn':'dl-up'}">${dpt>0?'▲':dpt<0?'▼':''} ${Math.abs(dpt).toFixed(1)} จุด</span><br>เดิม ${B.sales?pt(fpB):'–'}</em></div>`;
+  /* periods */
+  let P=[];
+  if(wk){let m=monOf(t);for(let i=0;i<12;i++){const a=addDays(m,-7*i),b=addDays(a,6);P.push({k:a,lab:`${dmyS(a)}–${dmyS(b)}`,short:dmyS(a),cur:i===0,rows:between(a,b<t?b:t)})}}
+  else{const d=new Date(t+'T00:00:00');for(let i=0;i<7;i++){const a=new Date(d.getFullYear(),d.getMonth()-i,1),b=new Date(d.getFullYear(),d.getMonth()-i+1,0),ai=isoOf(a),bi=isoOf(b);
+    P.push({k:ai,lab:monLabel(ai.slice(0,7)),short:TH_MON[a.getMonth()],cur:i===0,dim:b.getDate(),rows:between(ai,bi<t?bi:t)})}}
+  P=P.map(x=>({...x,...aggr(x.rows)})).filter(x=>x.n).reverse();
+  P.forEach((x,i)=>x.chg=i?dPct(x.avg,P[i-1].avg):null);
+  $('aChartT').textContent=wk?`ยอดขายรายสัปดาห์ (${P.length} สัปดาห์)`:`ยอดขายรายเดือน (${P.length} เดือน)`;
+  $('aTblT').textContent=wk?'รายละเอียดรายสัปดาห์ (จันทร์–อาทิตย์)':'รายละเอียดรายเดือน';
+  $('aBody').innerHTML=P.slice().reverse().map(x=>`<tr><td class="${x.cur?'cur':''}">${x.lab}${x.cur?' <small>(ถึงวันนี้)</small>':''} <small>${x.n}${wk?'':'/'+x.dim} วัน</small></td><td>${fmt0(x.sales)}</td><td>${fmt0(x.avg)}</td><td>${dTag(x.chg)}</td><td>${x.bills?fmt0(x.bills):'–'}</td><td>${x.bills?fmt0(x.tk):'–'}</td><td>${pc(x.food,x.sales)}</td><td>${pc(x.exp,x.sales)}</td></tr>`).join('')||'<tr><td colspan="8" class="muted">ยังไม่มีข้อมูล</td></tr>';
+  try{if(!window.Chart)await loadScript('https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js')}catch(e){return}
+  const C=window.Chart,muted=tok('--muted'),line=tok('--line'),fg=tok('--fg'),money=v=>Number(v).toLocaleString('th-TH',{maximumFractionDigits:0});
+  C.defaults.font.family=getComputedStyle(document.body).fontFamily;C.defaults.color=muted;
+  if(charts.cAna)charts.cAna.destroy();
+  charts.cAna=new C($('cAna'),{type:'bar',data:{labels:P.map(x=>x.short),datasets:[
+    {type:'bar',label:'ยอดขายเฉลี่ย/วัน',data:P.map(x=>x.avg),backgroundColor:P.map(x=>x.cur?'#f2b48a':tok('--leaf')),borderRadius:5,yAxisID:'y',order:2},
+    {type:'line',label:'% เปลี่ยนแปลง',data:P.map(x=>x.chg==null?null:+x.chg.toFixed(1)),borderColor:'#2f74d0',backgroundColor:'#2f74d0',pointRadius:4,tension:.25,yAxisID:'y2',order:1,spanGaps:true}]},
+    options:{maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+      scales:{x:{grid:{display:false},ticks:{color:muted}},y:{grid:{color:line},ticks:{color:muted,callback:money}},
+        y2:{position:'right',grid:{display:false},ticks:{color:'#2f74d0',callback:v=>v+'%'}}},
+      plugins:{legend:{position:'bottom',labels:{boxWidth:12,color:fg}},tooltip:{callbacks:{
+        title:c=>P[c[0].dataIndex].lab,label:c=>c.dataset.yAxisID==='y2'?'เปลี่ยนแปลง: '+(c.parsed.y>0?'+':'')+c.parsed.y+'%':'เฉลี่ย/วัน: '+money(c.parsed.y)+' (รวม '+money(P[c.dataIndex].sales)+')'}}}}});
+}
 
 
 /* คำที่เคยกรอก: ดึงจากข้อมูล 120 วันล่าสุด เรียงตามที่ใช้บ่อย แสดงเป็นตัวเลือกตอนพิมพ์ */
