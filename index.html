@@ -111,10 +111,10 @@ th.r{text-align:right}
 td{padding:5px 6px;border-bottom:1px solid var(--line);vertical-align:middle}
 tfoot td{font-family:var(--num);font-weight:500;text-align:right;border-bottom:0;padding-top:10px}
 tfoot td.lbl{font-family:var(--body);text-align:left;font-weight:600}
-.market{min-width:780px}
-.market input.t{min-width:140px}
+table.market{min-width:780px}
+table.market input.t{min-width:140px}
 .idx{width:48px}
-.market input.n{min-width:92px}
+table.market input.n{min-width:92px}
 .del{background:none;border:0;color:var(--muted);font-size:18px;cursor:pointer;padding:4px 8px;border-radius:6px}
 .del:hover{color:var(--chili);background:var(--chili-soft)}
 .tabs{display:flex;gap:4px;background:rgba(255,255,255,.14);padding:3px;border-radius:9px}
@@ -145,6 +145,45 @@ tfoot td.lbl{font-family:var(--body);text-align:left;font-weight:600}
 .tdlist tfoot td{border-bottom:0;font-weight:600}
 .tdmeta{font-size:13px;color:var(--muted)}
 .tdmeta .linkbtn{font-size:13px;color:var(--leaf);font-weight:600}
+/* รายการโอนบนมือถือ: แต่ละบิลเป็นการ์ดกะทัดรัด */
+@media (max-width:640px){
+  #transferView .range{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  #transferView .range label.f{width:auto}
+  #transferView .range .seg{grid-column:1/-1;justify-self:stretch}
+  #transferView .range .seg button{flex:1}
+  #transferView .scroll{overflow:visible;margin:0;padding:0}
+  .tlist{min-width:0}
+  .tlist>thead>tr{display:flex;align-items:center;gap:8px}
+  .tlist>thead>tr>th{display:none;border:0}
+  .tlist>thead>tr>th:first-child{display:flex;align-items:center;gap:8px;padding:4px 0 8px}
+  .tlist>thead>tr>th:first-child::after{content:"เลือกทั้งหมด";font-size:13px;color:var(--muted)}
+  .tlist>thead{display:block;border-bottom:1px solid var(--line)}
+  .tlist>tbody{display:block}
+  .tlist>tbody>tr.trow{display:grid;grid-template-columns:24px auto minmax(0,1fr) auto;grid-template-areas:"ck date type amt" "ck pay pay st" "ck det det det";gap:2px 8px;align-items:center;padding:10px 4px;border-bottom:1px solid var(--line)}
+  .tlist>tbody>tr.trow>td{display:block;padding:0;border:0;min-width:0}
+  .tlist .c-ck{grid-area:ck;align-self:start;padding-top:2px}
+  .tlist .c-date{grid-area:date;font-size:13px;color:var(--muted)}
+  .tlist .c-type{grid-area:type}
+  .tlist .c-type .chip{font-size:11px;padding:1px 7px}
+  .tlist .c-amt{grid-area:amt;font-size:16px;font-weight:600;text-align:right}
+  .tlist .c-pay{grid-area:pay;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tlist .c-st{grid-area:st;text-align:right;white-space:nowrap}
+  .tlist .c-st .chip{font-size:11px;padding:1px 7px}
+  .tlist .c-det{grid-area:det;max-width:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tlist>tbody>tr.trow.open .c-det{white-space:normal}
+  .tlist>tbody>tr.tdet{display:block}
+  .tlist>tbody>tr.tdet>td{display:block;padding:0 0 10px}
+  .tlist>tbody>tr.tdet>td:first-child{display:none}
+  .tlist>tbody>tr.trow.open{background:var(--leaf-soft)}
+  .tlist>tbody>tr.trow.open>td{background:transparent}
+  .tlist>tbody>tr.tdet{background:var(--leaf-soft);padding:0 6px}
+  .tdlist td,.tdlist th{font-size:13px}
+  .tbar{margin:10px -18px -18px;padding:10px 18px}
+  .tbar{flex-wrap:nowrap;gap:8px}
+  .tbar span{font-size:13px;min-width:0}
+  .tbar .btn{padding:8px 10px;font-size:14px;white-space:nowrap}
+}
+
 .kpis{grid-template-columns:repeat(3,1fr)}
 .fcast strong{color:var(--leaf)}
 .pdfhead{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid var(--bar);padding-bottom:8px;font-size:14px;color:var(--muted)}
@@ -1194,13 +1233,13 @@ function renderTransfers(){
   $('tDone').textContent=fmt0(sum(done));$('tDoneN').textContent=done.length+' บิล';
   const rows=tRows.filter(r=>tFilter==='all'||(tFilter==='paid'?r.paid:!r.paid));
   $('tBody').innerHTML=rows.map(r=>`<tr class="trow${r.paid?' isPaid':''}${tOpen.has(r.key)?' open':''}" data-key="${escH(r.key)}" tabindex="0" aria-expanded="${tOpen.has(r.key)}">
-    <td>${r.paid?'':`<input type="checkbox" class="tPick" data-key="${escH(r.key)}"${tSel.has(r.key)?' checked':''} aria-label="เลือกบิลนี้">`}</td>
-    <td class="nowrap">${dmy(r.date)}</td>
-    <td><span class="chip ${r.type}">${r.type==='petty'?'เงินสดย่อย':'บิลตลาด'}</span></td>
-    <td>${r.payee?escH(r.payee):'<span class="muted">ไม่ระบุ</span>'}</td>
-    <td class="det"><span class="tog" aria-hidden="true">${tOpen.has(r.key)?"▾":"▸"}</span> ${escH(r.detail)}</td>
-    <td class="amt">${fmt(r.amt)}</td>
-    <td>${r.paid?`<span class="chip paidc">โอนแล้ว ${dmy(r.paidAt)}</span> <button type="button" class="linkbtn tUndo" data-key="${escH(r.key)}">ยกเลิก</button>`:'<span class="chip pendc">ค้างโอน</span>'}</td></tr>`+(tOpen.has(r.key)?tDetail(r):'')).join('');
+    <td class="c-ck">${r.paid?'':`<input type="checkbox" class="tPick" data-key="${escH(r.key)}"${tSel.has(r.key)?' checked':''} aria-label="เลือกบิลนี้">`}</td>
+    <td class="nowrap c-date">${dmy(r.date)}</td>
+    <td class="c-type"><span class="chip ${r.type}">${r.type==='petty'?'เงินสดย่อย':'บิลตลาด'}</span></td>
+    <td class="c-pay">${r.payee?escH(r.payee):'<span class="muted">ไม่ระบุ</span>'}</td>
+    <td class="det c-det"><span class="tog" aria-hidden="true">${tOpen.has(r.key)?"▾":"▸"}</span> ${escH(r.detail)}</td>
+    <td class="amt c-amt">${fmt(r.amt)}</td>
+    <td class="c-st">${r.paid?`<span class="chip paidc">โอนแล้ว ${dmy(r.paidAt)}</span> <button type="button" class="linkbtn tUndo" data-key="${escH(r.key)}">ยกเลิก</button>`:'<span class="chip pendc">ค้างโอน</span>'}</td></tr>`+(tOpen.has(r.key)?tDetail(r):'')).join('');
   $('tNote').textContent=rows.length?`${rows.length} บิล · รวม ${fmt(sum(rows))} บาท`:(tFilter==='pending'?'ไม่มีบิลค้างโอนในช่วงวันที่นี้':'ไม่มีบิลในช่วงวันที่นี้');
   const picks=[...tSel].map(k=>tRows.find(r=>r.key===k)).filter(Boolean);
   $('tSel').textContent=fmt0(sum(picks));$('tSelN').textContent=picks.length+' บิล';
