@@ -262,6 +262,45 @@ select.t{font:inherit;width:100%;padding:9px 10px;border:1px solid var(--line);b
 .pltable .src{font-size:11.5px;color:var(--muted)}
 .pltable td.pc{color:var(--muted);white-space:nowrap}
 .pltable .del{font-size:15px;padding:0 4px}
+/* P&L บนมือถือ: แต่ละบรรทัด 2 แถว (ชื่อ / ระบบ · กรอกเพิ่ม · รวม · %) */
+@media (max-width:640px){
+  #plView .dhead{display:grid;grid-template-columns:1fr;gap:10px}
+  #plView .dhead label.f{width:auto}
+  #plView .dl{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0}
+  #plView .dl #plSave{grid-column:1/-1}
+  #plView .dl .btn{padding:9px 8px;font-size:14px}
+  #plView .kp4 strong{font-size:17px}
+  #plView .kp4 em{display:block}
+  #plView .scroll{overflow:visible;margin:0;padding:0}
+  .pltable{min-width:0}
+  .pltable thead{display:none}
+  .pltable tbody{display:block}
+  .pltable tr{display:grid;grid-template-columns:minmax(0,1fr) 80px minmax(60px,auto) 44px;column-gap:6px;align-items:center;border-bottom:1px solid var(--line);padding:6px 4px}
+  .pltable tr>td{display:block;padding:0;border:0!important;background:transparent!important;min-width:0;font-size:13.5px}
+  .pltable td.ind{padding-left:0}
+  .pltable tr.ln{grid-template-rows:auto auto;padding:5px 4px}
+  .pltable tr.ln>td:nth-child(1){grid-column:1;grid-row:1}
+  .pltable tr.ln>td:nth-child(2){grid-column:1;grid-row:2;color:var(--muted);text-align:left;font-size:12px}
+  .pltable tr.ln>td:nth-child(2)::before{content:"ระบบ ";font-family:var(--body);font-size:11.5px}
+  .pltable tr.ln>td:nth-child(3){grid-column:2;grid-row:1/3}
+  .pltable tr.ln>td:nth-child(4){grid-column:3;grid-row:1/3;font-weight:600}
+  .pltable tr.ln>td:nth-child(5){grid-column:4;grid-row:1/3}
+  .pltable input.n{width:100%;padding:5px 6px;font-size:13.5px}
+  .pltable input.t{width:100%}
+  .pltable tr.rev,.pltable tr.sub,.pltable tr.key,.pltable tr.net{grid-template-columns:minmax(0,1fr) auto 46px}
+  .pltable tr.rev>td:nth-child(2),.pltable tr.rev>td:nth-child(3),.pltable tr.sub>td:nth-child(2),.pltable tr.sub>td:nth-child(3),
+  .pltable tr.key>td:nth-child(2),.pltable tr.key>td:nth-child(3),.pltable tr.net>td:nth-child(2),.pltable tr.net>td:nth-child(3){display:none}
+  .pltable tr.key,.pltable tr.net{background:var(--leaf-soft);border-radius:8px;padding:8px 6px;margin:4px 0}
+  .pltable tr.sub{border-top:1px solid var(--fg)}
+  .pltable tr.net{border-top:2px solid var(--fg);border-radius:0 0 8px 8px}
+  .pltable tr.net>td{font-size:15px}
+  .pltable tr.hd,.pltable tr.addrow{display:block;border-bottom:1px solid var(--line)}
+  .pltable tr.hd>td{font-size:15px;padding-top:10px}
+  .pltable tr.addrow{border:0;padding:8px 0}
+  .pltable .src{font-size:11px}
+  .pltable td.pc{font-size:12px;text-align:right}
+}
+
 .pitems select.cat{font:inherit;font-size:13px;width:100%;min-width:0;padding:8px 6px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg)}
 .pitems select.cat.need{border-color:var(--chili)}
 /* รายการเงินสดย่อย: ช่องรายการกว้างขึ้น บนมือถือขึ้นบรรทัดของตัวเอง */
@@ -1533,7 +1572,7 @@ function plTotals(){
 function renderPL(){
   if(!plData)return;const D=plData,T=plTotals(),pc=v=>D.sales?(v/D.sales*100).toFixed(2):'–';
   const hint=k=>D.feeDiff&&k in D.feeDiff?`<div class="src">${D.feeDiff[k]==null?'ยังไม่มีบันทึกเงินเข้าในหน้ากระทบยอด':'ส่วนต่างจากหน้ากระทบยอด'}</div>`:'';
-  const line=(k,n)=>`<tr><td class="ind">${n}${hint(k)}</td><td>${D.auto[k]?fmt(D.auto[k]):'–'}</td><td><input class="n plm" data-k="${k}" inputmode="decimal" value="${plManual[k]?escH(plManual[k]):''}" aria-label="กรอกเพิ่ม ${n}"></td><td class="tv">${fmt(T.tot(k))}</td><td class="pc">${pc(T.tot(k))}</td></tr>`;
+  const line=(k,n)=>`<tr class="ln"><td class="ind">${n}${hint(k)}</td><td>${D.auto[k]?fmt(D.auto[k]):'–'}</td><td><input class="n plm" data-k="${k}" inputmode="decimal" value="${plManual[k]?escH(plManual[k]):''}" aria-label="กรอกเพิ่ม ${n}"></td><td class="tv">${fmt(T.tot(k))}</td><td class="pc">${pc(T.tot(k))}</td></tr>`;
   const sum=(label,v,cls)=>`<tr class="${cls}"><td>${label}</td><td></td><td></td><td class="tv">${fmt(v)}</td><td class="pc">${pc(v)}</td></tr>`;
   $('plBody').innerHTML=
     `<tr class="rev"><td>รายได้จากการขาย</td><td>${fmt(D.sales)}</td><td></td><td class="tv">${fmt(D.sales)}</td><td class="pc">100.00</td></tr>`
@@ -1542,8 +1581,8 @@ function renderPL(){
     +`<tr class="hd"><td colspan="5">ค่าใช้จ่ายในการบริหาร</td></tr>`+PL_OPEX.map(([k,n])=>line(k,n)).join('')
     +sum('รวมค่าใช้จ่ายในการบริหาร',T.opex,'sub')+sum('กำไรจากการดำเนินงาน',T.op,'key')
     +`<tr class="hd"><td colspan="5">รายการอื่นๆ <span class="muted">(ใส่ค่าใช้จ่ายเป็นบวก รายรับ/เงินคืนเป็นลบ)</span></td></tr>`
-    +plOther.map((o,i)=>`<tr><td class="ind"><input class="t plo" data-i="${i}" data-f="label" value="${escH(o.label||'')}" placeholder="ชื่อรายการ" aria-label="ชื่อรายการ"></td><td></td><td><input class="n plo" data-i="${i}" data-f="amount" inputmode="decimal" value="${o.amount!=null&&o.amount!==''?escH(o.amount):''}" aria-label="จำนวนเงิน"></td><td class="tv">${fmt(num(o.amount))}</td><td class="pc">${pc(num(o.amount))} <button type="button" class="del plDel" data-i="${i}" aria-label="ลบรายการ">×</button></td></tr>`).join('')
-    +`<tr><td class="ind" colspan="5"><button type="button" class="btn btn-add" id="plAddOther">+ เพิ่มรายการอื่นๆ</button></td></tr>`
+    +plOther.map((o,i)=>`<tr class="ln"><td class="ind"><input class="t plo" data-i="${i}" data-f="label" value="${escH(o.label||'')}" placeholder="ชื่อรายการ" aria-label="ชื่อรายการ"></td><td></td><td><input class="n plo" data-i="${i}" data-f="amount" inputmode="decimal" value="${o.amount!=null&&o.amount!==''?escH(o.amount):''}" aria-label="จำนวนเงิน"></td><td class="tv">${fmt(num(o.amount))}</td><td class="pc">${pc(num(o.amount))} <button type="button" class="del plDel" data-i="${i}" aria-label="ลบรายการ">×</button></td></tr>`).join('')
+    +`<tr class="addrow"><td class="ind" colspan="5"><button type="button" class="btn btn-add" id="plAddOther">+ เพิ่มรายการอื่นๆ</button></td></tr>`
     +sum('กำไร (ขาดทุน) สุทธิ',T.net,'net '+(T.net<0?'neg':''));
   $('plSave').disabled=!plDirty||D.moMissing;
   $('kpSales').textContent=fmt0(D.sales);$('kpSalesFc').textContent='100%';if(D.ym>=curYM())forecastMonth(D.ym).then(F=>{if(plData&&plData.ym===D.ym&&F&&F.remaining)$('kpSalesFc').textContent=`100% · ประมาณการสิ้นเดือน ${fmt0(F.fc)}`});$('kpGross').textContent=fmt0(T.gross);$('kpGrossP').textContent=pc(T.gross)+'%';
