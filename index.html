@@ -80,6 +80,10 @@ main{max-width:880px;margin:0 auto;display:grid;gap:22px;
 .rrow{all:unset;box-sizing:border-box;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:2px 12px;align-items:baseline;padding:8px 12px;border-radius:10px;background:var(--surface);border:1px solid var(--line);cursor:pointer;font-size:14px}
 .rrow:hover,.rrow:focus-visible{border-color:var(--leaf)}
 .rrow.sel{border-color:var(--bar);background:var(--leaf-soft)}
+.tabs .badge{display:inline-block;min-width:18px;height:18px;line-height:18px;padding:0 5px;margin-left:6px;border-radius:999px;background:#fff;color:var(--chili);font-size:11px;font-weight:700;text-align:center;vertical-align:1px;font-family:var(--num)}
+.tabs button[aria-current="page"] .badge{background:var(--chili);color:#fff}
+.rrow.unread{border-color:var(--chili);border-left-width:4px}
+.newchip{display:inline-block;font-family:var(--body);font-size:11px;font-weight:700;color:#fff;background:var(--chili);border-radius:999px;padding:0 7px;vertical-align:2px}
 .rrow .rd{font-family:var(--num);font-weight:600}
 .rrow .rs2{color:var(--muted);font-size:13px;min-width:0}
 .rrow .rt{font-size:12px;color:var(--muted);white-space:nowrap;text-align:right}
@@ -508,7 +512,7 @@ table.market:not(:has(#mktBody tr:not(.viewing))) tfoot tr{display:flex;justify-
 
 <div class="bar"><div class="bar-in">
   <div class="brand">ร้านตำนัว<small>บันทึกยอดประจำวัน · Daily P&amp;L input</small></div>
-  <nav class="tabs" aria-label="เลือกหน้า"><button type="button" data-view="daily" aria-current="page">บันทึกรายวัน</button><button type="button" data-view="recent" aria-current="false">อัปเดตล่าสุด</button><button type="button" data-view="transfer" aria-current="false">รายการโอน</button><button type="button" data-view="dash" aria-current="false">Dashboard</button><button type="button" data-view="recon" aria-current="false">กระทบยอด</button><button type="button" data-view="pl" aria-current="false">P&amp;L</button><button type="button" data-view="partner" aria-current="false">หุ้นส่วน</button></nav>
+  <nav class="tabs" aria-label="เลือกหน้า"><button type="button" data-view="daily" aria-current="page">บันทึกรายวัน</button><button type="button" data-view="recent" aria-current="false">อัปเดตล่าสุด<span class="badge" id="recentBadge" hidden></span></button><button type="button" data-view="transfer" aria-current="false">รายการโอน</button><button type="button" data-view="dash" aria-current="false">Dashboard</button><button type="button" data-view="recon" aria-current="false">กระทบยอด</button><button type="button" data-view="pl" aria-current="false">P&amp;L</button><button type="button" data-view="partner" aria-current="false">หุ้นส่วน</button></nav>
   <div class="bar-ctl" id="dailyCtl">
     <label class="datebtn empty" id="dayBtn"><span id="dayText">เลือกวัน/เดือน/ปี</span><input type="date" id="day" aria-label="เลือกวันที่"></label>
     <button class="btn btn-ghost" id="clear" type="button">ล้างฟอร์ม</button>
@@ -1037,6 +1041,13 @@ function toast(t,undo,label){
 function snapForm(){return JSON.parse(JSON.stringify(collect()))}
 function restoreForm(snap){load(snap);markPaidChips($('day').value);SEC_ALL.forEach(markSec);setStatus('dirty','กู้คืนแล้ว ยังไม่ได้บันทึก')}
 let ownStamp='';
+/* ตัวเลขยังไม่ได้อ่านบนแท็บ "อัปเดตล่าสุด": จำเวลาที่เปิดดูล่าสุดไว้ในเครื่องนี้ และไม่นับรายการที่เครื่องนี้บันทึกเอง */
+const LS_SEEN='tamnua-recent-seen',LS_OWN='tamnua-own-stamps';
+function lsGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
+function lsSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+let ownStamps=new Set();try{ownStamps=new Set(JSON.parse(lsGet(LS_OWN)||'[]'))}catch(e){}
+function rememberOwn(t){ownStamps.add(t);lsSet(LS_OWN,JSON.stringify([...ownStamps].slice(-60)));return t}
+function seenAt(){let v=Number(lsGet(LS_SEEN));if(!v){v=Date.now();lsSet(LS_SEEN,String(v))}return v}
 
 const TABLE='tamnua_days';
 async function fetchDay(day){
@@ -1110,14 +1121,18 @@ async function loadRecent(){
   if(!a.error){recSet=new Set((a.data||[]).filter(r=>r.data&&!r.data.deleted).map(r=>r.date))}
   if(!b.error){
     const rows=(b.data||[]).filter(r=>r.data&&!r.data.deleted).slice(0,30);
-    const t0=today();
+    const t0=today(),seen=seenAt();
+    const isNew=r=>Date.parse(r.updated_at)>seen&&!ownStamps.has(r.data.updatedAt);
+    const unread=rows.filter(isNew).length;
+    $('recentBadge').hidden=!unread||curView==='recent';$('recentBadge').textContent=unread>9?'9+':String(unread);
     $('recentList').innerHTML=rows.length?rows.map(r=>{
       const d=ensureIds({...r.data,date:r.date}),m=dayMetrics(d),u=new Date(r.updated_at);
       const ud=isoOf(u),hm=u.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
       const when=(ud===t0?'วันนี้ ':dmyS(ud)+' ')+hm+' น.';
       const parts=[m.sales?'ยอดขาย '+fmt0(m.sales):'',d.market.length?'บิลตลาด '+d.market.length:'',d.petty.length?'สดย่อย '+d.petty.length+' บิล':''].filter(Boolean).join(' · ')||'ยังไม่มีตัวเลข';
-      return `<button type="button" class="rrow${r.date===curDay?' sel':''}" data-d="${r.date}"><span class="rd">${dmy(r.date)}</span><span class="rs2">${parts}</span><span class="rt">แก้ไข ${when}</span></button>`}).join('')
+      return `<button type="button" class="rrow${r.date===curDay?' sel':''}${isNew(r)?' unread':''}" data-d="${r.date}"><span class="rd">${dmy(r.date)}${isNew(r)?' <span class="newchip">ใหม่</span>':''}</span><span class="rs2">${parts}</span><span class="rt">แก้ไข ${when}</span></button>`}).join('')
       :'<p class="sub" style="margin:0">ยังไม่มีข้อมูลที่บันทึก</p>';
+    if(curView==='recent'){lsSet(LS_SEEN,String(Date.now()));$('recentBadge').hidden=true}
   }
   renderStrip();
 }
@@ -1145,12 +1160,12 @@ async function saveSections(secs,btn){
     const prev=cur?JSON.parse(JSON.stringify(cur)):null;
     const data=cur?JSON.parse(JSON.stringify(cur)):{sales:{},bills:0,petty:[],market:[]};
     applySecs(data,form,secs);
-    data.date=day;data.vat=false;data.totals=totalsOf(data);data.updatedAt=new Date().toISOString();ownStamp=data.updatedAt;
+    data.date=day;data.vat=false;data.totals=totalsOf(data);data.updatedAt=new Date().toISOString();ownStamp=rememberOwn(data.updatedAt);
     const {error}=await db.from(TABLE).upsert({date:day,data,updated_at:data.updatedAt});if(error)throw error;
     latest=data;secs.forEach(clearSec);viewSecs(secs);refreshSummary();sugFrom(data);renderSug();
     if(!dirty){$('reload').hidden=true;showSaved()}else setStatus('dirty','บันทึกแล้วบางส่วน · ยังมีส่วนที่แก้ไขแต่ยังไม่บันทึก');
     toast('บันทึก'+secs.map(x=>SEC_NAME[x]).join(' · ')+' วันที่ '+dmy(day)+' แล้ว',async()=>{
-      const now=new Date().toISOString();ownStamp=now;
+      const now=new Date().toISOString();ownStamp=rememberOwn(now);
       const back=(await fetchDay(day))||{date:day,sales:{},bills:0,petty:[],market:[]};
       applySecs(back,prev,secs);back.totals=totalsOf(back);back.updatedAt=now;
       const r=await db.from(TABLE).upsert({date:day,data:back,updated_at:now});if(r.error)throw r.error;
@@ -1339,14 +1354,14 @@ $('moveGo').onclick=async()=>{
   const go=$('moveGo');go.disabled=true;
   try{
     if(!moveConfirm&&await fetchDay(to)){moveConfirm=true;go.textContent='วันที่ '+dmy(to)+' มีข้อมูลแล้ว กดอีกครั้งเพื่อเขียนทับ';return}
-    const now=new Date().toISOString();ownStamp=now;
+    const now=new Date().toISOString();ownStamp=rememberOwn(now);
     const fromSaved=latest?JSON.parse(JSON.stringify(latest)):null,toBefore=await fetchDay(to);
     const data={...collect(),date:to,updatedAt:now};
     let r=await db.from(TABLE).upsert({date:to,data,updated_at:now});if(r.error)throw r.error;
     r=await db.from(TABLE).upsert({date:from,data:{date:from,deleted:true,movedTo:to,updatedAt:now},updated_at:now});if(r.error)throw r.error;
     clearSec();setDay(to);watchDay(to);refreshSummary();
     toast('ย้ายข้อมูลจาก '+dmy(from)+' ไป '+dmy(to)+' แล้ว',async()=>{
-      const t2=new Date().toISOString();ownStamp=t2;
+      const t2=new Date().toISOString();ownStamp=rememberOwn(t2);
       let q=await db.from(TABLE).upsert({date:from,data:fromSaved?{...fromSaved,date:from,updatedAt:t2}:{date:from,deleted:true,updatedAt:t2},updated_at:t2});if(q.error)throw q.error;
       q=await db.from(TABLE).upsert({date:to,data:toBefore?{...toBefore,updatedAt:t2}:{date:to,deleted:true,updatedAt:t2},updated_at:t2});if(q.error)throw q.error;
       clearSec();setDay(from);watchDay(from);refreshSummary();toast('ย้ายกลับไปวันที่ '+dmy(from)+' แล้ว');
