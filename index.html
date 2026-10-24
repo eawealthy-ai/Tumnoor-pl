@@ -784,7 +784,7 @@ body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
     <h2>เข้าสู่ระบบเจ้าของร้าน</h2>
     <p class="sub">หน้ารายการโอน กระทบยอด P&L และหุ้นส่วน เปิดได้เฉพาะเจ้าของร้าน · Dashboard เปิดได้เฉพาะคนที่ได้รับสิทธิ์</p>
     <form id="tLoginForm" class="loginf">
-      <label class="f">อีเมล<input type="email" id="tEmail" class="t" autocomplete="username" required></label>
+      <label class="f">อีเมล หรือชื่อผู้ใช้<input type="text" id="tEmail" class="t" autocomplete="username" autocapitalize="none" spellcheck="false" required></label>
       <label class="f">รหัสผ่าน<input type="password" id="tPass" class="t" autocomplete="current-password" required></label>
       <button class="btn btn-save" id="tLoginBtn" type="submit">เข้าสู่ระบบ</button>
       <p class="sub" id="tLoginErr" style="color:var(--chili);margin:0"></p>
@@ -1640,7 +1640,7 @@ async function checkOwner(){
 }
 $('tLoginForm').addEventListener('submit',async e=>{
   e.preventDefault();if(!db)return;const btn=$('tLoginBtn');btn.disabled=true;$('tLoginErr').textContent='';
-  try{const {error}=await db.auth.signInWithPassword({email:$('tEmail').value.trim(),password:$('tPass').value});
+  try{const {error}=await db.auth.signInWithPassword({email:(u=>u.includes('@')?u:u+'@tumnoor.local')($('tEmail').value.trim().toLowerCase()),password:$('tPass').value});
     if(error){$('tLoginErr').textContent='อีเมลหรือรหัสผ่านไม่ถูกต้อง';return}
     $('tPass').value='';await checkOwner();
   }catch(err){$('tLoginErr').textContent='เข้าสู่ระบบไม่สำเร็จ ลองใหม่อีกครั้ง'}
