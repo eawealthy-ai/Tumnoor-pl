@@ -580,6 +580,11 @@ body.homebg .bar{display:none}
 .atable td.cur{font-weight:600}
 .atable td small{color:var(--muted);font-weight:400}
 @media (max-width:640px){.lfl{grid-template-columns:repeat(2,1fr)}.lfl strong{font-size:17px}.ana-top .seg{width:100%}.ana-top .seg button{flex:1;min-width:0}}
+/* ผู้ดู (viewer): ดูได้อย่างเดียว */
+.robadge{display:none}
+body.ro .robadge{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:999px;background:#e7f0fc;color:#2f74d0;font-size:12px;font-weight:600}
+body.ro #rFormSec,body.ro .tbar,body.ro #tAll,body.ro .tPick,body.ro .tUndo,body.ro .rcDel,body.ro #plSave,body.ro #pcSave,body.ro #pcAddP,body.ro #partnerView .filebtn,body.ro #partnerView .del,body.ro #plView .del,body.ro #plView .toolbar,body.ro #accBox{display:none!important}
+body.ro #plView input,body.ro #partnerView input,body.ro #partnerView select:not(#pcStart){pointer-events:none;background:transparent;border-color:transparent}
 /* แถบเมนูล่าง */
 body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
 .toast{bottom:calc(96px + env(safe-area-inset-bottom,0px))!important}
@@ -642,7 +647,7 @@ body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
   <div class="home-grid">
     <button type="button" class="home-tile c-am" data-go="recent"><span class="home-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="f" d="M6.5 9.5a5.5 5.5 0 0 1 11 0c0 5.5 2.5 7.5 2.5 7.5H4s2.5-2 2.5-7.5"/><path d="M6.5 9.5a5.5 5.5 0 0 1 11 0c0 5.5 2.5 7.5 2.5 7.5H4s2.5-2 2.5-7.5"/><path d="M10.3 20.5a1.94 1.94 0 0 0 3.4 0M18.5 3.5a5 5 0 0 1 2.2 3.5M5.5 3.5A5 5 0 0 0 3.3 7"/></svg><span class="badge rbadge" hidden></span></span><b>อัปเดตล่าสุด</b></button>
     <button type="button" class="home-tile c-rd" data-go="export"><span class="home-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="f" d="M6 3h8l5 5v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M11.5 11v6M9 14.5l2.5 2.5 2.5-2.5"/></svg></span><b>สรุปบิล Excel/PDF</b></button>
-    <button type="button" class="home-tile c-bl" data-go="access"><span class="home-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="f" d="M12 3l7 3v5.5c0 4.4-3 8-7 9.5-4-1.5-7-5.1-7-9.5V6z"/><path d="M12 3l7 3v5.5c0 4.4-3 8-7 9.5-4-1.5-7-5.1-7-9.5V6z"/><path d="M9 12l2.2 2.2L15.5 10"/></svg><span class="lock" aria-label="ต้องเข้าสู่ระบบ"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span></span><b>สิทธิ์ดู Dashboard</b></button>
+    <button type="button" class="home-tile c-bl" data-go="access"><span class="home-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="f" d="M12 3l7 3v5.5c0 4.4-3 8-7 9.5-4-1.5-7-5.1-7-9.5V6z"/><path d="M12 3l7 3v5.5c0 4.4-3 8-7 9.5-4-1.5-7-5.1-7-9.5V6z"/><path d="M9 12l2.2 2.2L15.5 10"/></svg><span class="lock" aria-label="ต้องเข้าสู่ระบบ"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span></span><b>ผู้ดู (viewer)</b></button>
     <button type="button" class="home-tile c-gr" data-go="reload"><span class="home-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><circle class="f" cx="12" cy="12" r="8.5"/><path d="M19.5 8.5A8 8 0 0 0 5 7.5M4.5 15.5A8 8 0 0 0 19 16.5"/><path d="M5 3.5v4h4M19 20.5v-4h-4"/></svg></span><b>โหลดเวอร์ชันล่าสุด</b></button>
     <button type="button" class="home-tile c-gy" id="authTile"><span class="home-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><circle class="f" cx="12" cy="13" r="8"/><path d="M12 3v8M7.2 6.3a8 8 0 1 0 9.6 0"/></svg></span><b id="authTileT">เข้าสู่ระบบ</b></button>
   </div>
@@ -750,7 +755,7 @@ body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
 
 <main id="transferView" hidden>
   <div id="tContent" class="tcontent">
-  <div class="tuser">เข้าสู่ระบบเป็น <b class="who"></b> · <button type="button" class="linkbtn logout">ออกจากระบบ</button></div>
+  <div class="tuser">เข้าสู่ระบบเป็น <b class="who"></b><span class="robadge">ดูอย่างเดียว</span> · <button type="button" class="linkbtn logout">ออกจากระบบ</button></div>
   <div class="summary three">
     <div><span>ค้างโอน</span><strong id="tPend">0</strong><em id="tPendN"></em></div>
     <div><span>โอนแล้ว</span><strong id="tDone">0</strong><em id="tDoneN"></em></div>
@@ -793,7 +798,7 @@ body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
 </main>
 
 <main id="dashView" hidden>
-  <div class="tuser">เข้าสู่ระบบเป็น <b class="who"></b> · <button type="button" class="linkbtn logout">ออกจากระบบ</button></div>
+  <div class="tuser">เข้าสู่ระบบเป็น <b class="who"></b><span class="robadge">ดูอย่างเดียว</span> · <button type="button" class="linkbtn logout">ออกจากระบบ</button></div>
   <div class="range dhead">
     <label class="f">ตั้งแต่<input type="date" id="dFrom" class="t"></label>
     <label class="f">ถึง<input type="date" id="dTo" class="t"></label>
@@ -850,14 +855,14 @@ body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
     </table></div>
   </section>
   <section id="accBox" hidden>
-    <h2>สิทธิ์ดู Dashboard</h2>
-    <p class="sub">คนที่อยู่ในรายการนี้ล็อกอินแล้วดูได้เฉพาะ Dashboard · สร้างบัญชีให้แต่ละคนที่ Supabase → Authentication → Users ด้วยอีเมลเดียวกัน</p>
-    <form id="accForm" class="accform"><input type="email" id="accEmail" class="t" placeholder="อีเมลของคนที่จะให้ดู" required aria-label="อีเมล"><button class="btn btn-save" type="submit">เพิ่ม</button></form>
+    <h2>ผู้ดู (viewer)</h2>
+    <p class="sub">คนในรายการนี้เข้าสู่ระบบแล้วดูได้ทุกหน้าที่ล็อก แต่แก้ไขไม่ได้ · สร้างบัญชีที่ Supabase → Authentication → Users ด้วยอีเมลเดียวกัน (ชื่อผู้ใช้ เช่น manager = manager@tumnoor.local)</p>
+    <form id="accForm" class="accform"><input type="text" autocapitalize="none" id="accEmail" class="t" placeholder="อีเมล หรือชื่อผู้ใช้ เช่น manager" required aria-label="อีเมล"><button class="btn btn-save" type="submit">เพิ่ม</button></form>
     <div id="accList" class="acclist"></div>
   </section>
 </main>
 <main id="anaView" hidden>
-  <div class="tuser">เข้าสู่ระบบเป็น <b class="who"></b> · <button type="button" class="linkbtn logout">ออกจากระบบ</button></div>
+  <div class="tuser">เข้าสู่ระบบเป็น <b class="who"></b><span class="robadge">ดูอย่างเดียว</span> · <button type="button" class="linkbtn logout">ออกจากระบบ</button></div>
   <div class="ana-top">
     <h2 style="margin:0">วิเคราะห์การเติบโต</h2>
     <div class="seg" id="aMode" role="group" aria-label="รูปแบบการเทียบ">
@@ -887,7 +892,7 @@ body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
 </main>
 
 <main id="reconView" hidden>
-  <div class="tuser">เข้าสู่ระบบเป็น <b class="who"></b> · <button type="button" class="linkbtn logout">ออกจากระบบ</button></div>
+  <div class="tuser">เข้าสู่ระบบเป็น <b class="who"></b><span class="robadge">ดูอย่างเดียว</span> · <button type="button" class="linkbtn logout">ออกจากระบบ</button></div>
   <div class="range dhead">
     <label class="f">ยอดขายตั้งแต่<input type="date" id="rFrom" class="t"></label>
     <label class="f">ถึง<input type="date" id="rTo" class="t"></label>
@@ -906,7 +911,7 @@ body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
       <tbody id="rBody"></tbody><tfoot id="rFoot"></tfoot>
     </table></div>
   </section>
-  <section>
+  <section id="rFormSec">
     <h2>บันทึกเงินเข้า</h2>
     <p class="sub">รับเงินแต่ละรอบให้บันทึกแยกกัน เช่น Grab โอนรายสัปดาห์ หรือนำเงินสดฝากธนาคารหลายครั้ง</p>
     <form id="rForm" class="rform">
@@ -930,7 +935,7 @@ body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
   </section>
 </main>
 <main id="plView" hidden>
-  <div class="tuser">เข้าสู่ระบบเป็น <b class="who"></b> · <button type="button" class="linkbtn logout">ออกจากระบบ</button></div>
+  <div class="tuser">เข้าสู่ระบบเป็น <b class="who"></b><span class="robadge">ดูอย่างเดียว</span> · <button type="button" class="linkbtn logout">ออกจากระบบ</button></div>
   <div class="range dhead">
     <label class="f">เดือน<select id="plMonth" class="t"></select></label>
     <div class="dl"><button class="btn btn-dl" id="plXls" type="button">ดาวน์โหลด Excel</button><button class="btn btn-dl" id="plPdf" type="button">ดาวน์โหลด PDF</button><button class="btn btn-save" id="plSave" type="button" disabled>บันทึกตัวเลขที่กรอก</button></div>
@@ -953,7 +958,7 @@ body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
   </section>
 </main>
 <main id="partnerView" hidden>
-  <div class="tuser">เข้าสู่ระบบเป็น <b class="who"></b> · <button type="button" class="linkbtn logout">ออกจากระบบ</button></div>
+  <div class="tuser">เข้าสู่ระบบเป็น <b class="who"></b><span class="robadge">ดูอย่างเดียว</span> · <button type="button" class="linkbtn logout">ออกจากระบบ</button></div>
   <div class="range dhead">
     <label class="f">เริ่มคำนวณปันผลจากเดือน<select id="pcStart" class="t"></select></label>
     <label class="f">ขาดทุนสะสมยกมา (บาท)<input id="pcOpen" class="n" inputmode="decimal" placeholder="0"></label>
@@ -1618,7 +1623,7 @@ function showView(v){
   if(curView==='hist'){$('histView').hidden=false;histOpen();return}
   checkOwner();
 }
-let owner=null;
+let owner=null,canView=false;
 const ACCESS='tamnua_access';
 /* สิทธิ์: เจ้าของ (ownerEmail) เปิดได้ทุกหน้า · คนที่อยู่ในตาราง tamnua_access เปิดได้เฉพาะ Dashboard */
 async function checkOwner(){
@@ -1629,13 +1634,13 @@ async function checkOwner(){
   const allowed=(window.TAMNUA_CONFIG&&window.TAMNUA_CONFIG.ownerEmail||'').toLowerCase();
   owner=email&&(!allowed||email.toLowerCase()===allowed)?email:null;
   let viewer=false;
-  if(email&&!owner&&(v==='dash'||v==='ana')){try{const r=await db.from(ACCESS).select('email').eq('email',email.toLowerCase()).maybeSingle();viewer=!r.error&&!!r.data}catch(e){}}
+  if(email&&!owner){try{const r=await db.from(ACCESS).select('email').eq('email',email.toLowerCase()).maybeSingle();viewer=!r.error&&!!r.data}catch(e){}}
   if(curView!==v)return;
-  const ok=!!owner||viewer;
+  const ok=!!owner||viewer;canView=ok;document.body.classList.toggle('ro',ok&&!owner);
   $('loginView').hidden=ok;$(VIEWS[v]).hidden=!ok;
   if(ok){document.querySelectorAll('.who').forEach(el=>el.textContent=email);$('accBox').hidden=!owner;
     v==='transfer'?loadTransfers():v==='ana'?loadAna():v==='dash'?(loadDash(),owner&&loadAccess()):v==='recon'?loadRecon():v==='pl'?loadPL():loadPartner()}
-  else if(email){$('tLoginErr').innerHTML='';const msg=document.createElement('span');msg.textContent=(v==='dash'||v==='ana')?'บัญชี '+email+' ยังไม่ได้รับสิทธิ์ดู Dashboard':'บัญชี '+email+' เปิดได้เฉพาะ Dashboard และหน้าวิเคราะห์';$('tLoginErr').appendChild(msg);
+  else if(email){$('tLoginErr').innerHTML='';const msg=document.createElement('span');msg.textContent='บัญชี '+email+' ยังไม่ได้รับสิทธิ์ดูหน้านี้';$('tLoginErr').appendChild(msg);
     const b=document.createElement('button');b.type='button';b.className='linkbtn';b.textContent=' ออกจากระบบ';b.onclick=async()=>{try{await db.auth.signOut()}catch(e){}$('tLoginErr').textContent='';checkOwner()};$('tLoginErr').appendChild(b)}
 }
 $('tLoginForm').addEventListener('submit',async e=>{
@@ -1667,6 +1672,10 @@ document.querySelectorAll('.home-tile[data-go]').forEach(b=>b.onclick=()=>{const
 document.querySelectorAll('.bnav button').forEach(b=>b.onclick=()=>{showView(b.dataset.nav);window.scrollTo(0,0)});
 $('hmBell').onclick=()=>{showView('recent');window.scrollTo(0,0)};
 let hmUser=null;
+/* ผู้ดู: ปิดช่องกรอก/ปุ่มแก้ไขในหน้า P&L และหุ้นส่วนทุกครั้งที่หน้าวาดใหม่ */
+function roLock(){if(!document.body.classList.contains('ro'))return;
+  document.querySelectorAll('#plView input,#plView textarea,#partnerView input,#partnerView textarea,#partnerView select:not(#pcStart),#transferView .tPick,#transferView #tAll').forEach(el=>{if(!el.disabled){el.disabled=true;el.readOnly=true}});}
+try{const mo=new MutationObserver(()=>roLock());['plView','partnerView','transferView'].forEach(id=>mo.observe($(id),{childList:true,subtree:true}))}catch(e){}
 async function hmAuth(){let e=null;try{if(db){const {data}=await db.auth.getSession();e=data&&data.session&&data.session.user&&data.session.user.email}}catch(x){}
   hmUser=e||null;$('authTileT').textContent=hmUser?'ออกจากระบบ':'เข้าสู่ระบบ';$('hmPower').title=hmUser?'ออกจากระบบ ('+hmUser+')':'เข้าสู่ระบบ'}
 $('hmPower').onclick=$('authTile').onclick=async()=>{
@@ -1968,7 +1977,7 @@ document.querySelectorAll('#rPreset button').forEach(b=>b.onclick=()=>{rcPreset(
 $('rFrom').onchange=$('rTo').onchange=()=>{document.querySelectorAll('#rPreset button').forEach(b=>b.setAttribute('aria-pressed','false'));syncFormPeriod();loadRecon()};
 
 async function loadRecon(){
-  if(!db||!owner)return;
+  if(!db||!canView)return;
   const f=$('rFrom').value,t=$('rTo').value;if(!f||!t){$('rNote').textContent='เลือกช่วงวันที่ให้ครบ';return}
   $('rNote').textContent='กำลังโหลด…';
   const [days,rc]=await Promise.all([
@@ -2067,7 +2076,7 @@ function plNetOf(R){
   return R.sales-cogs-opex-other;
 }
 async function loadPL(){
-  if(!db||!owner)return;
+  if(!db||!canView)return;
   const ym=$('plMonth').value;
   $('plNote').textContent='กำลังโหลด…';
   const R=await plFetch(ym);
@@ -2234,7 +2243,7 @@ function curYM(){return today().slice(0,7)}
 function pcDefault(){return{partners:[],startMonth:ymAdd(curYM(),-1),opening:0,overrides:{},paid:{},hist:[],histMeta:null}}
 function pcMark(){pcDirty=true;$('pcSave').disabled=false}
 async function loadPartner(){
-  if(!db||!owner)return;
+  if(!db||!canView)return;
   $('pcNote').textContent='กำลังโหลด…';
   const r=await db.from(MONTHLY).select('data').eq('month',PKEY).maybeSingle();
   if(r.error){$('pcNote').textContent=/does not exist|relation|schema cache/i.test(r.error.message||'')?'ยังไม่ได้สร้างตาราง tamnua_monthly (รัน supabase/monthly.sql)':'โหลดไม่ได้ ลองใหม่อีกครั้ง';return}
@@ -2420,9 +2429,9 @@ async function loadAccess(){
   $('accList').innerHTML=(r.data||[]).length?(r.data||[]).map(x=>`<div class="accrow"><span>${escH(x.email)} <span class="muted">· เพิ่มเมื่อ ${dmy(String(x.added_at).slice(0,10))}</span></span><button type="button" class="del accDel" data-e="${escH(x.email)}" aria-label="ยกเลิกสิทธิ์">×</button></div>`).join(''):'<p class="sub" style="margin:0">ยังไม่มีใครได้รับสิทธิ์</p>';
 }
 $('accForm').addEventListener('submit',async e=>{
-  e.preventDefault();if(!owner)return;const em=$('accEmail').value.trim().toLowerCase();if(!em)return;
+  e.preventDefault();if(!owner)return;let em=$('accEmail').value.trim().toLowerCase();if(!em)return;if(!em.includes('@'))em+='@tumnoor.local';
   const r=await db.from(ACCESS).upsert({email:em});if(r.error){toast('เพิ่มไม่สำเร็จ ลองใหม่อีกครั้ง');return}
-  $('accEmail').value='';loadAccess();toast('ให้สิทธิ์ '+em+' ดู Dashboard แล้ว',async()=>{const q=await db.from(ACCESS).delete().eq('email',em);if(q.error)throw q.error;loadAccess()});
+  $('accEmail').value='';loadAccess();toast('เพิ่ม '+em+' เป็นผู้ดูแล้ว',async()=>{const q=await db.from(ACCESS).delete().eq('email',em);if(q.error)throw q.error;loadAccess()});
 });
 $('accList').addEventListener('click',async e=>{
   const b=e.target.closest('.accDel');if(!b||!owner)return;const em=b.dataset.e;
