@@ -585,6 +585,20 @@ body.homebg .bar{display:none}
 body.ro .robadge{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:999px;background:#e7f0fc;color:#2f74d0;font-size:12px;font-weight:600}
 body.ro #rFormSec,body.ro .tbar,body.ro #tAll,body.ro .tPick,body.ro .tUndo,body.ro .rcDel,body.ro #plSave,body.ro #pcSave,body.ro #pcAddP,body.ro #partnerView .filebtn,body.ro #partnerView .del,body.ro #plView .del,body.ro #plView .toolbar,body.ro #accBox{display:none!important}
 body.ro #plView input,body.ro #partnerView input,body.ro #partnerView select:not(#pcStart){pointer-events:none;background:transparent;border-color:transparent}
+/* Export ในหน้าดูย้อนหลัง */
+#histView .hact{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px}
+#histView .hact #histSelN{margin-right:auto}
+#histView .hact #histShow{margin-left:0}
+.hbtns{display:flex;gap:8px;margin-left:auto}
+.hexp{position:relative;display:inline-block}
+.hexpmenu{position:absolute;right:0;top:calc(100% + 6px);z-index:8;display:flex;flex-direction:column;min-width:200px;white-space:nowrap;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 26px rgba(42,29,20,.16);overflow:hidden}
+.hexpmenu button{font:inherit;font-weight:600;text-align:left;padding:12px 16px;background:none;border:0;color:var(--fg);cursor:pointer;display:flex;align-items:center;gap:10px}
+.hexpmenu button+button{border-top:1px solid var(--line)}
+.hexpmenu button:hover{background:var(--leaf-soft)}
+.hexpmenu button::before{content:"";width:26px;height:26px;border-radius:7px;flex:none;background:#d6443a}
+.hexpmenu #histXls::before{background:#22936a}
+.hexpmenu #histPdf::after{content:"ไฟล์ .pdf";margin-left:auto;font-size:12px;font-weight:400;color:var(--muted)}
+.hexpmenu #histXls::after{content:"ไฟล์ .xlsx";margin-left:auto;font-size:12px;font-weight:400;color:var(--muted)}
 /* แถบเมนูล่าง */
 body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
 .toast{bottom:calc(96px + env(safe-area-inset-bottom,0px))!important}
@@ -740,7 +754,8 @@ body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
       <label class="f">ถึง<input type="date" id="hTo" class="t"></label>
       <button type="button" class="btn btn-add" id="hAddRange">เลือกช่วงนี้</button>
     </div>
-    <div class="hact"><span id="histSelN" class="muted">ยังไม่ได้เลือกวัน</span><button type="button" class="linkbtn" id="histClear" hidden>ล้างที่เลือก</button><button type="button" class="btn btn-save" id="histShow" disabled>ดูรายการ</button></div>
+    <div class="hact"><span id="histSelN" class="muted">ยังไม่ได้เลือกวัน</span><button type="button" class="linkbtn" id="histClear" hidden>ล้างที่เลือก</button><span class="hbtns"><span class="hexp"><button type="button" class="btn btn-dl" id="histExp" disabled aria-haspopup="true" aria-expanded="false">Export ▾</button>
+      <span class="hexpmenu" id="histExpMenu" hidden><button type="button" id="histPdf">PDF</button><button type="button" id="histXls">Excel</button></span></span><button type="button" class="btn btn-save" id="histShow" disabled>ดูรายการ</button></span></div>
     <div id="histOut"></div>
   </section>
 </main>
@@ -1299,8 +1314,25 @@ function renderStrip(){
 }
 $('dstrip').addEventListener('click',e=>{const b=e.target.closest('.dchip');if(!b)return;const d=b.dataset.d;histSel.has(d)?histSel.delete(d):histSel.add(d);renderStrip()});
 /* ดูรายการย้อนหลัง: เลือกได้หลายวัน แล้วแสดงยอดขาย เงินสดย่อย และบิลตลาดของวันที่เลือก (ดูอย่างเดียว) */
-function updateHistSel(){const n=histSel.size;$('histSelN').textContent=n?`เลือก ${n} วัน`:'ยังไม่ได้เลือกวัน';$('histShow').disabled=!n||!db;$('histClear').hidden=!n}
+function updateHistSel(){const n=histSel.size;$('histSelN').textContent=n?`เลือก ${n} วัน`:'ยังไม่ได้เลือกวัน';$('histShow').disabled=$('histExp').disabled=!n||!db;$('histClear').hidden=!n}
 function histOpen(){$('dstrip').dataset.scrolled='';['hFrom','hTo'].forEach(i=>$(i).max=today());if(!$('hFrom').value){$('hFrom').value=today().slice(0,8)+'01';$('hTo').value=today()}if(db)loadRecent();renderStrip()}
+/* Export วันที่เลือก: เลือกได้ทั้ง PDF และ Excel */
+$('histExp').onclick=e=>{e.stopPropagation();const m=$('histExpMenu');m.hidden=!m.hidden;$('histExp').setAttribute('aria-expanded',String(!m.hidden))};
+document.addEventListener('click',e=>{if(!e.target.closest('.hexp')){$('histExpMenu').hidden=true;$('histExp').setAttribute('aria-expanded','false')}});
+async function histExport(kind){
+  $('histExpMenu').hidden=true;if(!db||!histSel.size)return;
+  const dates=[...histSel].sort();
+  const {data,error}=await db.from(TABLE).select('date,data').in('date',dates).order('date');
+  if(error){toast('โหลดข้อมูลไม่ได้ ลองใหม่อีกครั้ง');return}
+  const docs=(data||[]).filter(r=>r.data&&!r.data.deleted).map(r=>ensureIds({...r.data,date:r.date}));
+  if(!docs.length){toast('วันที่เลือกยังไม่มีข้อมูล');return}
+  const f=dates[0],t=dates[dates.length-1],n=docs.length;
+  EXP={docs:()=>docs,title:'ยอดขาย บิลตลาด และเงินสดย่อย',sales:true,
+    label:()=>f===t?dmy(f):`${dmy(f)} – ${dmy(t)} (${n} วัน)`,base:()=>`ตำนัว_ย้อนหลัง_${f}${f===t?'':'_'+t}`};
+  await withBusy($('histExp'),'กำลังสร้าง…',kind==='pdf'?exportPdf:exportXls);
+  $('histExp').textContent='Export ▾';$('histExp').disabled=!histSel.size;
+}
+$('histPdf').onclick=()=>histExport('pdf');$('histXls').onclick=()=>histExport('xls');
 $('histClear').onclick=()=>{histSel.clear();$('histOut').innerHTML='';renderStrip()};
 $('hAddRange').onclick=()=>{let f=$('hFrom').value,t=$('hTo').value;if(!f||!t){toast('เลือกวันที่ให้ครบ');return}if(f>t)[f,t]=[t,f];if(t>today())t=today();
   let n=0;for(let x=new Date(f+'T00:00:00');isoOf(x)<=t&&n<93;x.setDate(x.getDate()+1),n++)histSel.add(isoOf(x));
@@ -1469,11 +1501,13 @@ async function saveFile(name,data){
   document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000);
   toast('ดาวน์โหลด '+name+' แล้ว');
 }
-const rangeLabel=()=>`${dmy($('from').value)} – ${dmy($('to').value)}`;
-const fileBase=()=>`ตำนัว_สรุปบิลตลาด-เงินสดย่อย_${$('from').value}_${$('to').value}`;
+/* ชุดข้อมูลที่จะส่งออก: ค่าเริ่มต้น = ช่วงวันที่ในหน้าบันทึกรายวัน · หน้าดูย้อนหลังเปลี่ยนเป็นวันที่เลือก */
+const EXP_DAILY={docs:()=>rangeDocs,label:()=>`${dmy($('from').value)} – ${dmy($('to').value)}`,base:()=>`ตำนัว_สรุปบิลตลาด-เงินสดย่อย_${$('from').value}_${$('to').value}`,title:'สรุปบิลตลาดและเงินสดย่อย',sales:false};
+let EXP=EXP_DAILY;
+const rangeLabel=()=>EXP.label(),fileBase=()=>EXP.base();
 function detailRows(){
   const mkt=[],pet=[];
-  rangeDocs.forEach(d=>{
+  EXP.docs().forEach(d=>{
     (d.market||[]).forEach(o=>{const v=CATS.map(c=>num(o[c]));mkt.push([dmy(d.date),o.payee||'',...v,v.reduce((a,b)=>a+b,0)])});
     pettyBillsOf(d).forEach(b=>(b.items||[]).forEach(r=>pet.push([dmy(d.date),b.payee||'',r.item||'',PL_NAME[r.cat]||'ไม่ระบุ',num(r.amount)])));
   });
@@ -1482,11 +1516,16 @@ function detailRows(){
 async function withBusy(btn,label,fn){
   const old=btn.textContent;btn.disabled=true;btn.textContent=label;
   try{await fn()}catch(e){toast('สร้างไฟล์ไม่สำเร็จ ลองใหม่อีกครั้ง')}
-  finally{btn.textContent=old;btn.disabled=!rangeDocs.length}
+  finally{btn.textContent=old;btn.disabled=!EXP.docs().length;EXP=EXP_DAILY}
 }
+/* แถวสรุปรายวัน (หน้าดูย้อนหลังมียอดขายและจำนวนบิลด้วย) */
+const sumHead=()=>EXP.sales?['วันที่','ยอดขาย','บิล',...CAT_TH,'รวมบิลตลาด','เงินสดย่อย','รวมค่าใช้จ่าย']:['วันที่',...CAT_TH,'รวมบิลตลาด','เงินสดย่อย','รวมทั้งหมด'];
+const sumData=()=>EXP.docs().map(d=>{const r=dayRow(d),m=EXP.sales?dayMetrics(d):null;return EXP.sales?[dmy(r.date),m.sales,num(d.bills),...r.mk,r.mt,r.p,r.all]:[dmy(r.date),...r.mk,r.mt,r.p,r.all]});
+const salesHead=()=>['วันที่',...SALES_CH.filter(([k])=>k!=='bills').map(([,n])=>n),'รวมยอดขาย','จำนวนบิล'];
+const salesData=()=>EXP.docs().map(d=>{const m=dayMetrics(d);return [dmy(d.date),...CH.map(([k])=>m.ch[k]),m.sales,num(d.bills)]});
 
 /* Excel */
-$('xlsBtn').onclick=()=>withBusy($('xlsBtn'),'กำลังสร้าง…',async()=>{
+async function exportXls(){
   if(!window.XLSX)await loadScript('https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js');
   const X=window.XLSX;
   const H={font:{bold:true,color:{rgb:"FFFFFF"}},fill:{fgColor:{rgb:"C4580F"}},alignment:{horizontal:"center",vertical:"center",wrapText:true}};
@@ -1509,31 +1548,34 @@ $('xlsBtn').onclick=()=>withBusy($('xlsBtn'),'กำลังสร้าง…'
     ws['!cols']=widths.map(w=>({wch:w}));ws['!rows']=[{hpt:24},{hpt:32}];
     return ws;
   }
-  const sum=rangeDocs.map(dayRow).map(r=>[dmy(r.date),...r.mk,r.mt,r.p,r.all]);
+  const sum=sumData(),sh=sumHead();
   const {mkt,pet}=detailRows();
   const wb=X.utils.book_new();
-  X.utils.book_append_sheet(wb,makeSheet(`ร้านตำนัว · สรุปบิลตลาดและเงินสดย่อย ${rangeLabel()}`,
-    ['วันที่',...CAT_TH,'รวมบิลตลาด','เงินสดย่อย','รวมทั้งหมด'],sum,1,[1,2,3,4,5,6,7,8],[12,12,14,12,13,12,14,13,14]),'สรุปรายวัน');
+  X.utils.book_append_sheet(wb,makeSheet(`ร้านตำนัว · ${EXP.title} ${rangeLabel()}`,
+    sh,sum,1,sh.map((_,i)=>i).slice(1),sh.map((_,i)=>i?13:12)),'สรุปรายวัน');
+  if(EXP.sales){const sd=salesData(),hh=salesHead();X.utils.book_append_sheet(wb,makeSheet(`ยอดขายแยกช่องทาง ${rangeLabel()}`,hh,sd,1,hh.map((_,i)=>i).slice(1),hh.map((_,i)=>i?13:12)),'ยอดขาย')}
   X.utils.book_append_sheet(wb,makeSheet(`บิลตลาด ${rangeLabel()}`,
     ['วันที่','จ่ายให้',...CAT_TH,'รวมบิล'],mkt,2,[2,3,4,5,6,7],[12,22,12,14,12,13,12,13]),'บิลตลาด');
   X.utils.book_append_sheet(wb,makeSheet(`เงินสดย่อย ${rangeLabel()}`,
     ['วันที่','จ่ายให้','รายการ','หมวด P&L','ยอดเงิน (บาท)'],pet,4,[4],[12,22,32,30,16]),'เงินสดย่อย');
   const buf=X.write(wb,{bookType:'xlsx',type:'array'});
   await saveFile(fileBase()+'.xlsx',buf);
-});
+}
+$('xlsBtn').onclick=()=>withBusy($('xlsBtn'),'กำลังสร้าง…',exportXls);
 
 /* PDF: each page is drawn from HTML so Thai text renders correctly */
-$('pdfBtn').onclick=()=>withBusy($('pdfBtn'),'กำลังสร้าง…',async()=>{
+async function exportPdf(){
   if(!window.html2canvas)await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
   if(!window.jspdf)await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
   try{await document.fonts.ready}catch(e){}
   const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   const f2=v=>typeof v==='number'?fmt(v):esc(v);
-  const sumRows=rangeDocs.map(dayRow).map(r=>[dmy(r.date),...r.mk,r.mt,r.p,r.all]);
+  const sumRows=sumData();
   const {mkt,pet}=detailRows();
   const total=(rows,from)=>rows[0]?rows[0].map((_,c)=>c===0?'รวม':c<from?'':rows.reduce((a,r)=>a+(+r[c]||0),0)):[];
   const tables=[
-    {title:'สรุปรายวัน',head:['วันที่',...CAT_TH,'รวมบิลตลาด','เงินสดย่อย','รวมทั้งหมด'],rows:sumRows,tot:total(sumRows,1),tx:[0]},
+    {title:'สรุปรายวัน',head:sumHead(),rows:sumRows,tot:total(sumRows,1),tx:[0]},
+    ...(EXP.sales?[(r=>({title:'ยอดขายแยกช่องทาง',head:salesHead(),rows:r,tot:total(r,1),tx:[0]}))(salesData())]:[]),
     {title:'รายละเอียดบิลตลาด',head:['วันที่','จ่ายให้',...CAT_TH,'รวมบิล'],rows:mkt,tot:total(mkt,2),tx:[0,1]},
     {title:'รายละเอียดเงินสดย่อย',head:['วันที่','จ่ายให้','รายการ','หมวด','ยอดเงิน (บาท)'],rows:pet,tot:total(pet,4),tx:[0,1,2,3]},
   ].filter(t=>t.rows.length);
@@ -1546,7 +1588,7 @@ $('pdfBtn').onclick=()=>withBusy($('pdfBtn'),'กำลังสร้าง…'
     const {t,part,lastPart,cont}=pages[i];
     const row=(r,cls)=>`<tr${cls?` class="${cls}"`:''}>${r.map((v,c)=>`<td${t.tx.includes(c)?' class="tx"':''}>${c===1&&t.tx.includes(1)&&typeof v==='number'?v:f2(v)}</td>`).join('')}</tr>`;
     const el=document.createElement('div');el.className='rep';
-    el.innerHTML=`<header><div><h1>ร้านตำนัว</h1><div class="rs">สรุปบิลตลาดและเงินสดย่อย</div></div><div class="rs">${rangeLabel()}</div></header>
+    el.innerHTML=`<header><div><h1>ร้านตำนัว</h1><div class="rs">${EXP.title}</div></div><div class="rs">${rangeLabel()}</div></header>
       <h3>${t.title}${cont?' (ต่อ)':''}</h3>
       <table><thead><tr>${t.head.map(h=>`<th>${h}</th>`).join('')}</tr></thead>
       <tbody>${part.map(r=>row(r)).join('')}${lastPart?row(t.tot,'tot'):''}</tbody></table>
@@ -1559,7 +1601,8 @@ $('pdfBtn').onclick=()=>withBusy($('pdfBtn'),'กำลังสร้าง…'
     }finally{el.remove()}
   }
   await saveFile(fileBase()+'.pdf',pdf.output('arraybuffer'));
-});
+}
+$('pdfBtn').onclick=()=>withBusy($('pdfBtn'),'กำลังสร้าง…',exportPdf);
 
 
 /* ย้ายข้อมูลที่บันทึกผิดวัน: เขียนลงวันใหม่ แล้วทำเครื่องหมายวันเดิมว่าไม่มีข้อมูล */
