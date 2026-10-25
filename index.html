@@ -69,6 +69,13 @@ main{max-width:880px;margin:0 auto;display:grid;gap:22px;
 .hgrp{border-top:1px solid var(--line);padding-top:8px}
 .hgh{display:flex;justify-content:space-between;font-size:14px;font-weight:600}
 .hgh b{font-family:var(--num)}
+.hbills{display:grid;gap:8px;margin-top:8px}
+.tdbox.hbill{background:var(--leaf-soft);border-color:#f3d6bf}
+.hbill .tdlist{background:var(--surface);border-radius:8px;overflow:hidden}
+.hbh{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:14.5px}
+.hbh span{font-family:var(--num);font-weight:700}
+.hbill .tdlist td.muted{color:var(--muted)}
+.hbill .tdlist td.grand{color:var(--chili);font-weight:600}
 .summary.hsum{grid-template-columns:repeat(3,minmax(0,1fr))}
 @media (max-width:640px){.summary.hsum strong{font-size:16px}.summary.hsum div{padding:10px}}
 .dphead{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
@@ -1348,12 +1355,19 @@ $('histShow').onclick=async()=>{
   let S=0,P=0,M=0;
   const card=d=>{const m=dayMetrics(d);S+=m.sales;P+=m.pt;M+=m.mt;
     const sl=SALES_CH.filter(([k])=>num(d.sales&&d.sales[k])).map(([k,n])=>`<li><span class="pvi">${n}</span><span class="pva">${fmt(num(d.sales[k]))}</span></li>`).join('');
-    const pl=d.petty.map(b=>{const t=(b.items||[]).reduce((a,i)=>a+num(i.amount),0);return t?`<li><span class="pvi">${escH(b.payee||'ไม่ระบุผู้รับ')}<small>${escH((b.items||[]).map(i=>i.item).filter(Boolean).join(', '))}</small></span><span class="pva">${fmt(t)}</span></li>`:''}).join('');
-    const ml=d.market.map(x=>{const t=CATS.reduce((a,c)=>a+num(x[c]),0);return t?`<li><span class="pvi">${escH(x.payee||'ไม่ระบุผู้รับ')}<small>${CATS.map((c,i)=>num(x[c])?CAT_TH[i]+' '+fmt0(num(x[c])):'').filter(Boolean).join(' · ')}</small></span><span class="pva">${fmt(t)}</span></li>`:''}).join('');
+    /* รายละเอียดรายบิล: แต่ละบิลเป็นตาราง รายการ · หมวด P&L · ยอดเงิน */
+    const pl=d.petty.map(b=>{const its=(b.items||[]).filter(i=>num(i.amount));const t=its.reduce((a,i)=>a+num(i.amount),0);return t?`<div class="tdbox hbill"><div class="hbh"><b>${escH(b.payee||'ไม่ระบุผู้รับ')}</b><span>${fmt(t)}</span></div>
+      <table class="tdlist"><thead><tr><th>รายการ</th><th>หมวด P&amp;L</th><th class="r">ยอดเงิน</th></tr></thead>
+      <tbody>${its.map(i=>`<tr><td>${escH(i.item||'–')}</td><td class="${PL_NAME[i.cat]?'muted':'grand'}">${escH(PL_NAME[i.cat]||'ยังไม่ระบุหมวด')}</td><td class="amt">${fmt(num(i.amount))}</td></tr>`).join('')}</tbody>
+      <tfoot><tr><td>รวมบิล</td><td></td><td class="amt"><b>${fmt(t)}</b></td></tr></tfoot></table></div>`:''}).join('');
+    const ml=d.market.map(x=>{const t=CATS.reduce((a,c)=>a+num(x[c]),0);return t?`<div class="tdbox hbill"><div class="hbh"><b>${escH(x.payee||'ไม่ระบุผู้รับ')}</b><span>${fmt(t)}</span></div>
+      <table class="tdlist"><thead><tr><th>ประเภท</th><th class="r">ยอดเงิน</th></tr></thead>
+      <tbody>${CATS.map((c,i)=>num(x[c])?`<tr><td>${CAT_TH[i]}</td><td class="amt">${fmt(num(x[c]))}</td></tr>`:'').join('')}</tbody>
+      <tfoot><tr><td>รวมบิล</td><td class="amt"><b>${fmt(t)}</b></td></tr></tfoot></table></div>`:''}).join('');
     return `<div class="hcard"><div class="pvh"><div class="pvn"><b>${dmy(d.date)}</b> <span class="muted">${DOW[new Date(d.date+'T00:00:00').getDay()]}</span></div><button type="button" class="editbtn hOpen" data-d="${d.date}">เปิด/แก้ไข</button></div>
       <div class="hgrp"><div class="hgh"><span>ยอดขาย${num(d.bills)?` · ${fmt0(num(d.bills))} บิล`:''}</span><b>${fmt(m.sales)}</b></div>${sl?`<ul class="pvl">${sl}</ul>`:''}</div>
-      ${pl?`<div class="hgrp"><div class="hgh"><span>เงินสดย่อย</span><b>${fmt(m.pt)}</b></div><ul class="pvl">${pl}</ul></div>`:''}
-      ${ml?`<div class="hgrp"><div class="hgh"><span>บิลตลาด</span><b>${fmt(m.mt)}</b></div><ul class="pvl">${ml}</ul></div>`:''}</div>`};
+      ${pl?`<div class="hgrp"><div class="hgh"><span>เงินสดย่อย</span><b>${fmt(m.pt)}</b></div><div class="hbills">${pl}</div></div>`:''}
+      ${ml?`<div class="hgrp"><div class="hgh"><span>บิลตลาด</span><b>${fmt(m.mt)}</b></div><div class="hbills">${ml}</div></div>`:''}</div>`};
   const cards=rows.map(card).join('');
   $('histOut').innerHTML=(rows.length>1?`<div class="summary three hsum"><div><span>ยอดขายรวม ${rows.length} วัน</span><strong>${fmt0(S)}</strong></div><div><span>เงินสดย่อยรวม</span><strong>${fmt0(P)}</strong></div><div><span>บิลตลาดรวม</span><strong>${fmt0(M)}</strong></div></div>`:'')
     +cards+(miss.length?`<p class="sub">ไม่มีข้อมูล: ${miss.map(dmyS).join(', ')}</p>`:'');
