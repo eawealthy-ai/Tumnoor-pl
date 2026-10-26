@@ -612,6 +612,16 @@ body.ro #plView input,body.ro #partnerView input,body.ro #partnerView select:not
 .ptable td small{display:block;color:var(--muted);font-size:11.5px;font-weight:400}
 .ptable td.neg{color:#c62f25}
 .ptable tr.open td:first-child::after{content:" (ยังไม่ปิดเดือน)";font-size:11px;color:var(--muted);font-weight:400}
+/* หน้าต่างรูป JPEG บนมือถือ */
+.imgsheet{position:fixed;inset:0;z-index:40;background:rgba(20,14,10,.55);display:flex;align-items:flex-end;justify-content:center}
+.imgbox{background:var(--surface);width:100%;max-width:560px;max-height:92vh;border-radius:20px 20px 0 0;padding:14px 16px calc(16px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:10px}
+.imghd{display:flex;justify-content:space-between;align-items:center;font-size:16px}
+.imgx{font:inherit;font-size:24px;line-height:1;background:none;border:0;color:var(--muted);cursor:pointer;padding:4px 8px}
+.imgscroll{overflow:auto;border:1px solid var(--line);border-radius:10px;max-height:55vh;background:#eee}
+.imgscroll img{display:block;width:100%;height:auto;-webkit-touch-callout:default}
+.imghint{margin:0;font-size:12.5px;color:var(--muted)}
+.imgbtns{display:grid;grid-template-columns:2fr 1fr;gap:8px}
+.imgbtns .btn{padding:12px 10px}
 /* แถบเมนูล่าง */
 body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
 .toast{bottom:calc(96px + env(safe-area-inset-bottom,0px))!important}
@@ -1553,8 +1563,22 @@ async function asJpg(fn){
   const real=window.jspdf;window.jspdf={jsPDF:ImgDoc};
   try{await fn()}finally{window.jspdf=real}
 }
+/* มือถือ: แสดงรูปพร้อมปุ่ม "บันทึกลงอัลบั้ม" (เปิดเมนูแชร์ของเครื่อง → บันทึกรูปภาพ) */
+function showImgSheet(file){
+  const url=URL.createObjectURL(file),el=document.createElement('div');el.className='imgsheet';
+  el.innerHTML=`<div class="imgbox"><div class="imghd"><b>รูปพร้อมแล้ว</b><button type="button" class="imgx" aria-label="ปิด">×</button></div>
+    <div class="imgscroll"><img alt="${escH(file.name)}" src="${url}"></div>
+    <p class="imghint">กดปุ่มด้านล่าง แล้วเลือก "บันทึกรูปภาพ" เพื่อเก็บลงอัลบั้ม · หรือกดค้างที่รูปแล้วเลือก "บันทึกไปยังรูปภาพ"</p>
+    <div class="imgbtns"><button type="button" class="btn btn-save imgsave">บันทึกลงอัลบั้ม / แชร์</button><button type="button" class="btn btn-dl imgdl">ดาวน์โหลดไฟล์</button></div></div>`;
+  document.body.appendChild(el);
+  const close=()=>{el.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)};
+  el.querySelector('.imgx').onclick=close;el.onclick=e=>{if(e.target===el)close()};
+  el.querySelector('.imgsave').onclick=async()=>{try{await navigator.share({files:[file],title:file.name})}catch(e){if(e&&e.name!=='AbortError')toast('เปิดเมนูบันทึกไม่ได้ ลองกดค้างที่รูปแทน')}};
+  el.querySelector('.imgdl').onclick=()=>{const a=document.createElement('a');a.href=url;a.download=file.name;document.body.appendChild(a);a.click();a.remove()};
+}
 async function saveFile(name,data){
-  if(data instanceof ImgDoc){data=await imgDocToJpeg(data);name=name.replace(/\.pdf$/i,'.jpg')}
+  if(data instanceof ImgDoc){data=await imgDocToJpeg(data);name=name.replace(/\.pdf$/i,'.jpg');
+    try{const f=new File([data],name,{type:'image/jpeg'});if(navigator.canShare&&navigator.canShare({files:[f]})&&matchMedia('(pointer:coarse)').matches){showImgSheet(f);return}}catch(e){}}
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([data]));a.download=name;
   document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000);
   toast('ดาวน์โหลด '+name+' แล้ว');
