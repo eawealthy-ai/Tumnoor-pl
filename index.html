@@ -606,6 +606,10 @@ body.ro #plView input,body.ro #partnerView input,body.ro #partnerView select:not
 .hexpmenu #histXls::before{background:#22936a}
 .hexpmenu #histPdf::after{content:"ไฟล์ .pdf";margin-left:auto;font-size:12px;font-weight:400;color:var(--muted)}
 .hexpmenu #histXls::after{content:"ไฟล์ .xlsx";margin-left:auto;font-size:12px;font-weight:400;color:var(--muted)}
+/* วิเคราะห์ P&L */
+.ptable td small{display:block;color:var(--muted);font-size:11.5px;font-weight:400}
+.ptable td.neg{color:#c62f25}
+.ptable tr.open td:first-child::after{content:" (ยังไม่ปิดเดือน)";font-size:11px;color:var(--muted);font-weight:400}
 /* แถบเมนูล่าง */
 body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
 .toast{bottom:calc(96px + env(safe-area-inset-bottom,0px))!important}
@@ -696,6 +700,7 @@ body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
       <label class="f">เงินสด<input class="n" id="cash" inputmode="decimal"></label>
       <label class="f">LINE MAN<input class="n" id="lineman" inputmode="decimal"></label>
       <label class="f">Grab Food<input class="n" id="grab" inputmode="decimal"></label>
+      <label class="f">Robinhood<input class="n" id="robinhood" inputmode="decimal"></label>
       <label class="f">Credit<input class="n" id="credit" inputmode="decimal"></label>
       <label class="f">KPlus<input class="n" id="kplus" inputmode="decimal"></label>
       <label class="f">จำนวนบิล<input class="n" id="bills" inputmode="numeric"></label>
@@ -911,6 +916,24 @@ body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
       <tbody id="aBody"></tbody>
     </table></div>
   </section>
+  <section>
+    <h2>วิเคราะห์ P&amp;L รายเดือน</h2>
+    <p class="sub" id="apNote">ยอดขาย · ต้นทุนอาหาร · ค่าใช้จ่าย · กำไร จากหน้า P&amp;L (% เทียบยอดขาย)</p>
+    <div class="lfl" id="apCards"></div>
+  </section>
+  <section>
+    <h2>โครงสร้างต้นทุน (% ยอดขาย)</h2>
+    <p class="sub">แท่ง = สัดส่วนค่าใช้จ่ายแต่ละกลุ่ม · เส้น = กำไรสุทธิ %</p>
+    <div class="chartbox tall"><canvas id="cPL" aria-label="โครงสร้างต้นทุนรายเดือน"></canvas></div>
+  </section>
+  <section>
+    <h2>รายละเอียด P&amp;L รายเดือน</h2>
+    <p class="sub">ค่าแรง = เงินเดือน พาร์ทไทม์ อาหารพนักงาน Incentive สวัสดิการ · สถานที่ = ค่าเช่า ค่าไฟ/น้ำ/โทรศัพท์ เครื่องล้างจาน · ค่าธรรมเนียม = GP เดลิเวอรี่ + บัตรเครดิต · อื่นๆ = ขนส่ง ตำรวจ อุปกรณ์ เบ็ดเตล็ด และรายการนอกงบ</p>
+    <div class="scroll"><table class="dtable atable ptable">
+      <thead><tr><th>เดือน</th><th class="r">ยอดขาย</th><th class="r">% เปลี่ยน</th><th class="r">ต้นทุนอาหาร</th><th class="r">ค่าแรง</th><th class="r">สถานที่</th><th class="r">ค่าธรรมเนียม</th><th class="r">อื่นๆ</th><th class="r">กำไรสุทธิ</th></tr></thead>
+      <tbody id="apBody"></tbody>
+    </table></div>
+  </section>
 </main>
 
 <main id="reconView" hidden>
@@ -1043,7 +1066,7 @@ function clearSec(sec){sec?dirtySec.delete(sec):dirtySec.clear();dirty=dirtySec.
 
 /* ---------- หมวด P&L ---------- */
 const PL_COGS=[['raw_fresh','ค่าวัตถุดิบ ของสด+ผักสด'],['raw_dry','ค่าวัตถุดิบ เครื่องปรุง ของแห้ง'],['rice','ข้าวสาร ข้าวเหนียว'],['oil','น้ำมัน'],['gas','ค่าแก๊ส'],['beer','ค่าเบียร์'],['water','น้ำดื่ม'],['coke','น้ำอัดลม'],['ice','ค่าน้ำแข็ง'],['dessert','ค่าของหวาน']];
-const PL_OPEX=[['salary','เงินเดือน และ O/T'],['parttime','พนักงานพาร์ทไทม์'],['staffmeal','ค่าอาหารพนักงาน'],['incentive','Incentive'],['welfare','สวัสดิการอื่นๆ'],['rent','ค่าเช่า ค่าบริการส่วนกลาง ค่าบริการอื่นๆ'],['utility','ค่าไฟ ค่าน้ำ ค่าโทรศัพท์'],['dishwasher','ค่าเช่าเครื่องล้างจาน'],['transport','ค่าขนส่ง'],['police','ตม. ตำรวจ ปคม.'],['equipment','อุปกรณ์ภาชนะ เครื่องครัวเพิ่มเติม'],['cardfee','ค่าธรรมเนียมบัตร'],['gp','LINE MAN & GRAB'],['misc','ค่าใช้จ่ายเบ็ดเตล็ดและวัสดุสิ้นเปลือง']];
+const PL_OPEX=[['salary','เงินเดือน และ O/T'],['parttime','พนักงานพาร์ทไทม์'],['staffmeal','ค่าอาหารพนักงาน'],['incentive','Incentive'],['welfare','สวัสดิการอื่นๆ'],['rent','ค่าเช่า ค่าบริการส่วนกลาง ค่าบริการอื่นๆ'],['utility','ค่าไฟ ค่าน้ำ ค่าโทรศัพท์'],['dishwasher','ค่าเช่าเครื่องล้างจาน'],['transport','ค่าขนส่ง'],['police','ตม. ตำรวจ ปคม.'],['equipment','อุปกรณ์ภาชนะ เครื่องครัวเพิ่มเติม'],['cardfee','ค่าธรรมเนียมบัตร'],['gp','LINE MAN & GRAB & Robinhood'],['misc','ค่าใช้จ่ายเบ็ดเตล็ดและวัสดุสิ้นเปลือง']];
 const PL_NAME=Object.fromEntries([...PL_COGS,...PL_OPEX]);
 const CAT_OPTS='<option value="">— เลือกหมวด —</option><optgroup label="ต้นทุนอาหาร">'+PL_COGS.map(([k,n])=>`<option value="${k}">${n}</option>`).join('')+'</optgroup><optgroup label="ค่าใช้จ่ายบริหาร">'+PL_OPEX.map(([k,n])=>`<option value="${k}">${n}</option>`).join('')+'</optgroup>';
 /* เดาหมวดจากคำ: ใช้หมวดที่เคยเลือกให้รายการชื่อเดียวกันก่อน แล้วค่อยใช้คำสำคัญ */
@@ -1183,7 +1206,7 @@ function mktRow(r={}){
 }
 
 function collect(){
-  const sales={cash:num($('cash').value),lineman:num($('lineman').value),grab:num($('grab').value),credit:num($('credit').value),kplus:num($('kplus').value)};
+  const sales={cash:num($('cash').value),lineman:num($('lineman').value),grab:num($('grab').value),robinhood:num($('robinhood').value),credit:num($('credit').value),kplus:num($('kplus').value)};
   const bills=num($('bills').value), vat=false; /* ร้านไม่มี VAT */
   const petty=[...$('pettyBills').querySelectorAll('.pbill')].map(b=>({id:b.dataset.id,...paidOf(b),payee:b.querySelector('.pay').value.trim(),
     items:[...b.querySelector('.pitems').rows].map(tr=>{const i=tr.querySelectorAll('input');const c=tr.querySelector('select.cat').value;const o={item:i[0].value.trim(),amount:num(i[1].value)};if(c)o.cat=c;return o}).filter(r=>r.item||r.amount)}))
@@ -1201,7 +1224,7 @@ function collect(){
 function load(d){
   d=ensureIds(d)||{};
   $('hol').dataset.manual=d.holiday!=null?'1':'';$('hol').checked=d.holiday!=null?!!d.holiday:TH_HOLIDAYS.has($('day').value);
-  const s=d.sales||{};['cash','lineman','grab','credit','kplus'].forEach(k=>$(k).value=blank(s[k]));
+  const s=d.sales||{};['cash','lineman','grab','robinhood','credit','kplus'].forEach(k=>$(k).value=blank(s[k]));
   $('bills').value=blank(d.bills);
   $('pettyBills').innerHTML='';const pb=pettyBillsOf(d);if(pb.length)pb.forEach(b=>setView(pettyBill(b),true));else pettyBill();
   $('mktBody').innerHTML='';if(d.market&&d.market.length)d.market.forEach(r=>{mktRow(r);setView($('mktBody').lastElementChild,true)});else mktRow();
@@ -1210,7 +1233,7 @@ function load(d){
   setSalesView(salesHas());
 }
 function calc(){
-  const s=['cash','lineman','grab','credit','kplus'].reduce((a,k)=>a+num($(k).value),0);
+  const s=['cash','lineman','grab','robinhood','credit','kplus'].reduce((a,k)=>a+num($(k).value),0);
   const bills=num($('bills').value), ex=s;
   $('salesTot').textContent=fmt(s);showIncentive(s);
   let p=0;$('pettyBills').querySelectorAll('.pbill').forEach(b=>{let t=0;b.querySelectorAll('.pitems tr').forEach(tr=>t+=num(tr.querySelectorAll('input')[1].value));b.querySelector('.pbt').textContent=fmt(t);p+=t});
@@ -1441,7 +1464,7 @@ async function saveSections(secs,btn){
 $('save').onclick=()=>saveSections(dirtySec.size?[...dirtySec]:SEC_ALL,$('save'));
 document.addEventListener('click',e=>{const b=e.target.closest('.secSave');if(b)saveSections([b.dataset.sec],b)});
 /* ยอดขายที่บันทึกแล้ว: แสดงเป็นรายการ กด "แก้ไข" เพื่อเปิดช่องกรอก */
-const SALES_CH=[['cash','เงินสด'],['lineman','LINE MAN'],['grab','Grab Food'],['credit','Credit'],['kplus','KPlus']];
+const SALES_CH=[['cash','เงินสด'],['lineman','LINE MAN'],['grab','Grab Food'],['robinhood','Robinhood'],['credit','Credit'],['kplus','KPlus']];
 function salesHas(){return SALES_CH.some(([k])=>num($(k).value))||num($('bills').value)>0}
 function setSalesView(on){
   const sec=$('secSales');sec.classList.toggle('viewing',!!on);if(!on)return;
@@ -1838,7 +1861,7 @@ $('tMark').onclick=async()=>{
 
 
 /* ---------- Dashboard ---------- */
-const CH=[['cash','เงินสด','#c4580f'],['lineman','LINE MAN','#3a9d5d'],['grab','Grab Food','#e0a82e'],['credit','Credit','#3b6ea8'],['kplus','KPlus','#8a5bb5']];
+const CH=[['cash','เงินสด','#c4580f'],['lineman','LINE MAN','#3a9d5d'],['grab','Grab Food','#e0a82e'],['robinhood','Robinhood','#d6457a'],['credit','Credit','#3b6ea8'],['kplus','KPlus','#8a5bb5']];
 const DOW=['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
 const isoOf=d=>{const x=new Date(d);x.setMinutes(x.getMinutes()-x.getTimezoneOffset());return x.toISOString().slice(0,10)};
 const charts={};let dashRows=[];
@@ -1946,12 +1969,56 @@ const monOf=iso=>{const d=new Date(iso+'T00:00:00'),g=(d.getDay()+6)%7;return ad
 function anaDay(r){const m=dayMetrics({...r.data,date:r.date});
   const food=m.d.market.reduce((a,x)=>a+num(x.fresh)+num(x.dry),0)+m.d.petty.reduce((a,b)=>a+(b.items||[]).reduce((x,i)=>x+(COGS_KEYS.has(i.cat)?num(i.amount):0),0),0);
   return{date:r.date,sales:m.sales,bills:m.bills,exp:m.exp,food}}
+/* วิเคราะห์ P&L: ดึงตัวเลขจากหน้า P&L ทีละเดือน แล้วจัดกลุ่มค่าใช้จ่าย */
+const PG={labor:['salary','parttime','staffmeal','incentive','welfare'],place:['rent','utility','dishwasher'],fee:['gp','cardfee'],misc:['transport','police','equipment','misc']};
+let apRows=[];
+function plSum(R){
+  const man=R.md.manual||{},tot=k=>(R.auto[k]||0)+num(man[k]),g=ks=>ks.reduce((a,k)=>a+tot(k),0);
+  const food=PL_COGS.reduce((a,[k])=>a+tot(k),0),opex=PL_OPEX.reduce((a,[k])=>a+tot(k),0),other=(R.md.other||[]).reduce((a,o)=>a+num(o.amount),0);
+  return{ym:R.ym,n:R.n,dim:R.dim,sales:R.sales,food,labor:g(PG.labor),place:g(PG.place),fee:g(PG.fee),misc:g(PG.misc)+other,opex,other,net:R.sales-food-opex-other};
+}
+async function loadAnaPL(){
+  if(!db)return;$('apNote').textContent='กำลังโหลด P&L…';
+  const t=today(),d=new Date(t+'T00:00:00'),yms=[];
+  for(let i=0;i<7;i++){const x=new Date(d.getFullYear(),d.getMonth()-i,1);yms.push(x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0'))}
+  const rs=await Promise.all(yms.map(ym=>plFetch(ym).catch(()=>({error:true}))));
+  apRows=rs.filter(r=>!r.error&&r.n).map(plSum).sort((a,b)=>a.ym<b.ym?-1:1);
+  renderAnaPL();
+}
+async function renderAnaPL(){
+  const R=apRows,cur=curYM();
+  if(!R.length){$('apNote').textContent='ยังไม่มีข้อมูล P&L';$('apCards').innerHTML='';$('apBody').innerHTML='';return}
+  const P=v=>(v*100).toFixed(1)+'%',ratio=(x,k)=>x.sales?x[k]/x.sales:0;
+  /* การ์ด: เดือนล่าสุดที่ปิดแล้ว เทียบเดือนก่อนหน้า */
+  const closed=R.filter(x=>x.ym<cur),A=closed[closed.length-1],B=closed[closed.length-2];
+  $('apNote').textContent=A?`${monLabel(A.ym)}${B?' เทียบ '+monLabel(B.ym):''} · % เทียบยอดขาย`:'ยังไม่มีเดือนที่ปิดแล้ว';
+  const ptsTag=(a,b,good)=>{if(b==null)return '<span class="dl-0">–</span>';const v=(a-b)*100,up=v>0;return `<span class="${Math.abs(v)<.05?'dl-0':(up===good?'dl-up':'dl-dn')}">${up?'▲':v<0?'▼':''} ${Math.abs(v).toFixed(1)} จุด</span>`};
+  $('apCards').innerHTML=A?[
+    `<div><span>ยอดขาย</span><strong>${fmt0(A.sales)}</strong><em>${dTag(B?dPct(A.sales,B.sales):null)}<br>เดิม ${B?fmt0(B.sales):'–'}</em></div>`,
+    `<div><span>ต้นทุนอาหาร</span><strong>${P(ratio(A,'food'))}</strong><em>${ptsTag(ratio(A,'food'),B&&ratio(B,'food'),false)}<br>${fmt0(A.food)} บาท</em></div>`,
+    `<div><span>ค่าใช้จ่าย (รวมนอกงบ)</span><strong>${P((A.opex+A.other)/A.sales)}</strong><em>${ptsTag((A.opex+A.other)/A.sales,B&&(B.opex+B.other)/B.sales,false)}<br>${fmt0(A.opex+A.other)} บาท</em></div>`,
+    `<div><span>กำไรสุทธิ</span><strong class="${A.net<0?'dl-dn':''}">${fmt0(A.net)}</strong><em>${ptsTag(ratio(A,'net'),B&&ratio(B,'net'),true)}<br>${P(ratio(A,'net'))} ของยอดขาย</em></div>`].join(''):'';
+  const cell=(v,sales,neg)=>`<td class="${neg&&v<0?'neg':''}">${fmt0(v)}<small>${sales?P(v/sales):'–'}</small></td>`;
+  $('apBody').innerHTML=R.slice().reverse().map((x,i,arr)=>{const prev=arr[i+1];return `<tr class="${x.ym===cur?'open':''}"><td>${monLabel(x.ym)}<small>บันทึก ${x.n}/${x.dim} วัน</small></td><td>${fmt0(x.sales)}</td><td>${dTag(prev?dPct(x.sales/x.n,prev.sales/prev.n):null)}</td>${cell(x.food,x.sales)}${cell(x.labor,x.sales)}${cell(x.place,x.sales)}${cell(x.fee,x.sales)}${cell(x.misc,x.sales)}${cell(x.net,x.sales,true)}</tr>`}).join('');
+  try{if(!window.Chart)await loadScript('https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js')}catch(e){return}
+  const C=window.Chart,muted=tok('--muted'),line=tok('--line'),fg=tok('--fg');
+  C.defaults.font.family=getComputedStyle(document.body).fontFamily;C.defaults.color=muted;
+  if(charts.cPL)charts.cPL.destroy();
+  const ds=[['food','ต้นทุนอาหาร','#e0661a'],['labor','ค่าแรง','#2f74d0'],['place','สถานที่','#7652cc'],['fee','ค่าธรรมเนียม','#d18a00'],['misc','อื่นๆ','#9a8b80']];
+  charts.cPL=new C($('cPL'),{type:'bar',data:{labels:R.map(x=>TH_MON[+x.ym.slice(5)-1]+(x.ym===cur?'*':'')),datasets:[
+    ...ds.map(([k,n,c])=>({type:'bar',label:n,data:R.map(x=>+(ratio(x,k)*100).toFixed(1)),backgroundColor:c,stack:'s',order:2})),
+    {type:'line',label:'กำไรสุทธิ %',data:R.map(x=>+(ratio(x,'net')*100).toFixed(1)),borderColor:'#22936a',backgroundColor:'#22936a',pointRadius:4,tension:.25,order:1}]},
+    options:{maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+      scales:{x:{stacked:true,grid:{display:false},ticks:{color:muted}},y:{stacked:true,grid:{color:line},ticks:{color:muted,callback:v=>v+'%'}}},
+      plugins:{legend:{position:'bottom',labels:{boxWidth:12,color:fg}},tooltip:{callbacks:{title:c=>monLabel(R[c[0].dataIndex].ym),label:c=>c.dataset.label+': '+c.parsed.y+'%'}}}}});
+}
 async function loadAna(){
   if(!db)return;$('aNote').textContent='กำลังโหลด…';
   const t=today(),d=new Date(t+'T00:00:00'),f=isoOf(new Date(d.getFullYear(),d.getMonth()-6,1)),f2=addDays(monOf(t),-7*12),from=f<f2?f:f2;
   const {data,error}=await db.from(TABLE).select('date,data').gte('date',from).lte('date',t).order('date').limit(500);
   if(error){$('aNote').textContent='โหลดข้อมูลไม่ได้ ลองใหม่อีกครั้ง';return}
   anaRows=(data||[]).filter(r=>r.data&&!r.data.deleted).map(anaDay);
+  loadAnaPL();
   $('aNote').textContent=`ข้อมูล ${anaRows.length} วัน · อัปเดต ${new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})}`;
   renderAna();
 }
@@ -2119,7 +2186,7 @@ async function plFetch(ym){
   const got={},has={};
   if(!rc.error)(rc.data||[]).forEach(r=>{got[r.channel]=(got[r.channel]||0)+num(r.amount);has[r.channel]=true});
   const feeDiff={};
-  [['gp',['lineman','grab']],['cardfee',['credit']]].forEach(([k,chs])=>{
+  [['gp',['lineman','grab','robinhood']],['cardfee',['credit']]].forEach(([k,chs])=>{
     if(!chs.some(c=>has[c])){feeDiff[k]=null;return}
     const v=chs.reduce((a,c)=>a+(chS[c]||0)-(got[c]||0),0);feeDiff[k]=v;auto[k]+=v;
   });

@@ -18,7 +18,7 @@ async function rest(path: string, init: RequestInit = {}) {
 
 type Bill = { id?: string; payee?: string; items?: { item?: string; amount?: number }[]; [k: string]: unknown };
 const CATS = ["fresh", "dry", "supplies", "staffMeal", "transport"];
-const CH: [string, string][] = [["cash", "เงินสด"], ["lineman", "LINE MAN"], ["grab", "Grab"], ["credit", "Credit"], ["kplus", "KPlus"]];
+const CH: [string, string][] = [["cash", "เงินสด"], ["lineman", "LINE MAN"], ["grab", "Grab"], ["robinhood", "Robinhood"], ["credit", "Credit"], ["kplus", "KPlus"]];
 const n = (v: unknown) => { const x = parseFloat(String(v ?? "").replace(/,/g, "")); return isFinite(x) ? x : 0; };
 const money = (v: number) => v.toLocaleString("en-US", { minimumFractionDigits: Math.round(v * 100) % 100 ? 2 : 0, maximumFractionDigits: 2 });
 const esc = (s: unknown) => String(s ?? "").replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]!));
