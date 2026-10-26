@@ -602,10 +602,12 @@ body.ro #plView input,body.ro #partnerView input,body.ro #partnerView select:not
 .hexpmenu button{font:inherit;font-weight:600;text-align:left;padding:12px 16px;background:none;border:0;color:var(--fg);cursor:pointer;display:flex;align-items:center;gap:10px}
 .hexpmenu button+button{border-top:1px solid var(--line)}
 .hexpmenu button:hover{background:var(--leaf-soft)}
-.hexpmenu button::before{content:"";width:26px;height:26px;border-radius:7px;flex:none;background:#d6443a}
-.hexpmenu #histXls::before{background:#22936a}
-.hexpmenu #histPdf::after{content:"ไฟล์ .pdf";margin-left:auto;font-size:12px;font-weight:400;color:var(--muted)}
-.hexpmenu #histXls::after{content:"ไฟล์ .xlsx";margin-left:auto;font-size:12px;font-weight:400;color:var(--muted)}
+.hexpmenu button::before{content:"";width:28px;height:28px;border-radius:7px;flex:none;display:grid;place-items:center;font-size:9px;font-weight:800;color:#fff;letter-spacing:.02em}
+.hexpmenu button.ex-pdf::before{content:"PDF";background:#d6443a}
+.hexpmenu button.ex-xls::before{content:"XLS";background:#22936a}
+.hexpmenu button.ex-jpg::before{content:"JPG";background:#2f74d0}
+.hexpmenu button::after{content:attr(data-ext);margin-left:auto;font-size:12px;font-weight:400;color:var(--muted)}
+.dl .hexp .btn{white-space:nowrap}
 /* วิเคราะห์ P&L */
 .ptable td small{display:block;color:var(--muted);font-size:11.5px;font-weight:400}
 .ptable td.neg{color:#c62f25}
@@ -744,8 +746,9 @@ body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
       <label class="f">ตั้งแต่<input type="date" id="from" class="t"></label>
       <label class="f">ถึง<input type="date" id="to" class="t"></label>
       <div class="dl">
-        <button class="btn btn-dl" id="xlsBtn" type="button" disabled>ดาวน์โหลด Excel</button>
-        <button class="btn btn-dl" id="pdfBtn" type="button" disabled>ดาวน์โหลด PDF</button>
+        <span class="hexp" data-exp="daily" data-id="dailyExp"></span>
+        <button class="btn btn-dl" id="xlsBtn" type="button" disabled hidden>ดาวน์โหลด Excel</button>
+        <button class="btn btn-dl" id="pdfBtn" type="button" disabled hidden>ดาวน์โหลด PDF</button>
       </div>
     </div>
     <div class="scroll"><table class="sum">
@@ -766,8 +769,7 @@ body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
       <label class="f">ถึง<input type="date" id="hTo" class="t"></label>
       <button type="button" class="btn btn-add" id="hAddRange">เลือกช่วงนี้</button>
     </div>
-    <div class="hact"><span id="histSelN" class="muted">ยังไม่ได้เลือกวัน</span><button type="button" class="linkbtn" id="histClear" hidden>ล้างที่เลือก</button><span class="hbtns"><span class="hexp"><button type="button" class="btn btn-dl" id="histExp" disabled aria-haspopup="true" aria-expanded="false">Export ▾</button>
-      <span class="hexpmenu" id="histExpMenu" hidden><button type="button" id="histPdf">PDF</button><button type="button" id="histXls">Excel</button></span></span><button type="button" class="btn btn-save" id="histShow" disabled>ดูรายการ</button></span></div>
+    <div class="hact"><span id="histSelN" class="muted">ยังไม่ได้เลือกวัน</span><button type="button" class="linkbtn" id="histClear" hidden>ล้างที่เลือก</button><span class="hbtns"><span class="hexp" data-exp="hist" data-id="histExp"></span><button type="button" class="btn btn-save" id="histShow" disabled>ดูรายการ</button></span></div>
     <div id="histOut"></div>
   </section>
 </main>
@@ -840,7 +842,7 @@ body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
       <button type="button" data-p="m9" aria-pressed="false">9 เดือน</button>
       <button type="button" data-p="m12" aria-pressed="false">12 เดือน</button>
     </div>
-    <div class="dl"><button class="btn btn-dl" id="dPdf" type="button">ดาวน์โหลด PDF</button></div>
+    <div class="dl"><span class="hexp" data-exp="dash" data-id="dashExp"></span><button class="btn btn-dl" id="dPdf" type="button" hidden>ดาวน์โหลด PDF</button></div>
   </div>
   <div class="pdfhead" id="dPdfHead" hidden><div><b>ร้านตำนัว</b> · Dashboard</div><div id="dPdfRange"></div></div>
   <p class="sub" id="dNote" style="margin:-10px 0 0">กำลังโหลด…</p>
@@ -983,7 +985,7 @@ body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
   <div class="tuser">เข้าสู่ระบบเป็น <b class="who"></b><span class="robadge">ดูอย่างเดียว</span> · <button type="button" class="linkbtn logout">ออกจากระบบ</button></div>
   <div class="range dhead">
     <label class="f">เดือน<select id="plMonth" class="t"></select></label>
-    <div class="dl"><button class="btn btn-dl" id="plXls" type="button">ดาวน์โหลด Excel</button><button class="btn btn-dl" id="plPdf" type="button">ดาวน์โหลด PDF</button><button class="btn btn-save" id="plSave" type="button" disabled>บันทึกตัวเลขที่กรอก</button></div>
+    <div class="dl"><span class="hexp" data-exp="pl" data-id="plExp"></span><button class="btn btn-dl" id="plXls" type="button" hidden>ดาวน์โหลด Excel</button><button class="btn btn-dl" id="plPdf" type="button" hidden>ดาวน์โหลด PDF</button><button class="btn btn-save" id="plSave" type="button" disabled>บันทึกตัวเลขที่กรอก</button></div>
   </div>
   <p class="sub" id="plNote" style="margin:-10px 0 0">กำลังโหลด…</p>
   <div class="uncbox" id="plUnc" hidden></div>
@@ -1344,13 +1346,11 @@ function renderStrip(){
 }
 $('dstrip').addEventListener('click',e=>{const b=e.target.closest('.dchip');if(!b)return;const d=b.dataset.d;histSel.has(d)?histSel.delete(d):histSel.add(d);renderStrip()});
 /* ดูรายการย้อนหลัง: เลือกได้หลายวัน แล้วแสดงยอดขาย เงินสดย่อย และบิลตลาดของวันที่เลือก (ดูอย่างเดียว) */
-function updateHistSel(){const n=histSel.size;$('histSelN').textContent=n?`เลือก ${n} วัน`:'ยังไม่ได้เลือกวัน';$('histShow').disabled=$('histExp').disabled=!n||!db;$('histClear').hidden=!n}
+function updateHistSel(){const n=histSel.size;$('histSelN').textContent=n?`เลือก ${n} วัน`:'ยังไม่ได้เลือกวัน';$('histShow').disabled=!n||!db;if($('histExp'))$('histExp').disabled=!n||!db;$('histClear').hidden=!n}
 function histOpen(){$('dstrip').dataset.scrolled='';['hFrom','hTo'].forEach(i=>$(i).max=today());if(!$('hFrom').value){$('hFrom').value=today().slice(0,8)+'01';$('hTo').value=today()}if(db)loadRecent();renderStrip()}
 /* Export วันที่เลือก: เลือกได้ทั้ง PDF และ Excel */
-$('histExp').onclick=e=>{e.stopPropagation();const m=$('histExpMenu');m.hidden=!m.hidden;$('histExp').setAttribute('aria-expanded',String(!m.hidden))};
-document.addEventListener('click',e=>{if(!e.target.closest('.hexp')){$('histExpMenu').hidden=true;$('histExp').setAttribute('aria-expanded','false')}});
 async function histExport(kind){
-  $('histExpMenu').hidden=true;if(!db||!histSel.size)return;
+  if(!db||!histSel.size)return;
   const dates=[...histSel].sort();
   const {data,error}=await db.from(TABLE).select('date,data').in('date',dates).order('date');
   if(error){toast('โหลดข้อมูลไม่ได้ ลองใหม่อีกครั้ง');return}
@@ -1360,9 +1360,7 @@ async function histExport(kind){
   EXP={docs:()=>docs,title:'ยอดขาย บิลตลาด และเงินสดย่อย',sales:true,
     label:()=>f===t?dmy(f):`${dmy(f)} – ${dmy(t)} (${n} วัน)`,base:()=>`ตำนัว_ย้อนหลัง_${f}${f===t?'':'_'+t}`};
   await withBusy($('histExp'),'กำลังสร้าง…',kind==='pdf'?exportPdf:exportXls);
-  $('histExp').textContent='Export ▾';$('histExp').disabled=!histSel.size;
 }
-$('histPdf').onclick=()=>histExport('pdf');$('histXls').onclick=()=>histExport('xls');
 $('histClear').onclick=()=>{histSel.clear();$('histOut').innerHTML='';renderStrip()};
 $('hAddRange').onclick=()=>{let f=$('hFrom').value,t=$('hTo').value;if(!f||!t){toast('เลือกวันที่ให้ครบ');return}if(f>t)[f,t]=[t,f];if(t>today())t=today();
   let n=0;for(let x=new Date(f+'T00:00:00');isoOf(x)<=t&&n<93;x.setDate(x.getDate()+1),n++)histSel.add(isoOf(x));
@@ -1528,12 +1526,35 @@ function renderSummary(failed){
     $('sumFoot').innerHTML=`<tr><td class="lbl">รวม</td>${mk.map(v=>`<td>${fmt(v)}</td>`).join('')}<td>${fmt(tot('mt'))}</td><td>${fmt(tot('p'))}</td><td class="grand">${fmt(tot('all'))}</td></tr>`;
   } else $('sumFoot').innerHTML='';
   if(!failed)$('sumNote').textContent=rows.length?`มีข้อมูล ${rows.length} วัน`:'ยังไม่มีข้อมูลที่บันทึกในช่วงวันที่นี้';
-  $('xlsBtn').disabled=$('pdfBtn').disabled=!rows.length;
+  $('xlsBtn').disabled=$('pdfBtn').disabled=!rows.length;if($('dailyExp'))$('dailyExp').disabled=!rows.length;
 }
 $('from').onchange=$('to').onchange=refreshSummary;
 
 function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=()=>rej(new Error('load'));document.head.appendChild(s)})}
+/* ส่งออกเป็น JPEG: ใช้ตัวสร้าง PDF เดิม แต่แทน jsPDF ด้วยตัวเก็บภาพ แล้วต่อทุกหน้าเป็นภาพเดียว */
+class ImgDoc{constructor(){this.pages=[[]]}addPage(){this.pages.push([]);return this}addImage(src,f,x,y,w,h){this.pages[this.pages.length-1].push({src,x,y,w,h});return this}output(){return this}}
+async function imgDocToJpeg(doc){
+  const W=1240,k=W/210,gap=24,load=src=>new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=src});
+  const pages=doc.pages.filter(p=>p.length).map(p=>({items:p,h:Math.ceil(Math.max(...p.map(o=>o.y+o.h))*k)}));
+  const H=pages.reduce((a,p)=>a+p.h,0)+gap*(pages.length-1),cv=document.createElement('canvas');cv.width=W;cv.height=H;
+  const ctx=cv.getContext('2d');ctx.fillStyle='#e9e3dd';ctx.fillRect(0,0,W,H);let y0=0;
+  for(const p of pages){ctx.fillStyle='#fff';ctx.fillRect(0,y0,W,p.h);for(const o of p.items){const im=await load(o.src);ctx.drawImage(im,o.x*k,y0+o.y*k,o.w*k,o.h*k)}y0+=p.h+gap}
+  /* ตัดพื้นที่ว่างสีขาวที่สูงเกิน 48px ออก ภาพจะไม่ยาวเกินจำเป็น */
+  const px=ctx.getImageData(0,0,W,H).data,keep=[],MAX=48;let run=0;
+  for(let y=0;y<H;y++){let white=true;for(let x=0;x<W;x+=6){const i=(y*W+x)*4;if(px[i]<245||px[i+1]<245||px[i+2]<245){white=false;break}}
+    run=white?run+1:0;if(!white||run<=MAX)keep.push(y)}
+  const out=document.createElement('canvas');out.width=W;out.height=keep.length;const oc=out.getContext('2d');
+  let i=0;while(i<keep.length){let j=i;while(j+1<keep.length&&keep[j+1]===keep[j]+1)j++;oc.drawImage(cv,0,keep[i],W,j-i+1,0,i,W,j-i+1);i=j+1}
+  return await new Promise(r=>out.toBlob(b=>b.arrayBuffer().then(r),'image/jpeg',0.92));
+}
+async function asJpg(fn){
+  if(!window.html2canvas)await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
+  if(!window.jspdf)await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+  const real=window.jspdf;window.jspdf={jsPDF:ImgDoc};
+  try{await fn()}finally{window.jspdf=real}
+}
 async function saveFile(name,data){
+  if(data instanceof ImgDoc){data=await imgDocToJpeg(data);name=name.replace(/\.pdf$/i,'.jpg')}
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([data]));a.download=name;
   document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000);
   toast('ดาวน์โหลด '+name+' แล้ว');
@@ -1863,7 +1884,7 @@ $('tMark').onclick=async()=>{
 /* ---------- Dashboard ---------- */
 const CH=[['cash','เงินสด','#c4580f'],['lineman','LINE MAN','#3a9d5d'],['grab','Grab Food','#e0a82e'],['robinhood','Robinhood','#d6457a'],['credit','Credit','#3b6ea8'],['kplus','KPlus','#8a5bb5']];
 const DOW=['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
-const isoOf=d=>{const x=new Date(d);x.setMinutes(x.getMinutes()-x.getTimezoneOffset());return x.toISOString().slice(0,10)};
+function isoOf(d){const x=new Date(d);x.setMinutes(x.getMinutes()-x.getTimezoneOffset());return x.toISOString().slice(0,10)}
 const charts={};let dashRows=[];
 function setPreset(p){
   const now=new Date();let f,t;
@@ -2595,6 +2616,44 @@ $('dPdf').onclick=async()=>{
   }
 };
 function dmyS(iso){const p=String(iso).split('-');return p.length===3?p[2]+'/'+p[1]:iso}
+/* Dashboard → Excel: ตารางรายวัน (หรือรายเดือน) พร้อมยอดขายแยกช่องทาง */
+async function dashXls(){
+  if(!dashRows.length){toast('ยังไม่มีข้อมูลในช่วงนี้');return}
+  if(!window.XLSX)await loadScript('https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js');
+  const X=window.XLSX,H={font:{bold:true,color:{rgb:"FFFFFF"}},fill:{fgColor:{rgb:"C4580F"}},alignment:{horizontal:"center",vertical:"center",wrapText:true}};
+  const head=['วันที่',...CH.map(c=>c[1]),'ยอดขายรวม','จำนวนบิล','เฉลี่ย/บิล','บิลตลาด','เงินสดย่อย','ค่าใช้จ่ายรวม','ค่าใช้จ่าย %'];
+  const rows=dashRows.map(r=>[dmy(r.date),...CH.map(([k])=>r.ch[k]),r.sales,r.bills,r.bills?r.sales/r.bills:0,r.mt,r.pt,r.exp,r.ex?r.exp/r.ex:0]);
+  const S=i=>rows.reduce((a,x)=>a+(+x[i]||0),0),n=head.length,tot=['รวม',...head.slice(1).map((_,j)=>{const i=j+1;return i===n-1?(S(1+CH.length)?S(n-2)/S(1+CH.length):0):i===n-4?(S(2+CH.length)?S(1+CH.length)/S(2+CH.length):0):S(i)})];
+  const ws=X.utils.aoa_to_sheet([[`ร้านตำนัว · Dashboard ${dmy($('dFrom').value)} – ${dmy($('dTo').value)}`],head,...rows,tot]);
+  ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:n-1}}];ws['A1'].s={font:{bold:true,sz:14,color:{rgb:"C4580F"}}};
+  head.forEach((_,c)=>{ws[X.utils.encode_cell({r:1,c})].s=H});
+  for(let r=2;r<rows.length+3;r++)for(let c=1;c<n;c++){const a=X.utils.encode_cell({r,c});if(ws[a])ws[a].s={numFmt:c===n-1?'0.0%':'#,##0.00',...(r===rows.length+2?{font:{bold:true},fill:{fgColor:{rgb:"FDEADB"}}}:{})}}
+  ws['!cols']=head.map((_,i)=>({wch:i?13:12}));
+  const wb=X.utils.book_new();X.utils.book_append_sheet(wb,ws,'Dashboard');
+  await saveFile(`ตำนัว_Dashboard_${$('dFrom').value}_${$('dTo').value}.xlsx`,X.write(wb,{bookType:'xlsx',type:'array'}));
+}
+/* ปุ่ม Export ▾ ทุกหน้า: เลือก PDF · Excel · JPEG */
+const EXPORTS={
+  daily:{pdf:()=>$('pdfBtn').onclick(),xls:()=>$('xlsBtn').onclick(),guard:()=>!$('pdfBtn').disabled||(toast('ยังไม่มีข้อมูลในช่วงวันที่นี้'),false)},
+  hist:{pdf:()=>histExport('pdf'),xls:()=>histExport('xls')},
+  dash:{pdf:()=>$('dPdf').onclick(),xls:dashXls},
+  pl:{pdf:()=>$('plPdf').onclick(),xls:()=>$('plXls').onclick()},
+};
+document.querySelectorAll('.hexp[data-exp]').forEach(w=>{
+  const E=EXPORTS[w.dataset.exp];
+  w.innerHTML=`<button type="button" class="btn btn-dl" id="${w.dataset.id}" aria-haspopup="true" aria-expanded="false">Export ▾</button>
+    <span class="hexpmenu" hidden><button type="button" class="ex-pdf" data-k="pdf" data-ext=".pdf">PDF</button><button type="button" class="ex-xls" data-k="xls" data-ext=".xlsx">Excel</button><button type="button" class="ex-jpg" data-k="jpg" data-ext=".jpg">JPEG</button></span>`;
+  const btn=w.firstElementChild,menu=w.querySelector('.hexpmenu');
+  if(w.dataset.exp==='hist')btn.disabled=true;
+  btn.onclick=e=>{e.stopPropagation();document.querySelectorAll('.hexpmenu').forEach(m=>{if(m!==menu)m.hidden=true});menu.hidden=!menu.hidden;btn.setAttribute('aria-expanded',String(!menu.hidden))};
+  menu.onclick=async e=>{const b=e.target.closest('button[data-k]');if(!b)return;menu.hidden=true;btn.setAttribute('aria-expanded','false');
+    if(E.guard&&!E.guard())return;
+    const old=btn.textContent;btn.disabled=true;btn.textContent='กำลังสร้าง…';
+    try{const k=b.dataset.k;if(k==='jpg')await asJpg(E.pdf);else await E[k]()}
+    catch(err){toast('สร้างไฟล์ไม่สำเร็จ ลองใหม่อีกครั้ง')}
+    finally{btn.textContent=old;btn.disabled=w.dataset.exp==='hist'?!histSel.size:false}};
+});
+document.addEventListener('click',e=>{if(!e.target.closest('.hexp'))document.querySelectorAll('.hexpmenu').forEach(m=>{m.hidden=true;const b=m.previousElementSibling;if(b)b.setAttribute('aria-expanded','false')})});
 initDb();
 </script>
 </body>
