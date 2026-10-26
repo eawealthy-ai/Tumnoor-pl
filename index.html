@@ -525,6 +525,17 @@ table.market:not(:has(#mktBody tr:not(.viewing))) tfoot tr{display:flex;justify-
 .rep td.tx{text-align:left}
 .rep tr.tot td{font-weight:600;background:#fdeadb;border-bottom:0}
 .rep.pl td{padding:3px 6px;font-size:11.5px}
+.rep.dv{min-height:0}
+.rep.dv .dvk{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:4px 0 18px}
+.rep.dv .dvk div{border:1px solid #ecdfd3;border-radius:10px;padding:10px 12px}
+.rep.dv .dvk span{display:block;font-size:11px;color:#5f6d61}
+.rep.dv .dvk b{font-size:18px;font-variant-numeric:tabular-nums}
+.rep.dv .dvk b.neg{color:#b3261e}
+.rep.dv td{font-size:12.5px;padding:6px}
+.rep.dv tr.sub td{color:#5f6d61;font-size:11.5px}
+.rep.dv td.st{text-align:center;font-size:11px}
+.rep.dv footer{position:static;margin-top:22px}
+.pcJpg{display:inline-block;margin-top:4px;font:inherit;font-size:11.5px;font-weight:600;color:#2f74d0;background:#e7f0fc;border:0;border-radius:999px;padding:2px 10px;cursor:pointer}
 .rep.pl td.ind{padding-left:20px}
 .rep.pl tr.hd td{font-weight:600;padding-top:8px;border-bottom:1px solid #ecdfd3}
 .rep.pl tr.sub td{font-weight:600;border-top:1px solid #2a1d14}
@@ -2478,7 +2489,7 @@ function renderPayouts(){
     const paid=(pc.paid||{})[r.ym]||{};
     const prof=`<input class="n pco" data-ym="${r.ym}" inputmode="decimal" value="${r.hasOv?escH(pc.overrides[r.ym].profit):''}" placeholder="${r.auto==null?'กรอกกำไร':fmt(r.auto)}" aria-label="กำไรสุทธิ ${monLabel(r.ym)}">`
       +`<div class="src">${r.hasOv?'กรอกเอง':r.auto==null?'ยังไม่มีข้อมูลในระบบ':'จาก P&L'+(r.running?' (เดือนนี้ยังไม่จบ)':'')}</div>`;
-    return `<tr><td class="nowrap c-m"><b>${monLabel(r.ym)}</b>${r.n?`<div class="src">บันทึก ${r.n}/${r.dim} วัน</div>`:''}</td><td class="pin c-s" data-l="ยอดขาย">${r.n?(r.sales?fmt0(r.sales):'–'):`<input class="n pcx" data-ym="${r.ym}" data-f="sales" inputmode="decimal" value="${escH(((pc.overrides||{})[r.ym]||{}).sales??'')}" placeholder="ยอดขาย" aria-label="ยอดขาย ${monLabel(r.ym)}"><input class="n pcx" data-ym="${r.ym}" data-f="cogs" inputmode="decimal" value="${escH(((pc.overrides||{})[r.ym]||{}).cogs??'')}" placeholder="%COG" aria-label="%COG ${monLabel(r.ym)}" style="margin-top:4px">`}</td><td class="pin c-pr" data-l="กำไรสุทธิ">${prof}</td>
+    return `<tr><td class="nowrap c-m"><b>${monLabel(r.ym)}</b>${r.n?`<div class="src">บันทึก ${r.n}/${r.dim} วัน</div>`:''}<button type="button" class="pcJpg" data-ym="${r.ym}" aria-label="บันทึกสรุปปันผล ${monLabel(r.ym)} เป็น JPEG">JPEG</button></td><td class="pin c-s" data-l="ยอดขาย">${r.n?(r.sales?fmt0(r.sales):'–'):`<input class="n pcx" data-ym="${r.ym}" data-f="sales" inputmode="decimal" value="${escH(((pc.overrides||{})[r.ym]||{}).sales??'')}" placeholder="ยอดขาย" aria-label="ยอดขาย ${monLabel(r.ym)}"><input class="n pcx" data-ym="${r.ym}" data-f="cogs" inputmode="decimal" value="${escH(((pc.overrides||{})[r.ym]||{}).cogs??'')}" placeholder="%COG" aria-label="%COG ${monLabel(r.ym)}" style="margin-top:4px">`}</td><td class="pin c-pr" data-l="กำไรสุทธิ">${prof}</td>
       <td class="c-cy" data-l="หักขาดทุนยกมา">${r.used?'−'+fmt0(r.used):r.profit<0?'<span class="grand">ขาดทุน '+fmt0(-r.profit)+'</span>':'–'}</td><td class="c-dist" data-l="กำไรที่แบ่งได้"><b>${fmt0(r.dist)}</b></td>`
       +P.map((p,i)=>{const amt=(r.dist*num(p.share)/100),pd=paid[p.id];
         const subs=(p.subs||[]).map(s=>`<div class="src">${escH(s.name)} ${fmt0(amt*num(s.pct)/100)}</div>`).join('');
@@ -2492,6 +2503,41 @@ function renderPayouts(){
     return `<div><span>${escH(p.name||'-')} · ลงทุน ${fmt0(num(p.invest))}</span><strong>${fmt0(all)}</strong><em>ปันผลสะสม · ${num(p.invest)?(all/num(p.invest)*100).toFixed(1)+'% ของเงินลงทุน':''}${unpaid>0?` · ค้างจ่าย ${fmt0(unpaid)}`:''}</em></div>`}).join('');
   $('pcSum').hidden=!P.length;
 }
+/* สรุปปันผลรายเดือน → JPEG (ใช้ตัวสร้างภาพเดียวกับปุ่ม Export) */
+async function pcMonthJpg(ym,btn){
+  const r=pcRows.find(x=>x.ym===ym);if(!r)return;const P=pc.partners,paid=(pc.paid||{})[ym]||{};
+  const old=btn.textContent;btn.disabled=true;btn.textContent='กำลังสร้าง…';
+  try{
+    if(!window.html2canvas)await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
+    try{await document.fonts.ready}catch(e){}
+    const neg=v=>v<0?' class="neg"':'';
+    const rows=P.map(p=>{const amt=r.dist*num(p.share)/100,pd=paid[p.id];
+      return `<tr><td class="tx"><b>${escH(p.name||'-')}</b></td><td>${num(p.share)}%</td><td><b>${fmt(amt)}</b></td><td class="st">${amt>0?(pd?'จ่ายแล้ว '+dmy(pd):'ยังไม่จ่าย'):'–'}</td></tr>`
+        +(p.subs||[]).map(s=>`<tr class="sub"><td class="tx">&nbsp;&nbsp;↳ ${escH(s.name)}</td><td>${num(s.pct)}% ของ ${escH(p.name||'')}</td><td>${fmt(amt*num(s.pct)/100)}</td><td></td></tr>`).join('')}).join('');
+    const el=document.createElement('div');el.className='rep dv';
+    el.innerHTML=`<header><div><h1>ร้านตำนัว</h1><div class="rs">สรุปปันผลหุ้นส่วน</div></div><div class="rs"><b style="font-size:16px;color:#1d2a1f">${monLabel(ym)}</b>${r.running?' (เดือนนี้ยังไม่จบ)':''}</div></header>
+      <div class="dvk">
+        <div><span>ยอดขาย</span><b>${fmt0(r.sales)}</b></div>
+        <div><span>ต้นทุนอาหาร</span><b>${r.cogs?(r.cogs*100).toFixed(1)+'%':'–'}</b></div>
+        <div><span>กำไรสุทธิ</span><b${neg(r.profit||0)}>${r.profit==null?'–':fmt(r.profit)}</b></div>
+        <div><span>ขาดทุนสะสมยกมา</span><b>${fmt(r.carryIn)}</b></div>
+        <div><span>หักขาดทุนยกมา</span><b>${r.used?'−'+fmt(r.used):'–'}</b></div>
+        <div><span>กำไรที่แบ่งได้</span><b>${fmt(r.dist)}</b></div>
+      </div>
+      <h3>ส่วนแบ่งหุ้นส่วน</h3>
+      <table><thead><tr><th>หุ้นส่วน</th><th>% ปันผล</th><th>ปันผล (บาท)</th><th style="text-align:center">สถานะ</th></tr></thead>
+      <tbody>${rows}<tr class="tot"><td class="tx">รวม</td><td></td><td>${fmt(r.dist)}</td><td></td></tr></tbody></table>
+      ${r.deficit>0?`<p class="rs" style="margin-top:12px">ขาดทุนสะสมคงเหลือยกไปเดือนถัดไป ${fmt(r.deficit)} บาท</p>`:''}
+      <footer><span>พิมพ์เมื่อ ${new Date().toLocaleString('th-TH',{dateStyle:'medium',timeStyle:'short'})}</span><span>ที่มา: หน้า P&amp;L และบัญชีหุ้นส่วน</span></footer>`;
+    document.body.appendChild(el);
+    try{const cv=await window.html2canvas(el,{scale:2,backgroundColor:'#ffffff',logging:false});
+      const doc=new ImgDoc();doc.addImage(cv.toDataURL('image/jpeg',0.92),'JPEG',0,0,210,cv.height*210/cv.width);
+      await saveFile(`ตำนัว_ปันผล_${ym}.pdf`,doc)}
+    finally{el.remove()}
+  }catch(e){toast('สร้างรูปไม่สำเร็จ ลองใหม่อีกครั้ง')}
+  finally{btn.disabled=false;btn.textContent=old}
+}
+document.addEventListener('click',e=>{const b=e.target.closest('.pcJpg');if(b)pcMonthJpg(b.dataset.ym,b)});
 function renderHist(){
   const P=pc.partners,subsOf=P.flatMap(p=>(p.subs||[]).map(s=>({p,name:s.name,pct:num(s.pct)})));
   /* ประวัติจากไฟล์ + เดือนที่ระบบคำนวณ (เฉพาะเดือนที่มีตัวเลขกำไร) */
