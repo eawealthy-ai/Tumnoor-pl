@@ -2001,7 +2001,7 @@ function plSum(R){
 async function loadAnaPL(){
   if(!db)return;$('apNote').textContent='กำลังโหลด P&L…';
   const t=today(),d=new Date(t+'T00:00:00'),yms=[];
-  for(let i=0;i<7;i++){const x=new Date(d.getFullYear(),d.getMonth()-i,1);yms.push(x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0'))}
+  for(let i=0;i<12;i++){const x=new Date(d.getFullYear(),d.getMonth()-i,1);yms.push(x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0'))}
   const rs=await Promise.all(yms.map(ym=>plFetch(ym).catch(()=>({error:true}))));
   apRows=rs.filter(r=>!r.error&&r.n).map(plSum).sort((a,b)=>a.ym<b.ym?-1:1);
   renderAnaPL();
@@ -2035,8 +2035,8 @@ async function renderAnaPL(){
 }
 async function loadAna(){
   if(!db)return;$('aNote').textContent='กำลังโหลด…';
-  const t=today(),d=new Date(t+'T00:00:00'),f=isoOf(new Date(d.getFullYear(),d.getMonth()-6,1)),f2=addDays(monOf(t),-7*12),from=f<f2?f:f2;
-  const {data,error}=await db.from(TABLE).select('date,data').gte('date',from).lte('date',t).order('date').limit(500);
+  const t=today(),d=new Date(t+'T00:00:00'),f=isoOf(new Date(d.getFullYear(),d.getMonth()-11,1)),f2=addDays(monOf(t),-7*12),from=f<f2?f:f2;
+  const {data,error}=await db.from(TABLE).select('date,data').gte('date',from).lte('date',t).order('date').limit(400);
   if(error){$('aNote').textContent='โหลดข้อมูลไม่ได้ ลองใหม่อีกครั้ง';return}
   anaRows=(data||[]).filter(r=>r.data&&!r.data.deleted).map(anaDay);
   loadAnaPL();
@@ -2067,7 +2067,7 @@ async function renderAna(){
   /* periods */
   let P=[];
   if(wk){let m=monOf(t);for(let i=0;i<12;i++){const a=addDays(m,-7*i),b=addDays(a,6);P.push({k:a,lab:`${dmyS(a)}–${dmyS(b)}`,short:dmyS(a),cur:i===0,rows:between(a,b<t?b:t)})}}
-  else{const d=new Date(t+'T00:00:00');for(let i=0;i<7;i++){const a=new Date(d.getFullYear(),d.getMonth()-i,1),b=new Date(d.getFullYear(),d.getMonth()-i+1,0),ai=isoOf(a),bi=isoOf(b);
+  else{const d=new Date(t+'T00:00:00');for(let i=0;i<12;i++){const a=new Date(d.getFullYear(),d.getMonth()-i,1),b=new Date(d.getFullYear(),d.getMonth()-i+1,0),ai=isoOf(a),bi=isoOf(b);
     P.push({k:ai,lab:monLabel(ai.slice(0,7)),short:TH_MON[a.getMonth()],cur:i===0,dim:b.getDate(),rows:between(ai,bi<t?bi:t)})}}
   P=P.map(x=>({...x,...aggr(x.rows)})).filter(x=>x.n).reverse();
   P.forEach((x,i)=>x.chg=i?dPct(x.avg,P[i-1].avg):null);
