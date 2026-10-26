@@ -849,7 +849,7 @@ body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
   <div class="summary kpis">
     <div><span>ยอดขายรวม</span><strong id="kSales">0</strong><em id="kSalesEx"></em></div>
     <div><span>ค่าใช้จ่าย (บิลตลาด + เงินสดย่อย)</span><strong id="kExp">0</strong><em id="kExpPct"></em></div>
-    <div><span>ยอดขายหักค่าใช้จ่าย</span><strong id="kNet">0</strong><em id="kNetPct"></em></div>
+    <div><span>กำไรสุทธิ (ตาม P&amp;L)</span><strong id="kNet">–</strong><em id="kNetPct"></em></div>
     <div><span>ยอดเฉลี่ย/บิล</span><strong id="kAvg">–</strong><em id="kBills"></em></div>
     <div><span>ค้างโอน</span><strong id="kPend" class="warnnum">0</strong><em id="kPendN"></em></div>
     <div class="fcast"><span id="kFcL">ประมาณการยอดขายสิ้นเดือน</span><strong id="kFc">–</strong><em id="kFcN"></em></div>
@@ -879,7 +879,7 @@ body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
   <section>
     <h2 id="dTableTitle">รายละเอียดรายวัน</h2>
     <div class="scroll"><table class="dtable">
-      <thead><tr><th id="dColDate">วันที่</th><th class="r">ยอดขาย</th><th class="r">บิล</th><th class="r">เฉลี่ย/บิล</th><th class="r">บิลตลาด</th><th class="r">เงินสดย่อย</th><th class="r">ค่าใช้จ่าย %</th></tr></thead>
+      <thead><tr><th id="dColDate">วันที่</th><th class="r">ยอดขาย</th><th class="r">บิล</th><th class="r">เฉลี่ย/บิล</th><th class="r">บิลตลาด</th><th class="r">เงินสดย่อย</th><th class="r">ค่าใช้จ่าย %</th><th class="r" id="dColNet">กำไรสุทธิ</th></tr></thead>
       <tbody id="dBody"></tbody><tfoot id="dFoot"></tfoot>
     </table></div>
   </section>
@@ -1885,7 +1885,7 @@ $('tMark').onclick=async()=>{
 const CH=[['cash','เงินสด','#c4580f'],['lineman','LINE MAN','#3a9d5d'],['grab','Grab Food','#e0a82e'],['robinhood','Robinhood','#d6457a'],['credit','Credit','#3b6ea8'],['kplus','KPlus','#8a5bb5']];
 const DOW=['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
 function isoOf(d){const x=new Date(d);x.setMinutes(x.getMinutes()-x.getTimezoneOffset());return x.toISOString().slice(0,10)}
-const charts={};let dashRows=[];
+const charts={};let dashRows=[],dashPL=null,dashTok='';
 function setPreset(p){
   const now=new Date();let f,t;
   if(p==='lastMonth'){f=new Date(now.getFullYear(),now.getMonth()-1,1);t=new Date(now.getFullYear(),now.getMonth(),0)}
@@ -1923,7 +1923,13 @@ async function loadDash(){
     r.d.market.forEach(m=>{const a=CATS.reduce((x,c)=>x+num(m[c]),0);if(a&&!paidKeys.has(r.date+'|'+m.id)){pend+=a;pendN++}});
   });
   $('dNote').textContent=dashRows.length?`${dmy(f)} – ${dmy(t)} · บันทึกแล้ว ${dashRows.length} วัน`:'ยังไม่มีข้อมูลที่บันทึกในช่วงวันที่นี้';
-  dashLast=[pend,pendN];renderDash(pend,pendN);
+  dashLast=[pend,pendN];dashPL=null;renderDash(pend,pendN);
+  /* ดึง P&L รายเดือนของช่วงที่เลือก แล้ววาดใหม่ */
+  const yms=[];{let [y,m]=f.slice(0,7).split('-').map(Number);const end=t.slice(0,7);while(yms.length<13){const ym=y+'-'+String(m).padStart(2,'0');if(ym>end)break;yms.push(ym);m++;if(m>12){m=1;y++}}}
+  const tok0=f+t;dashTok=tok0;
+  const rs=await Promise.all(yms.map(ym=>plFetch(ym).catch(()=>({error:true}))));
+  if(dashTok!==tok0)return;
+  dashPL={};rs.forEach(r=>{if(!r.error&&r.n)dashPL[r.ym]=plSum(r)});renderDash(pend,pendN);
 }
 function tok(name){return getComputedStyle(document.documentElement).getPropertyValue(name).trim()||'#888'}
 async function renderDash(pend,pendN){
@@ -1932,7 +1938,14 @@ async function renderDash(pend,pendN){
   const pct=v=>ex?(v/ex*100).toFixed(1)+'%':'–';
   $('kSales').textContent=fmt0(sales);$('kSalesEx').textContent=R.length?'จาก '+R.length+' วันที่บันทึก':'';
   $('kExp').textContent=fmt0(exp);$('kExpPct').textContent=pct(exp)+' ของยอดขาย';
-  $('kNet').textContent=fmt0(ex-exp);$('kNetPct').textContent=pct(ex-exp)+' ของยอดขาย';
+  /* กำไรสุทธิจากหน้า P&L ของเดือนในช่วงที่เลือก (P&L คิดเป็นรายเดือน) */
+  const PLm=dashPL||{},plKeys=Object.keys(PLm).sort();
+  if(plKeys.length){const net=plKeys.reduce((a,k)=>a+PLm[k].net,0),ps=plKeys.reduce((a,k)=>a+PLm[k].sales,0);
+    const f=$('dFrom').value,t=$('dTo').value,lastDay=ym=>{const [y,m]=ym.split('-').map(Number);return ym+'-'+String(new Date(y,m,0).getDate()).padStart(2,'0')};
+    const partial=f.slice(8)!=='01'||(t!==lastDay(t.slice(0,7))&&t<today());
+    $('kNet').textContent=fmt0(net);$('kNet').classList.toggle('warnnum',net<0);
+    $('kNetPct').textContent=`${ps?(net/ps*100).toFixed(1)+'%':'–'} ของยอดขาย · ${plKeys.length>1?monLabel(plKeys[0])+' – '+monLabel(plKeys[plKeys.length-1]):monLabel(plKeys[0])}${partial?' (คิดทั้งเดือน)':''}`}
+  else{$('kNet').textContent='–';$('kNetPct').textContent=dashPL===null?'กำลังโหลด…':'ไม่มีข้อมูล P&L'}
   $('kAvg').textContent=bills?fmt0(sales/bills):'–';$('kBills').textContent=bills?fmt0(bills)+' บิล · เฉลี่ย '+fmt0(R.length?sales/R.length:0)+'/วัน':'ยังไม่มีจำนวนบิล';
   $('kPend').textContent=fmt0(pend||0);$('kPendN').textContent=(pendN||0)+' บิล';
   showForecast(curYM(),'kFc','kFcN','kFcL');
@@ -1952,10 +1965,10 @@ async function renderDash(pend,pendN){
   const V=monthly?Object.values(R.reduce((g,r)=>{const k=r.date.slice(0,7),x=g[k]||(g[k]={date:k,n:0,sales:0,ex:0,bills:0,mt:0,pt:0,exp:0,ch:Object.fromEntries(CH.map(([c])=>[c,0]))});
       x.n++;['sales','ex','bills','mt','pt','exp'].forEach(f=>x[f]+=r[f]);CH.forEach(([c])=>x.ch[c]+=r.ch[c]);return g},{})).sort((a,b)=>a.date<b.date?-1:1):R;
   $('dChartTitle').textContent=monthly?'ยอดขายรายเดือน':'ยอดขายรายวัน';$('dTableTitle').textContent=monthly?'รายละเอียดรายเดือน':'รายละเอียดรายวัน';
-  $('dColDate').textContent=monthly?'เดือน':'วันที่';
+  $('dColDate').textContent=monthly?'เดือน':'วันที่';$('dColNet').hidden=!monthly;
   // daily table
-  $('dBody').innerHTML=V.map(r=>`<tr><td>${monthly?`${monLabel(r.date)} <span class="muted">${r.n} วัน</span>`:`${dmy(r.date)} <span class="muted">${DOW[new Date(r.date+'T00:00:00').getDay()].slice(0,2)}</span>`}</td><td>${fmt0(r.sales)}</td><td>${r.bills?fmt0(r.bills):'–'}</td><td>${r.bills?fmt0(r.sales/r.bills):'–'}</td><td>${fmt0(r.mt)}</td><td>${fmt0(r.pt)}</td><td>${r.ex?(r.exp/r.ex*100).toFixed(1)+'%':'–'}</td></tr>`).join('');
-  $('dFoot').innerHTML=R.length?`<tr><td class="lbl">รวม</td><td>${fmt0(sales)}</td><td>${bills?fmt0(bills):'–'}</td><td>${bills?fmt0(sales/bills):'–'}</td><td>${fmt0(mt)}</td><td>${fmt0(pt)}</td><td>${pct(exp)}</td></tr>`:'';
+  $('dBody').innerHTML=V.map(r=>`<tr><td>${monthly?`${monLabel(r.date)} <span class="muted">${r.n} วัน</span>`:`${dmy(r.date)} <span class="muted">${DOW[new Date(r.date+'T00:00:00').getDay()].slice(0,2)}</span>`}</td><td>${fmt0(r.sales)}</td><td>${r.bills?fmt0(r.bills):'–'}</td><td>${r.bills?fmt0(r.sales/r.bills):'–'}</td><td>${fmt0(r.mt)}</td><td>${fmt0(r.pt)}</td><td>${r.ex?(r.exp/r.ex*100).toFixed(1)+'%':'–'}</td>${monthly?`<td class="${PLm[r.date]&&PLm[r.date].net<0?'warnnum':''}">${PLm[r.date]?fmt0(PLm[r.date].net):'–'}</td>`:''}</tr>`).join('');
+  $('dFoot').innerHTML=R.length?`<tr><td class="lbl">รวม</td><td>${fmt0(sales)}</td><td>${bills?fmt0(bills):'–'}</td><td>${bills?fmt0(sales/bills):'–'}</td><td>${fmt0(mt)}</td><td>${fmt0(pt)}</td><td>${pct(exp)}</td>${monthly?`<td>${plKeys.length?fmt0(plKeys.reduce((a,k)=>a+PLm[k].net,0)):'–'}</td>`:''}</tr>`:'';
 
   // charts
   try{if(!window.Chart)await loadScript('https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js')}
