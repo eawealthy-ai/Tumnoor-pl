@@ -535,6 +535,12 @@ table.market:not(:has(#mktBody tr:not(.viewing))) tfoot tr{display:flex;justify-
 .rep.dv tr.sub td{color:#5f6d61;font-size:11.5px}
 .rep.dv td.st{text-align:center;font-size:11px}
 .rep.dv footer{position:static;margin-top:22px}
+.rtable tr.rpick{cursor:pointer}
+.rfilt{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 12px}
+.rfilt label{font-size:13px;color:#5f6d61}
+.rfilt select{width:auto;min-width:150px}
+.rfilt #rFiltSum{font-size:13px;color:#5f6d61;margin-left:auto}
+.rfilt #rFiltSum b{color:#1d2a1f;font-variant-numeric:tabular-nums}
 .negBtn{position:absolute;z-index:60;display:none;align-items:center;justify-content:center;min-width:36px;height:30px;padding:0 8px;font:600 15px/1 inherit;color:#b3261e;background:#fdecea;border:1px solid #f3c2bd;border-radius:8px;cursor:pointer;touch-action:manipulation}
 .negBtn.on{display:flex}
 .pcJpg{display:inline-block;margin-top:4px;font:inherit;font-size:11.5px;font-weight:600;color:#2f74d0;background:#e7f0fc;border:0;border-radius:999px;padding:2px 10px;cursor:pointer}
@@ -997,6 +1003,7 @@ body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
   </section>
   <section>
     <h2>รายการเงินเข้า</h2>
+    <div class="rfilt"><label for="rFilt">ดูช่องทาง</label><select id="rFilt" class="t"><option value="">ทุกช่องทาง</option></select><span id="rFiltSum"></span></div>
     <div class="scroll"><table class="rlist">
       <thead><tr><th>วันที่เงินเข้า</th><th>ช่องทาง</th><th>งวดยอดขาย</th><th class="r">ยอดเข้า</th><th class="r">ค่าธรรมเนียม</th><th>หมายเหตุ</th><th></th></tr></thead>
       <tbody id="rList"></tbody>
@@ -2194,15 +2201,23 @@ function renderRecon(){
   $('rBody').innerHTML=keys.map(k=>{
     const s=rcSales[k]||0,g=got[k]||0,fe=fee[k]||0,d=s-g-fe;T.s+=s;T.g+=g;T.f+=fe;
     const st=Math.abs(d)<1?(s||g?'<span class="chip paidc">ครบ</span>':'<span class="muted">–</span>'):d>0?'<span class="chip pendc">ค้างรับ</span>':'<span class="chip warnc">รับเกิน</span>';
-    return `<tr><td><i class="sw" style="background:${chColor(k)}"></i>${chName(k)}</td><td>${fmt(s)}</td><td>${fmt(g)}</td><td>${fmt(fe)}</td><td class="${Math.abs(d)<1?'':'grand'}">${fmt(d)}</td><td>${st}</td></tr>`;
+    return `<tr data-ch="${escH(k)}" class="rpick"><td><i class="sw" style="background:${chColor(k)}"></i>${chName(k)}</td><td>${fmt(s)}</td><td>${fmt(g)}</td><td>${fmt(fe)}</td><td class="${Math.abs(d)<1?'':'grand'}">${fmt(d)}</td><td>${st}</td></tr>`;
   }).join('');
   const d=T.s-T.g-T.f;
   $('rFoot').innerHTML=`<tr><td class="lbl">รวม</td><td>${fmt(T.s)}</td><td>${fmt(T.g)}</td><td>${fmt(T.f)}</td><td class="grand">${fmt(d)}</td><td></td></tr>`;
-  $('rList').innerHTML=rcRows.map(r=>`<tr><td class="nowrap">${dmy(r.received_on)}</td><td><i class="sw" style="background:${chColor(r.channel)}"></i>${escH(chName(r.channel))}</td>
+  const fs=$('rFilt'),cur=fs.value,chs=[...new Set([...CH.map(c=>c[0]),...rcRows.map(r=>r.channel)])];
+  fs.innerHTML='<option value="">ทุกช่องทาง</option>'+chs.map(k=>`<option value="${escH(k)}">${escH(chName(k))}</option>`).join('');
+  fs.value=chs.includes(cur)?cur:'';
+  const L=fs.value?rcRows.filter(r=>r.channel===fs.value):rcRows;
+  $('rFiltSum').innerHTML=L.length?`${L.length} รายการ · รับ <b>${fmt(L.reduce((a,r)=>a+num(r.amount),0))}</b>${L.some(r=>num(r.fee))?` · ค่าธรรมเนียม <b>${fmt(L.reduce((a,r)=>a+num(r.fee),0))}</b>`:''}`:'';
+  $('rList').innerHTML=L.map(r=>`<tr><td class="nowrap">${dmy(r.received_on)}</td><td><i class="sw" style="background:${chColor(r.channel)}"></i>${escH(chName(r.channel))}</td>
     <td class="nowrap muted">${dmyS(r.period_from)} – ${dmyS(r.period_to)}</td><td class="amt">${fmt(num(r.amount))}</td><td class="amt">${num(r.fee)?fmt(num(r.fee)):'–'}</td>
     <td class="det">${escH(r.note||'')}</td><td><button type="button" class="del rcDel" data-id="${escH(r.id)}" aria-label="ลบรายการนี้">×</button></td></tr>`).join('');
-  $('rListNote').textContent=rcRows.length?'':'ยังไม่มีเงินเข้าที่บันทึกในช่วงนี้';
+  $('rListNote').textContent=L.length?'':fs.value?'ยังไม่มีเงินเข้าช่องทางนี้ในช่วงนี้':'ยังไม่มีเงินเข้าที่บันทึกในช่วงนี้';
 }
+$('rFilt').addEventListener('change',renderRecon);
+/* กดชื่อช่องทางในตารางกระทบยอด = กรองรายการเงินเข้าช่องทางนั้น */
+$('rBody').addEventListener('click',e=>{const tr=e.target.closest('tr[data-ch]');if(!tr)return;const f=$('rFilt');f.value=f.value===tr.dataset.ch?'':tr.dataset.ch;renderRecon();f.closest('section').scrollIntoView({behavior:'smooth',block:'start'})});
 $('rForm').addEventListener('submit',async e=>{
   e.preventDefault();if(!db||!owner)return;
   const amt=num($('rAmt').value),fe=num($('rFee').value),pf=$('rPf').value,pt=$('rPt').value;
