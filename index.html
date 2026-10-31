@@ -2052,7 +2052,7 @@ const PG={labor:['salary','parttime','staffmeal','incentive','welfare'],place:['
 let apRows=[];
 function plSum(R){
   const man=R.md.manual||{},tot=k=>(R.auto[k]||0)+num(man[k]),g=ks=>ks.reduce((a,k)=>a+tot(k),0);
-  const food=PL_COGS.reduce((a,[k])=>a+tot(k),0),opex=PL_OPEX.reduce((a,[k])=>a+tot(k),0),other=(R.md.other||[]).reduce((a,o)=>a+num(o.amount),0);
+  const food=PL_COGS.reduce((a,[k])=>a+tot(k),0),opex=PL_OPEX.reduce((a,[k])=>a+tot(k),0),other=-(R.md.other||[]).reduce((a,o)=>a+num(o.amount),0);
   return{ym:R.ym,n:R.n,dim:R.dim,sales:R.sales,food,labor:g(PG.labor),place:g(PG.place),fee:g(PG.fee),misc:g(PG.misc)+other,opex,other,net:R.sales-food-opex-other};
 }
 async function loadAnaPL(){
@@ -2282,7 +2282,7 @@ async function plFetch(ym){
 function plNetOf(R){
   const man=R.md.manual||{},tot=k=>R.auto[k]+num(man[k]);
   const cogs=PL_COGS.reduce((a,[k])=>a+tot(k),0),opex=PL_OPEX.reduce((a,[k])=>a+tot(k),0);
-  const other=(R.md.other||[]).reduce((a,o)=>a+num(o.amount),0);
+  const other=-(R.md.other||[]).reduce((a,o)=>a+num(o.amount),0);
   return R.sales-cogs-opex-other;
 }
 async function loadPL(){
@@ -2303,7 +2303,7 @@ async function loadPL(){
 function plTotals(){
   const D=plData,tot=k=>D.auto[k]+num(plManual[k]);
   const cogs=PL_COGS.reduce((a,[k])=>a+tot(k),0),gross=D.sales-cogs,opex=PL_OPEX.reduce((a,[k])=>a+tot(k),0),op=gross-opex;
-  const other=plOther.reduce((a,o)=>a+num(o.amount),0);
+  const other=-plOther.reduce((a,o)=>a+num(o.amount),0); /* รายการอื่นๆ: เงินเข้า +, เงินจ่าย − */
   return {tot,cogs,gross,opex,op,other,net:op-other};
 }
 function renderPL(){
@@ -2317,7 +2317,7 @@ function renderPL(){
     +sum('รวมต้นทุนอาหาร',T.cogs,'sub')+sum('กำไรขั้นต้น',T.gross,'key')
     +`<tr class="hd"><td colspan="5">ค่าใช้จ่ายในการบริหาร</td></tr>`+PL_OPEX.map(([k,n])=>line(k,n)).join('')
     +sum('รวมค่าใช้จ่ายในการบริหาร',T.opex,'sub')+sum('กำไรจากการดำเนินงาน',T.op,'key')
-    +`<tr class="hd"><td colspan="5">รายการอื่นๆ <span class="muted">(ใส่ค่าใช้จ่ายเป็นบวก รายรับ/เงินคืนเป็นลบ)</span></td></tr>`
+    +`<tr class="hd"><td colspan="5">รายการอื่นๆ <span class="muted">(เงินเข้าใส่เป็นบวก เงินจ่ายใส่เป็นลบ)</span></td></tr>`
     +plOther.map((o,i)=>`<tr class="ln"><td class="ind"><input class="t plo" data-i="${i}" data-f="label" value="${escH(o.label||'')}" placeholder="ชื่อรายการ" aria-label="ชื่อรายการ"></td><td></td><td><input class="n plo" data-i="${i}" data-f="amount" inputmode="decimal" value="${o.amount!=null&&o.amount!==''?escH(o.amount):''}" aria-label="จำนวนเงิน"></td><td class="tv">${fmt(num(o.amount))}</td><td class="pc">${pc(num(o.amount))} <button type="button" class="del plDel" data-i="${i}" aria-label="ลบรายการ">×</button></td></tr>`).join('')
     +`<tr class="addrow"><td class="ind" colspan="5"><button type="button" class="btn btn-add" id="plAddOther">+ เพิ่มรายการอื่นๆ</button></td></tr>`
     +sum('กำไร (ขาดทุน) สุทธิ',T.net,'net '+(T.net<0?'neg':''));
