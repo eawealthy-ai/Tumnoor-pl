@@ -2497,7 +2497,7 @@ async function computePartner(){
     pcRows.push({cogs,ym:m,sales:sys?R.sales:num(o.sales),n:sys?R.n:0,dim:R.dim||0,auto,profit,hasOv,carryIn,used,dist,deficit,shares,running:m===end});
   });
   $('pcNote').textContent=`คำนวณ ${months.length} เดือน ตั้งแต่ ${monLabel(months[0]||end)} · ขาดทุนสะสมคงเหลือ ${fmt(deficit)} บาท`;
-  renderPayouts();renderHist();
+  renderPayouts();renderHist();pcSyncHist();
 }
 function renderPayouts(){
   const P=pc.partners;
@@ -2570,15 +2570,37 @@ document.addEventListener('click',e=>{const b=e.target.closest('.pcJpg');if(b)pc
     cur.dispatchEvent(new Event('input',{bubbles:true}));cur.dispatchEvent(new Event('change',{bubbles:true}))});
   window.addEventListener('resize',place);document.addEventListener('scroll',place,true);
 })();
+/* แถวประวัติปันผลของเดือนหนึ่ง (เดือนขาดทุน dist=0 → ปันผล 0) */
+function pcHistRow(r){
+  const P=pc.partners,r2=v=>Math.round(v*100)/100;
+  return{ym:r.ym,label:monLabel(r.ym),sales:r2(r.sales),cogs:r.cogs?Math.round(r.cogs*10000)/10000:null,profit:r2(r.profit),pct:r.sales?r2(r.profit/r.sales*100):null,auto:true,
+    shares:Object.fromEntries(P.map(p=>[p.id,r2(r.dist*num(p.share)/100)])),
+    subs:Object.fromEntries(P.flatMap(p=>(p.subs||[]).map(s=>[s.name,r2(r.dist*num(p.share)/100*num(s.pct)/100)])))};
+}
+/* บันทึกเดือนที่ปิดแล้วลงประวัติอัตโนมัติ (เฉพาะเจ้าของ) · เดือนที่ระบบบันทึกเองจะอัปเดตตามตัวเลขล่าสุด */
+async function pcSyncHist(){
+  if(!owner||!pc||pcDirty)return;
+  const hist=(pc.hist||[]).slice();let changed=false;
+  pcRows.filter(r=>!r.running&&r.profit!=null).forEach(r=>{
+    const row=pcHistRow(r),i=hist.findIndex(h=>h.ym===r.ym);
+    if(i<0){hist.push(row);changed=true}
+    else if(hist[i].auto&&JSON.stringify(hist[i])!==JSON.stringify(row)){hist[i]=row;changed=true}
+  });
+  if(!changed)return;
+  try{
+    const cur=await db.from(MONTHLY).select('data').eq('month',PKEY).maybeSingle();if(cur.error)return;
+    const data={...((cur.data&&cur.data.data)||{}),hist};
+    const w=await db.from(MONTHLY).upsert({month:PKEY,data,updated_at:new Date().toISOString()});if(w.error)return;
+    pc.hist=hist;renderHist();
+  }catch(e){}
+}
 function renderHist(){
   const P=pc.partners,subsOf=P.flatMap(p=>(p.subs||[]).map(s=>({p,name:s.name,pct:num(s.pct)})));
-  /* ประวัติจากไฟล์ + เดือนที่ระบบคำนวณ (เฉพาะเดือนที่มีตัวเลขกำไร) */
-  const H=(pc.hist||[]).map(r=>({...r,src:'file'})).concat(pcRows.filter(r=>r.profit!=null).map(r=>({
-    label:monLabel(r.ym),sales:r.sales,cogs:r.cogs,profit:r.profit,pct:r.sales?r.profit/r.sales*100:null,src:r.running?'live':'sys',
-    shares:Object.fromEntries(P.map(p=>[p.id,r.dist*num(p.share)/100])),
-    subs:Object.fromEntries(subsOf.map(s=>[s.name,r.dist*num(s.p.share)/100*s.pct/100]))})));
+  /* ประวัติที่บันทึกไว้ (ไฟล์ + ระบบ) + เดือนที่ยังไม่ได้บันทึก/เดือนนี้ */
+  const have=new Set((pc.hist||[]).map(h=>h.ym).filter(Boolean));
+  const H=(pc.hist||[]).map(r=>({...r,src:r.auto?'sys':'file'})).concat(pcRows.filter(r=>r.profit!=null&&!have.has(r.ym)).map(r=>({...pcHistRow(r),src:r.running?'live':'sys'})));
   $('pcHistBox').hidden=!H.length;
-  const nf=(pc.hist||[]).length,ns=H.length-nf;
+  const nf=H.filter(r=>r.src==='file').length,ns=H.length-nf;
   $('pcHistMeta').textContent=(pc.histMeta?`นำเข้าจาก ${pc.histMeta.file} ${nf} เดือน`:'')+(ns?`${nf?' · ':''}จากระบบ ${ns} เดือน (ตามสัดส่วนปันผลปัจจุบัน หักขาดทุนยกมาแล้ว)`:'');
   $('pcHistHead').innerHTML=`<tr><th>เดือน</th><th class="r">ยอดขาย</th><th class="r">%COG</th><th class="r">กำไร</th><th class="r">%</th>${P.map(p=>`<th class="r">${escH(p.name)}</th>`).join('')}${subsOf.map(s=>`<th class="r">${escH(s.name)}</th>`).join('')}</tr>`;
   $('pcHistBody').innerHTML=H.map(r=>`<tr class="${r.src!=='file'?'sysrow':''}"><td>${escH(r.label)}${r.src==='sys'?' <span class="chip paidc">ระบบ</span>':r.src==='live'?' <span class="chip pendc">เดือนนี้</span>':''}</td><td>${r.sales?fmt0(r.sales):'–'}</td><td>${r.cogs?(r.cogs*100).toFixed(1)+'%':'–'}</td><td class="${r.profit<0?'grand':''}">${fmt0(r.profit||0)}</td><td>${r.pct!=null?Number(r.pct).toFixed(1):'–'}</td>${P.map(p=>`<td>${fmt0(num((r.shares||{})[p.id]))}</td>`).join('')}${subsOf.map(s=>`<td>${fmt0(num((r.subs||{})[s.name]))}</td>`).join('')}</tr>`).join('');
