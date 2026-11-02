@@ -2651,7 +2651,7 @@ function renderMenu(){
   const hasRev=months.every(m=>mnData[m].src==='pos'),prevRev=!!prevM&&mnData[prevM].src==='pos';
   const by=hasRev?mnBy:'q',val=x=>by==='v'?x.v:x.q,f0=x=>by==='v'?fmt0(x):fmt0(x);
   $('mnBy').querySelectorAll('button').forEach(b=>{b.setAttribute('aria-pressed',b.dataset.b===by);b.disabled=b.dataset.b==='v'&&!hasRev});
-  $('mnByNote').textContent=hasRev?'':'ยอดขาย (บาท) มีเฉพาะเดือนที่นำเข้ารายงาน POS (พ.ค.–ก.ค. 69)';
+  $('mnByNote').textContent=hasRev?'':'ยอดขาย (บาท) มีเฉพาะเดือนที่นำเข้ารายงาน POS';
   const days=months.reduce((a,m)=>a+mnDim(m),0),okC=c=>mnCat==='all'||(mnCat==='main'?(c==='ส้มตำ'||c==='อาหาร'):c===mnCat);
   const A=mnAgg(months),P=prevM&&(by==='q'||prevRev)?mnAgg([prevM]):null,trendM=ms.slice(-6).filter(m=>by==='q'||mnData[m].src==='pos'),T=trendM.map(m=>mnAgg([m]));
   const L=Object.values(A).filter(x=>okC(x.c)&&(x.q>0||x.v>0)).sort((a,b)=>val(b)-val(a)||b.q-a.q||a.n.localeCompare(b.n,'th'));
