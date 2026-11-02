@@ -549,6 +549,8 @@ table.market:not(:has(#mktBody tr:not(.viewing))) tfoot tr{display:flex;justify-
 .mn-cats{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 4px}
 .mn-cats button{font:inherit;font-size:13px;padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--muted);cursor:pointer}
 .mn-cats button[aria-pressed="true"]{background:var(--leaf);border-color:var(--leaf);color:#fff;font-weight:600}
+.mn-by{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0 0;font-size:13px;color:var(--muted)}
+.mn-by .seg button:disabled{opacity:.45;cursor:not-allowed}
 .mn-top{display:grid;gap:8px}
 .mn-row{display:grid;grid-template-columns:26px minmax(0,1fr) auto;align-items:center;gap:10px}
 .mn-row .rk{font-family:var(--num);font-size:13px;color:var(--muted);text-align:right}
@@ -950,6 +952,7 @@ body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
   </div>
   <p class="sub" id="mnNote" style="margin:-8px 0 0">กำลังโหลด…</p>
   <div class="mn-cats" id="mnCats" role="group" aria-label="หมวดเมนู"></div>
+  <div class="mn-by"><span>จัดอันดับตาม</span><div class="seg" id="mnBy" role="group" aria-label="จัดอันดับตาม"><button type="button" data-b="v" aria-pressed="true">ยอดขาย (บาท)</button><button type="button" data-b="q" aria-pressed="false">จำนวนจาน</button></div><small id="mnByNote" class="muted"></small></div>
   <section>
     <div class="lfl" id="mnKpi"></div>
   </section>
@@ -959,9 +962,9 @@ body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
   </section>
   <section>
     <h2>ยอดขายรายเมนู</h2>
-    <p class="sub">จำนวนที่ขาย (จาน/ชิ้น) · % ของหมวดที่เลือก · เทียบเดือนก่อน · แนวโน้ม 6 เดือนล่าสุด</p>
+    <p class="sub">จำนวน (จาน/ชิ้น) · ยอดขายสุทธิหลังส่วนลด (เดือนที่มีรายงาน POS) · % ของหมวดที่เลือก · เทียบเดือนก่อน · แนวโน้มรายเดือน</p>
     <div class="scroll"><table class="dtable mn-table">
-      <thead><tr><th>#</th><th>เมนู</th><th class="r">จำนวน</th><th class="r">%</th><th class="r">เฉลี่ย/วัน</th><th class="r">เทียบเดือนก่อน</th><th>แนวโน้ม</th></tr></thead>
+      <thead id="mnHead"></thead>
       <tbody id="mnBody"></tbody>
     </table></div>
   </section>
@@ -2610,9 +2613,9 @@ async function pcMonthJpg(ym,btn){
 }
 document.addEventListener('click',e=>{const b=e.target.closest('.pcJpg');if(b)pcMonthJpg(b.dataset.ym,b)});
 /* ---------- เมนูขายดี (ยอดขายรายเมนู เก็บใน tamnua_monthly แถว 'menu:YYYY-MM') ---------- */
-const MN_CATS=['ส้มตำ','อาหาร','ของหวาน','เครื่องดื่ม','เบียร์','ข้าว/เส้น'];
+const MN_CATS=['ส้มตำ','อาหาร','ของหวาน','เครื่องดื่ม','เบียร์','ข้าว/เส้น','เพิ่มเติม'];
 const MN_TH={'มค':1,'กพ':2,'มีค':3,'เมย':4,'พค':5,'มิย':6,'กค':7,'สค':8,'กย':9,'ตค':10,'พย':11,'ธค':12};
-let mnData={},mnCat='main',mnView=null;
+let mnData={},mnCat='main',mnView=null,mnBy='v';
 function mnCatOf(n){
   if(/^\d+\./.test(n))return'ส้มตำ';if(/^เบียร์/.test(n))return'เบียร์';
   if(/น้ำดื่ม|โค๊ก|โค้ก|สแปลช|สไปร์ท|ชเวปส์|โซดา|น้ำแข็ง/.test(n))return'เครื่องดื่ม';
@@ -2634,7 +2637,7 @@ async function loadMenu(){
   $('mnCats').innerHTML=[['main','อาหารทั้งหมด'],...MN_CATS.map(c=>[c,c]),['all','ทุกหมวด']].map(([k,l])=>`<button type="button" data-c="${escH(k)}" aria-pressed="${k===mnCat}">${escH(l)}</button>`).join('');
   renderMenu();
 }
-function mnAgg(months){const o={};months.forEach(m=>(mnData[m].items||[]).forEach(([n,c,q])=>{const x=o[n]||(o[n]={n,c,q:0});x.q+=num(q)}));return o}
+function mnAgg(months){const o={};months.forEach(m=>(mnData[m].items||[]).forEach(([n,c,q,v])=>{const x=o[n]||(o[n]={n,c,q:0,v:0});x.q+=num(q);x.v+=num(v)}));return o}
 function mnSpark(vals){
   const w=64,h=20,mx=Math.max(...vals,1),st=vals.length>1?w/(vals.length-1):0;
   const pts=vals.map((v,i)=>`${(i*st).toFixed(1)},${(h-2-(v/mx)*(h-4)).toFixed(1)}`).join(' ');
@@ -2645,38 +2648,45 @@ function renderMenu(){
   const ms=Object.keys(mnData).sort();
   if(!ms.length){$('mnNote').textContent='ยังไม่มีข้อมูลยอดขายรายเมนู · นำเข้าไฟล์ Excel ด้านล่าง';['mnKpi','mnTop','mnBody'].forEach(id=>$(id).innerHTML='');return}
   const v=$('mnMonth').value,months=v==='all'?ms:[v],prevM=v==='all'?null:ms[ms.indexOf(v)-1]||null;
+  const hasRev=months.every(m=>mnData[m].src==='pos'),prevRev=!!prevM&&mnData[prevM].src==='pos';
+  const by=hasRev?mnBy:'q',val=x=>by==='v'?x.v:x.q,f0=x=>by==='v'?fmt0(x):fmt0(x);
+  $('mnBy').querySelectorAll('button').forEach(b=>{b.setAttribute('aria-pressed',b.dataset.b===by);b.disabled=b.dataset.b==='v'&&!hasRev});
+  $('mnByNote').textContent=hasRev?'':'ยอดขาย (บาท) มีเฉพาะเดือนที่นำเข้ารายงาน POS (พ.ค.–ก.ค. 69)';
   const days=months.reduce((a,m)=>a+mnDim(m),0),okC=c=>mnCat==='all'||(mnCat==='main'?(c==='ส้มตำ'||c==='อาหาร'):c===mnCat);
-  const A=mnAgg(months),P=prevM?mnAgg([prevM]):null,trendM=ms.slice(-6),T=trendM.map(m=>mnAgg([m]));
-  const L=Object.values(A).filter(x=>okC(x.c)&&x.q>0).sort((a,b)=>b.q-a.q||a.n.localeCompare(b.n,'th'));
+  const A=mnAgg(months),P=prevM&&(by==='q'||prevRev)?mnAgg([prevM]):null,trendM=ms.slice(-6).filter(m=>by==='q'||mnData[m].src==='pos'),T=trendM.map(m=>mnAgg([m]));
+  const L=Object.values(A).filter(x=>okC(x.c)&&(x.q>0||x.v>0)).sort((a,b)=>val(b)-val(a)||b.q-a.q||a.n.localeCompare(b.n,'th'));
   const catLabel={main:'อาหารทั้งหมด (ส้มตำ+อาหาร)',all:'ทุกหมวด'}[mnCat]||mnCat;
-  mnView={L,P,T,trendM,days,months,v,prevM,catLabel};
-  const tot=L.reduce((a,x)=>a+x.q,0),ptot=P?Object.values(P).filter(x=>okC(x.c)).reduce((a,x)=>a+x.q,0):null;
-  $('mnNote').textContent=`${v==='all'?'รวม '+ms.length+' เดือน':monLabel(v)} · ${L.length} เมนู · ที่มา: ${(mnData[months[months.length-1]]||{}).file||'ไฟล์นำเข้า'}`;
-  const top=L[0],chg=(a,b)=>b?((a-b)/b*100):null,pc=x=>x==null?'–':(x>0?'+':'')+x.toFixed(1)+'%';
-  const top3=L.slice(0,3).reduce((a,x)=>a+x.q,0);
-  $('mnKpi').innerHTML=`<div><span>ขายได้รวม</span><strong>${fmt0(tot)}</strong><em>${ptot!=null?'เดือนก่อน '+fmt0(ptot)+' · '+pc(chg(tot,ptot)):'จาน/ชิ้น'}</em></div>
-    <div><span>อันดับ 1</span><strong style="font-size:16px;line-height:1.3">${top?escH(top.n):'–'}</strong><em>${top?fmt0(top.q)+' · '+(top.q/tot*100).toFixed(1)+'% ของหมวด':''}</em></div>
-    <div><span>เฉลี่ยต่อวัน</span><strong>${fmt0(tot/days)}</strong><em>${days} วัน</em></div>
-    <div><span>Top 3 รวมกัน</span><strong>${tot?(top3/tot*100).toFixed(1)+'%':'–'}</strong><em>ของยอดในหมวด</em></div>`;
-  const mx=top?top.q:1;
-  $('mnTop').innerHTML=L.slice(0,10).map((x,i)=>`<div class="mn-row"><span class="rk${i<3?' g':''}">${i+1}</span><div class="nm"><span>${escH(x.n)}</span><div class="mbar"><i style="width:${(x.q/mx*100).toFixed(1)}%"></i></div></div><span class="q">${fmt0(x.q)}</span></div>`).join('');
+  mnView={L,P,T,trendM,days,months,v,prevM,catLabel,hasRev,by};
+  const tot=L.reduce((a,x)=>a+val(x),0),totQ=L.reduce((a,x)=>a+x.q,0),totV=L.reduce((a,x)=>a+x.v,0),ptot=P?Object.values(P).filter(x=>okC(x.c)).reduce((a,x)=>a+val(x),0):null;
+  const src=months.map(m=>mnData[m].src==='pos'?'POS':'Excel');
+  $('mnNote').textContent=`${v==='all'?'รวม '+ms.length+' เดือน':monLabel(v)} · ${L.length} เมนู · ที่มา: ${[...new Set(src)].join(' + ')}${v!=='all'?' ('+((mnData[v]||{}).file||'')+')':''}`;
+  const top=L[0],chg=(a,b)=>b?((a-b)/b*100):null,pc=x=>x==null?'–':(x>0?'+':'')+x.toFixed(1)+'%',unit=by==='v'?'บาท':'จาน/ชิ้น';
+  const top3=L.slice(0,3).reduce((a,x)=>a+val(x),0);
+  $('mnKpi').innerHTML=`<div><span>${by==='v'?'ยอดขายรวม (บาท)':'ขายได้รวม'}</span><strong>${fmt0(tot)}</strong><em>${ptot!=null?'เดือนก่อน '+fmt0(ptot)+' · '+pc(chg(tot,ptot)):unit}</em></div>
+    <div><span>อันดับ 1</span><strong style="font-size:16px;line-height:1.3">${top?escH(top.n):'–'}</strong><em>${top?fmt0(val(top))+' '+(by==='v'?'บาท':'')+' · '+(val(top)/tot*100).toFixed(1)+'% ของหมวด':''}</em></div>
+    <div><span>เฉลี่ยต่อวัน</span><strong>${fmt0(tot/days)}</strong><em>${unit} · ${days} วัน</em></div>
+    ${hasRev?`<div><span>ราคาเฉลี่ยต่อจาน</span><strong>${totQ?fmt0(totV/totQ):'–'}</strong><em>บาท · ${fmt0(totQ)} จาน/ชิ้น</em></div>`:`<div><span>Top 3 รวมกัน</span><strong>${tot?(top3/tot*100).toFixed(1)+'%':'–'}</strong><em>ของยอดในหมวด</em></div>`}`;
+  const mx=top?val(top)||1:1;
+  $('mnTop').innerHTML=L.slice(0,10).map((x,i)=>`<div class="mn-row"><span class="rk${i<3?' g':''}">${i+1}</span><div class="nm"><span>${escH(x.n)}</span><div class="mbar"><i style="width:${(val(x)/mx*100).toFixed(1)}%"></i></div></div><span class="q">${fmt0(val(x))}</span></div>`).join('');
+  $('mnHead').innerHTML=`<tr><th>#</th><th>เมนู</th><th class="r">จำนวน</th>${hasRev?'<th class="r">ยอดขาย (บาท)</th><th class="r">ราคาเฉลี่ย</th>':''}<th class="r">% ${by==='v'?'ยอดขาย':'จำนวน'}</th><th class="r">เฉลี่ย/วัน</th><th class="r">เทียบเดือนก่อน</th><th>แนวโน้ม</th></tr>`;
   $('mnBody').innerHTML=L.map((x,i)=>{
-    const p=P?(P[x.n]||{q:0}).q:null,d=p==null?null:p?chg(x.q,p):null;
+    const p=P?val(P[x.n]||{q:0,v:0}):null,d=p==null?null:p?chg(val(x),p):null;
     const dTxt=p==null?'–':!p?'<span class="up">ใหม่</span>':`<span class="${d>=0?'up':'dn'}">${pc(d)}</span> <small class="muted">(${fmt0(p)})</small>`;
-    return`<tr><td>${i+1}</td><td class="nm">${escH(x.n)}${mnCat==='main'||mnCat==='all'?`<small>${escH(x.c)}</small>`:''}</td><td>${fmt0(x.q)}</td><td>${(x.q/tot*100).toFixed(1)}%</td><td>${(x.q/days).toFixed(1)}</td><td>${dTxt}</td><td>${mnSpark(T.map(t=>(t[x.n]||{q:0}).q))}</td></tr>`}).join('');
+    return`<tr><td>${i+1}</td><td class="nm">${escH(x.n)}${mnCat==='main'||mnCat==='all'?`<small>${escH(x.c)}</small>`:''}</td><td>${fmt0(x.q)}</td>${hasRev?`<td>${fmt0(x.v)}</td><td>${x.q?fmt0(x.v/x.q):'–'}</td>`:''}<td>${tot?(val(x)/tot*100).toFixed(1):'0.0'}%</td><td>${(val(x)/days).toFixed(1)}</td><td>${dTxt}</td><td>${mnSpark(T.map(t=>val(t[x.n]||{q:0,v:0})))}</td></tr>`}).join('');
 }
 $('mnMonth').addEventListener('change',renderMenu);
+$('mnBy').addEventListener('click',e=>{const b=e.target.closest('button[data-b]');if(!b||b.disabled)return;mnBy=b.dataset.b;renderMenu()});
 function mnPeriodLabel(V){return V.v==='all'?`รวม ${V.months.length} เดือน (${monLabel(V.months[0])} – ${monLabel(V.months[V.months.length-1])})`:monLabel(V.v)}
 function mnFileTag(V){return (V.v==='all'?V.months[0]+'_'+V.months[V.months.length-1]:V.v)+'_'+({main:'อาหารทั้งหมด',all:'ทุกหมวด'}[mnCat]||mnCat).replace(/\//g,'-')}
 async function mnXls(){
   const V=mnView;if(!V||!V.L.length){toast('ยังไม่มีข้อมูล');return}
   if(!window.XLSX)await loadScript('https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js');
-  const X=window.XLSX,tot=V.L.reduce((a,x)=>a+x.q,0);
-  const head=['อันดับ','เมนู','หมวด','จำนวน','% ของหมวด','เฉลี่ย/วัน',...(V.P?['เดือนก่อน','% เปลี่ยน']:[]),...V.trendM.map(m=>monLabel(m))];
-  const A=[[`ตำนัว · เมนูขายดี ${mnPeriodLabel(V)}`],[`หมวด: ${V.catLabel} · ${V.L.length} เมนู · รวม ${tot} จาน/ชิ้น · ${V.days} วัน`],head];
-  V.L.forEach((x,i)=>{const p=V.P?(V.P[x.n]||{q:0}).q:null;
-    A.push([i+1,x.n,x.c,x.q,tot?x.q/tot:0,x.q/V.days,...(V.P?[p,p?(x.q-p)/p:'']:[]),...V.T.map(t=>(t[x.n]||{q:0}).q)])});
-  A.push(['','รวม','',tot,1,tot/V.days]);
+  const X=window.XLSX,val=x=>V.by==='v'?x.v:x.q,tot=V.L.reduce((a,x)=>a+val(x),0),tq=V.L.reduce((a,x)=>a+x.q,0),tv=V.L.reduce((a,x)=>a+x.v,0),u=V.by==='v'?'บาท':'จาน';
+  const head=['อันดับ','เมนู','หมวด','จำนวน',...(V.hasRev?['ยอดขาย (บาท)','ราคาเฉลี่ย']:[]),`% ของหมวด`,`เฉลี่ย/วัน (${u})`,...(V.P?[`เดือนก่อน (${u})`,'% เปลี่ยน']:[]),...V.trendM.map(m=>monLabel(m)+` (${u})`)];
+  const A=[[`ตำนัว · เมนูขายดี ${mnPeriodLabel(V)}`],[`หมวด: ${V.catLabel} · จัดอันดับตาม${V.by==='v'?'ยอดขาย':'จำนวน'} · ${V.L.length} เมนู · ${fmt0(tq)} จาน/ชิ้น${V.hasRev?' · '+fmt0(tv)+' บาท':''} · ${V.days} วัน`],head];
+  V.L.forEach((x,i)=>{const p=V.P?val(V.P[x.n]||{q:0,v:0}):null;
+    A.push([i+1,x.n,x.c,x.q,...(V.hasRev?[x.v,x.q?x.v/x.q:'']:[]),tot?val(x)/tot:0,val(x)/V.days,...(V.P?[p,p?(val(x)-p)/p:'']:[]),...V.T.map(t=>val(t[x.n]||{q:0,v:0}))])});
+  A.push(['','รวม','',tq,...(V.hasRev?[tv,tq?tv/tq:'']:[]),1,tot/V.days]);
   const ws=X.utils.aoa_to_sheet(A),R=X.utils.decode_range(ws['!ref']),G='C4580F';
   for(let r=0;r<=R.e.r;r++)for(let c=0;c<=R.e.c;c++){const a=X.utils.encode_cell({r,c}),cell=ws[a];if(!cell)continue;
     const st={font:{name:'Tahoma',sz:10},alignment:{vertical:'center'}};
@@ -2684,9 +2694,9 @@ async function mnXls(){
     else if(r===1)st.font={name:'Tahoma',sz:9,color:{rgb:'75655A'}};
     else if(r===2){st.font={name:'Tahoma',sz:10,bold:true,color:{rgb:'FFFFFF'}};st.fill={fgColor:{rgb:G}};st.alignment={horizontal:c<3?'left':'right',vertical:'center'}}
     else{if(r===R.e.r){st.font.bold=true;st.fill={fgColor:{rgb:'FDEADB'}}}
-      const h=head[c]||'';if(typeof cell.v==='number'){st.numFmt=/%/.test(h)?'0.0%':h==='เฉลี่ย/วัน'?'0.0':'#,##0';st.alignment={horizontal:'right'}}}
+      const h=head[c]||'';if(typeof cell.v==='number'){st.numFmt=/^%/.test(h)?'0.0%':/เฉลี่ย\/วัน/.test(h)?'0.0':'#,##0';st.alignment={horizontal:'right'}}}
     cell.s=st}
-  ws['!cols']=[{wch:7},{wch:30},{wch:12},{wch:9},{wch:11},{wch:10},...(V.P?[{wch:10},{wch:10}]:[]),...V.trendM.map(()=>({wch:11}))];
+  ws['!cols']=[{wch:7},{wch:30},{wch:12},{wch:9},...(V.hasRev?[{wch:13},{wch:10}]:[]),{wch:11},{wch:13},...(V.P?[{wch:14},{wch:10}]:[]),...V.trendM.map(()=>({wch:15}))];
   ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:5}},{s:{r:1,c:0},e:{r:1,c:5}}];ws['!freeze']={xSplit:0,ySplit:3};
   const wb=X.utils.book_new();X.utils.book_append_sheet(wb,ws,'เมนูขายดี');
   await saveFile(`ตำนัว_เมนูขายดี_${mnFileTag(V)}.xlsx`,X.write(wb,{bookType:'xlsx',type:'array'}));
@@ -2696,18 +2706,18 @@ async function mnPdf(){
   if(!window.html2canvas)await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
   if(!window.jspdf)await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
   try{await document.fonts.ready}catch(e){}
-  const tot=V.L.reduce((a,x)=>a+x.q,0),top=V.L[0],PER=40,pages=[];
+  const val=x=>V.by==='v'?x.v:x.q,tot=V.L.reduce((a,x)=>a+val(x),0),tq=V.L.reduce((a,x)=>a+x.q,0),tv=V.L.reduce((a,x)=>a+x.v,0),top=V.L[0],PER=40,pages=[];
   for(let i=0;i<V.L.length;i+=PER)pages.push(V.L.slice(i,i+PER));
   const pdf=new window.jspdf.jsPDF({unit:'mm',format:'a4',orientation:'portrait'});
   for(let pi=0;pi<pages.length;pi++){
-    const rows=pages[pi].map((x,j)=>{const i=pi*PER+j,p=V.P?(V.P[x.n]||{q:0}).q:null;
-      const d=p==null?'–':!p?'ใหม่':((x.q-p)/p*100>0?'+':'')+((x.q-p)/p*100).toFixed(1)+'%';
-      return`<tr><td>${i+1}</td><td class="tx">${escH(x.n)}</td><td class="tx">${escH(x.c)}</td><td>${fmt0(x.q)}</td><td>${(x.q/tot*100).toFixed(1)}%</td><td>${(x.q/V.days).toFixed(1)}</td><td>${d}</td></tr>`}).join('');
+    const rows=pages[pi].map((x,j)=>{const i=pi*PER+j,p=V.P?val(V.P[x.n]||{q:0,v:0}):null;
+      const d=p==null?'–':!p?'ใหม่':((val(x)-p)/p*100>0?'+':'')+((val(x)-p)/p*100).toFixed(1)+'%';
+      return`<tr><td>${i+1}</td><td class="tx">${escH(x.n)}</td><td class="tx">${escH(x.c)}</td><td>${fmt0(x.q)}</td>${V.hasRev?`<td>${fmt0(x.v)}</td><td>${x.q?fmt0(x.v/x.q):'–'}</td>`:''}<td>${tot?(val(x)/tot*100).toFixed(1):'0.0'}%</td><td>${d}</td></tr>`}).join('');
     const el=document.createElement('div');el.className='rep';
     el.innerHTML=`<header><div><h1>ร้านตำนัว</h1><div class="rs">เมนูขายดี · ${escH(V.catLabel)}</div></div><div class="rs">${mnPeriodLabel(V)}</div></header>
-      ${pi===0?`<p class="rs" style="margin:0 0 12px">ขายได้รวม <b>${fmt0(tot)}</b> จาน/ชิ้น · ${V.L.length} เมนู · เฉลี่ย ${fmt0(tot/V.days)} ต่อวัน · อันดับ 1 <b>${escH(top.n)}</b> (${fmt0(top.q)})</p>`:''}
-      <table><thead><tr><th>#</th><th style="text-align:left">เมนู</th><th style="text-align:left">หมวด</th><th>จำนวน</th><th>% หมวด</th><th>เฉลี่ย/วัน</th><th>${V.P?'เทียบเดือนก่อน':'–'}</th></tr></thead><tbody>${rows}</tbody>
-      ${pi===pages.length-1?`<tbody><tr class="tot"><td></td><td class="tx">รวม</td><td></td><td>${fmt0(tot)}</td><td>100%</td><td>${(tot/V.days).toFixed(1)}</td><td></td></tr></tbody>`:''}</table>
+      ${pi===0?`<p class="rs" style="margin:0 0 12px">จัดอันดับตาม${V.by==='v'?'ยอดขาย':'จำนวน'} · ${V.L.length} เมนู · ${fmt0(tq)} จาน/ชิ้น${V.hasRev?' · ยอดขาย <b>'+fmt0(tv)+'</b> บาท':''} · อันดับ 1 <b>${escH(top.n)}</b> (${fmt0(val(top))}${V.by==='v'?' บาท':''})</p>`:''}
+      <table><thead><tr><th>#</th><th style="text-align:left">เมนู</th><th style="text-align:left">หมวด</th><th>จำนวน</th>${V.hasRev?'<th>ยอดขาย (บาท)</th><th>ราคาเฉลี่ย</th>':''}<th>% หมวด</th><th>${V.P?'เทียบเดือนก่อน':'–'}</th></tr></thead><tbody>${rows}</tbody>
+      ${pi===pages.length-1?`<tbody><tr class="tot"><td></td><td class="tx">รวม</td><td></td><td>${fmt0(tq)}</td>${V.hasRev?`<td>${fmt0(tv)}</td><td>${tq?fmt0(tv/tq):''}</td>`:''}<td>100%</td><td></td></tr></tbody>`:''}</table>
       <footer><span>พิมพ์เมื่อ ${new Date().toLocaleString('th-TH',{dateStyle:'medium',timeStyle:'short'})}</span><span>หน้า ${pi+1}/${pages.length}</span></footer>`;
     document.body.appendChild(el);
     try{const cv=await window.html2canvas(el,{scale:2,backgroundColor:'#ffffff',logging:false});
