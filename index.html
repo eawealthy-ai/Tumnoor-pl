@@ -541,6 +541,25 @@ table.market:not(:has(#mktBody tr:not(.viewing))) tfoot tr{display:flex;justify-
 .rfilt select{width:auto;min-width:150px}
 .rfilt #rFiltSum{font-size:13px;color:#5f6d61;margin-left:auto}
 .rfilt #rFiltSum b{color:#1d2a1f;font-variant-numeric:tabular-nums}
+.mn-sel{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+.mn-sel select{width:auto;min-width:170px}
+.mn-cats{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 4px}
+.mn-cats button{font:inherit;font-size:13px;padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--muted);cursor:pointer}
+.mn-cats button[aria-pressed="true"]{background:var(--leaf);border-color:var(--leaf);color:#fff;font-weight:600}
+.mn-top{display:grid;gap:8px}
+.mn-row{display:grid;grid-template-columns:26px minmax(0,1fr) auto;align-items:center;gap:10px}
+.mn-row .rk{font-family:var(--num);font-size:13px;color:var(--muted);text-align:right}
+.mn-row .rk.g{color:var(--leaf);font-weight:700}
+.mn-row .nm{min-width:0}
+.mn-row .nm span{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mn-row .mbar{height:8px;border-radius:4px;background:var(--leaf-soft);margin-top:4px;overflow:hidden}
+.mn-row .mbar i{display:block;height:100%;background:var(--leaf);border-radius:4px}
+.mn-row .q{font-family:var(--num);font-size:14px;font-weight:600;font-variant-numeric:tabular-nums}
+.mn-table td.nm{text-align:left;white-space:nowrap}
+.mn-table td.nm small{display:block;color:var(--muted);font-size:11px}
+.mn-table .up{color:var(--ok)}.mn-table .dn{color:var(--chili)}
+.mn-table svg{display:block}
+body.ro #mnImpSec{display:none!important}
 .negBtn{position:absolute;z-index:60;display:none;align-items:center;justify-content:center;min-width:36px;height:30px;padding:0 8px;font:600 15px/1 inherit;color:#b3261e;background:#fdecea;border:1px solid #f3c2bd;border-radius:8px;cursor:pointer;touch-action:manipulation}
 .negBtn.on{display:flex}
 .pcJpg{display:inline-block;margin-top:4px;font:inherit;font-size:11.5px;font-weight:600;color:#2f74d0;background:#e7f0fc;border:0;border-radius:999px;padding:2px 10px;cursor:pointer}
@@ -696,6 +715,7 @@ body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
     <button type="button" class="home-tile c-te" data-go="recon"><span class="home-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="f" d="M3 14h6a3 3 0 0 1-6 0zM15 14h6a3 3 0 0 1-6 0z"/><path d="M12 4v16M7 20h10M5 7h14M12 4.2l-1 .8M6 7l-3 7a3 3 0 0 0 6 0zM18 7l-3 7a3 3 0 0 0 6 0z"/><circle class="d" cx="12" cy="4" r="1.3"/></svg><span class="lock" aria-label="ต้องเข้าสู่ระบบ"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span></span><b>กระทบยอด</b></button>
     <button type="button" class="home-tile c-bl" data-go="dash"><span class="home-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect class="f" x="3" y="3" width="18" height="18" rx="4"/><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M7.5 16.5v-3M12 16.5v-8M16.5 16.5v-5.5"/></svg><span class="lock" aria-label="ต้องเข้าสู่ระบบ"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span></span><b>Dashboard</b></button>
     <button type="button" class="home-tile c-or" data-go="ana"><span class="home-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="f" d="M3 20l5-6 4 3 8-10v13z"/><path d="M3 16.5l5-5.5 4 3 8-9"/><path d="M15 5h5v5"/><path d="M3 20.5h18"/></svg><span class="lock" aria-label="ต้องเข้าสู่ระบบ"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span></span><b>วิเคราะห์ WoW/MoM</b></button>
+    <button type="button" class="home-tile c-rd" data-go="menu"><span class="home-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="f" d="M7 21h10l1.5-9h-13z"/><path d="M5.5 12h13L17 21H7z"/><path d="M12 3c-2 2-2 4 0 6M8.5 5c-1.4 1.6-1.2 3 .3 4.3M15.5 5c1.4 1.6 1.2 3-.3 4.3"/></svg><span class="lock" aria-label="ต้องเข้าสู่ระบบ"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span></span><b>เมนูขายดี</b></button>
     <button type="button" class="home-tile c-pu" data-go="pl"><span class="home-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="f" d="M12 3a9 9 0 0 1 9 9h-9z"/><path d="M21 12a9 9 0 1 1-9-9v9z"/><path d="M14.5 3.3A9 9 0 0 1 20.7 9.5H14.5z"/></svg><span class="lock" aria-label="ต้องเข้าสู่ระบบ"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span></span><b>P&amp;L</b></button>
     <button type="button" class="home-tile c-pk" data-go="partner"><span class="home-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><circle class="f" cx="9" cy="8" r="3.4"/><circle cx="9" cy="8" r="3.4"/><path d="M3 19.5a6 6 0 0 1 12 0"/><circle cx="17" cy="9.2" r="2.5"/><path d="M15.6 14a4.6 4.6 0 0 1 5.9 4.4"/></svg><span class="lock" aria-label="ต้องเข้าสู่ระบบ"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span></span><b>หุ้นส่วน</b></button>
   </div>
@@ -919,6 +939,36 @@ body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
     <div id="accList" class="acclist"></div>
   </section>
 </main>
+<main id="menuView" hidden>
+  <div class="tuser">เข้าสู่ระบบเป็น <b class="who"></b><span class="robadge">ดูอย่างเดียว</span> · <button type="button" class="linkbtn logout">ออกจากระบบ</button></div>
+  <div class="ana-top">
+    <h2 style="margin:0">เมนูขายดี</h2>
+    <label class="mn-sel">ช่วงเวลา<select id="mnMonth" class="t"></select></label>
+  </div>
+  <p class="sub" id="mnNote" style="margin:-8px 0 0">กำลังโหลด…</p>
+  <div class="mn-cats" id="mnCats" role="group" aria-label="หมวดเมนู"></div>
+  <section>
+    <div class="lfl" id="mnKpi"></div>
+  </section>
+  <section>
+    <h2>10 อันดับขายดี</h2>
+    <div class="mn-top" id="mnTop"></div>
+  </section>
+  <section>
+    <h2>ยอดขายรายเมนู</h2>
+    <p class="sub">จำนวนที่ขาย (จาน/ชิ้น) · % ของหมวดที่เลือก · เทียบเดือนก่อน · แนวโน้ม 6 เดือนล่าสุด</p>
+    <div class="scroll"><table class="dtable mn-table">
+      <thead><tr><th>#</th><th>เมนู</th><th class="r">จำนวน</th><th class="r">%</th><th class="r">เฉลี่ย/วัน</th><th class="r">เทียบเดือนก่อน</th><th>แนวโน้ม</th></tr></thead>
+      <tbody id="mnBody"></tbody>
+    </table></div>
+  </section>
+  <section id="mnImpSec">
+    <h2>นำเข้ายอดขายรายเมนู</h2>
+    <p class="sub">ไฟล์ Excel รูปแบบเดิม: 1 ชีตต่อเดือน (ชื่อชีต เช่น "พ.ย69") · คอลัมน์ A = เมนู · คอลัมน์วันที่ 1–31 · เดือนที่มีอยู่แล้วจะถูกแทนที่</p>
+    <div class="dl"><label class="btn btn-dl filebtn">เลือกไฟล์ Excel<input type="file" id="mnFile" accept=".xlsx,.xls"></label></div>
+  </section>
+</main>
+
 <main id="anaView" hidden>
   <div class="tuser">เข้าสู่ระบบเป็น <b class="who"></b><span class="robadge">ดูอย่างเดียว</span> · <button type="button" class="linkbtn logout">ออกจากระบบ</button></div>
   <div class="ana-top">
@@ -1521,6 +1571,7 @@ function initDb(){
   else if(location.hash==='#dashboard')showView('dash');
   else if(location.hash==='#recon')showView('recon');
   else if(location.hash==='#analyse')showView('ana');
+  else if(location.hash==='#menu')showView('menu');
   else if(location.hash==='#pl')showView('pl');
   else if(location.hash==='#partner')showView('partner');
   db.auth.onAuthStateChange&&db.auth.onAuthStateChange(()=>{});
@@ -1752,11 +1803,11 @@ function firstOfPrevMonth(){const d=new Date();d.setDate(1);d.setMonth(d.getMont
 $('tFrom').value=firstOfPrevMonth();$('tTo').value=today();
 
 let curView='home';
-const VIEWS={home:'homeView',daily:'dailyView',hist:'histView',recent:'recentView',transfer:'transferView',dash:'dashView',recon:'reconView',ana:'anaView',pl:'plView',partner:'partnerView'};
+const VIEWS={home:'homeView',daily:'dailyView',hist:'histView',recent:'recentView',transfer:'transferView',dash:'dashView',recon:'reconView',ana:'anaView',menu:'menuView',pl:'plView',partner:'partnerView'};
 function showView(v){
   curView=VIEWS[v]?v:'home';
   document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-current',b.dataset.view===curView?'page':'false'));
-  try{history.replaceState(null,'',curView==='transfer'?'#transfer':curView==='dash'?'#dashboard':curView==='recon'?'#recon':curView==='pl'?'#pl':curView==='partner'?'#partner':curView==='recent'?'#recent':curView==='hist'?'#history':curView==='daily'?'#daily':curView==='ana'?'#analyse':location.pathname)}catch(e){}
+  try{history.replaceState(null,'',curView==='transfer'?'#transfer':curView==='dash'?'#dashboard':curView==='recon'?'#recon':curView==='pl'?'#pl':curView==='partner'?'#partner':curView==='recent'?'#recent':curView==='hist'?'#history':curView==='daily'?'#daily':curView==='ana'?'#analyse':curView==='menu'?'#menu':location.pathname)}catch(e){}
   $('dailyCtl').hidden=curView!=='daily';
   Object.values(VIEWS).forEach(id=>$(id).hidden=true);$('loginView').hidden=true;
   document.body.classList.toggle('homebg',curView==='home');
@@ -1784,7 +1835,7 @@ async function checkOwner(){
   const ok=!!owner||viewer;canView=ok;document.body.classList.toggle('ro',ok&&!owner);
   $('loginView').hidden=ok;$(VIEWS[v]).hidden=!ok;
   if(ok){document.querySelectorAll('.who').forEach(el=>el.textContent=email);$('accBox').hidden=!owner;
-    v==='transfer'?loadTransfers():v==='ana'?loadAna():v==='dash'?(loadDash(),owner&&loadAccess()):v==='recon'?loadRecon():v==='pl'?loadPL():loadPartner()}
+    v==='transfer'?loadTransfers():v==='ana'?loadAna():v==='menu'?loadMenu():v==='dash'?(loadDash(),owner&&loadAccess()):v==='recon'?loadRecon():v==='pl'?loadPL():loadPartner()}
   else if(email){$('tLoginErr').innerHTML='';const msg=document.createElement('span');msg.textContent='บัญชี '+email+' ยังไม่ได้รับสิทธิ์ดูหน้านี้';$('tLoginErr').appendChild(msg);
     const b=document.createElement('button');b.type='button';b.className='linkbtn';b.textContent=' ออกจากระบบ';b.onclick=async()=>{try{await db.auth.signOut()}catch(e){}$('tLoginErr').textContent='';checkOwner()};$('tLoginErr').appendChild(b)}
 }
@@ -2555,6 +2606,81 @@ async function pcMonthJpg(ym,btn){
   finally{btn.disabled=false;btn.textContent=old}
 }
 document.addEventListener('click',e=>{const b=e.target.closest('.pcJpg');if(b)pcMonthJpg(b.dataset.ym,b)});
+/* ---------- เมนูขายดี (ยอดขายรายเมนู เก็บใน tamnua_monthly แถว 'menu:YYYY-MM') ---------- */
+const MN_CATS=['ส้มตำ','อาหาร','ของหวาน','เครื่องดื่ม','เบียร์','ข้าว/เส้น'];
+const MN_TH={'มค':1,'กพ':2,'มีค':3,'เมย':4,'พค':5,'มิย':6,'กค':7,'สค':8,'กย':9,'ตค':10,'พย':11,'ธค':12};
+let mnData={},mnCat='main';
+function mnCatOf(n){
+  if(/^\d+\./.test(n))return'ส้มตำ';if(/^เบียร์/.test(n))return'เบียร์';
+  if(/น้ำดื่ม|โค๊ก|โค้ก|สแปลช|สไปร์ท|ชเวปส์|โซดา|น้ำแข็ง/.test(n))return'เครื่องดื่ม';
+  if(['ข้าวเหนียว','ข้าวสวย','เส้นหมี่','ขนมจีน','กากหมู'].includes(n))return'ข้าว/เส้น';
+  if(/แยม|^มะนาว$|วนิลลา|ชาไทย|กาแฟ|ช็อกโกแลต|เผือก|กะทิ|ทุเรียน|คุกกี้|คิวบิค|เฉาก๊วย/.test(n))return'ของหวาน';
+  return'อาหาร';
+}
+const mnClean=n=>n.replace(/^\d+\./,'').replace(/[#*]/g,'').replace(/\s+/g,' ').trim();
+const mnDim=ym=>{const [y,m]=ym.split('-').map(Number);return new Date(y,m,0).getDate()};
+async function loadMenu(){
+  if(!db||!canView)return;
+  $('mnNote').textContent='กำลังโหลด…';
+  const r=await db.from(MONTHLY).select('month,data').like('month','menu:%').order('month').limit(120);
+  if(r.error){$('mnNote').textContent='โหลดไม่ได้ ลองใหม่อีกครั้ง';return}
+  mnData={};(r.data||[]).forEach(x=>{if(x.data&&Array.isArray(x.data.items))mnData[x.month.slice(5)]=x.data});
+  const ms=Object.keys(mnData).sort(),sel=$('mnMonth'),cur=sel.value;
+  sel.innerHTML=ms.slice().reverse().map(m=>`<option value="${m}">${monLabel(m)}</option>`).join('')+(ms.length>1?`<option value="all">รวม ${ms.length} เดือน (${monLabel(ms[0])} – ${monLabel(ms[ms.length-1])})</option>`:'');
+  sel.value=cur&&(cur==='all'||mnData[cur])?cur:(ms[ms.length-1]||'');
+  $('mnCats').innerHTML=[['main','อาหารทั้งหมด'],...MN_CATS.map(c=>[c,c]),['all','ทุกหมวด']].map(([k,l])=>`<button type="button" data-c="${escH(k)}" aria-pressed="${k===mnCat}">${escH(l)}</button>`).join('');
+  renderMenu();
+}
+function mnAgg(months){const o={};months.forEach(m=>(mnData[m].items||[]).forEach(([n,c,q])=>{const x=o[n]||(o[n]={n,c,q:0});x.q+=num(q)}));return o}
+function mnSpark(vals){
+  const w=64,h=20,mx=Math.max(...vals,1),st=vals.length>1?w/(vals.length-1):0;
+  const pts=vals.map((v,i)=>`${(i*st).toFixed(1)},${(h-2-(v/mx)*(h-4)).toFixed(1)}`).join(' ');
+  const last=vals[vals.length-1],[lx,ly]=pts.split(' ').pop().split(',');
+  return`<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" aria-label="แนวโน้ม ${vals.join(', ')}"><polyline points="${pts}" fill="none" stroke="var(--leaf)" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/><circle cx="${lx}" cy="${ly}" r="2.2" fill="var(--leaf)"/></svg>`;
+}
+function renderMenu(){
+  const ms=Object.keys(mnData).sort();
+  if(!ms.length){$('mnNote').textContent='ยังไม่มีข้อมูลยอดขายรายเมนู · นำเข้าไฟล์ Excel ด้านล่าง';['mnKpi','mnTop','mnBody'].forEach(id=>$(id).innerHTML='');return}
+  const v=$('mnMonth').value,months=v==='all'?ms:[v],prevM=v==='all'?null:ms[ms.indexOf(v)-1]||null;
+  const days=months.reduce((a,m)=>a+mnDim(m),0),okC=c=>mnCat==='all'||(mnCat==='main'?(c==='ส้มตำ'||c==='อาหาร'):c===mnCat);
+  const A=mnAgg(months),P=prevM?mnAgg([prevM]):null,trendM=ms.slice(-6),T=trendM.map(m=>mnAgg([m]));
+  const L=Object.values(A).filter(x=>okC(x.c)&&x.q>0).sort((a,b)=>b.q-a.q||a.n.localeCompare(b.n,'th'));
+  const tot=L.reduce((a,x)=>a+x.q,0),ptot=P?Object.values(P).filter(x=>okC(x.c)).reduce((a,x)=>a+x.q,0):null;
+  $('mnNote').textContent=`${v==='all'?'รวม '+ms.length+' เดือน':monLabel(v)} · ${L.length} เมนู · ที่มา: ${(mnData[months[months.length-1]]||{}).file||'ไฟล์นำเข้า'}`;
+  const top=L[0],chg=(a,b)=>b?((a-b)/b*100):null,pc=x=>x==null?'–':(x>0?'+':'')+x.toFixed(1)+'%';
+  const top3=L.slice(0,3).reduce((a,x)=>a+x.q,0);
+  $('mnKpi').innerHTML=`<div><span>ขายได้รวม</span><strong>${fmt0(tot)}</strong><em>${ptot!=null?'เดือนก่อน '+fmt0(ptot)+' · '+pc(chg(tot,ptot)):'จาน/ชิ้น'}</em></div>
+    <div><span>อันดับ 1</span><strong style="font-size:16px;line-height:1.3">${top?escH(top.n):'–'}</strong><em>${top?fmt0(top.q)+' · '+(top.q/tot*100).toFixed(1)+'% ของหมวด':''}</em></div>
+    <div><span>เฉลี่ยต่อวัน</span><strong>${fmt0(tot/days)}</strong><em>${days} วัน</em></div>
+    <div><span>Top 3 รวมกัน</span><strong>${tot?(top3/tot*100).toFixed(1)+'%':'–'}</strong><em>ของยอดในหมวด</em></div>`;
+  const mx=top?top.q:1;
+  $('mnTop').innerHTML=L.slice(0,10).map((x,i)=>`<div class="mn-row"><span class="rk${i<3?' g':''}">${i+1}</span><div class="nm"><span>${escH(x.n)}</span><div class="mbar"><i style="width:${(x.q/mx*100).toFixed(1)}%"></i></div></div><span class="q">${fmt0(x.q)}</span></div>`).join('');
+  $('mnBody').innerHTML=L.map((x,i)=>{
+    const p=P?(P[x.n]||{q:0}).q:null,d=p==null?null:p?chg(x.q,p):null;
+    const dTxt=p==null?'–':!p?'<span class="up">ใหม่</span>':`<span class="${d>=0?'up':'dn'}">${pc(d)}</span> <small class="muted">(${fmt0(p)})</small>`;
+    return`<tr><td>${i+1}</td><td class="nm">${escH(x.n)}${mnCat==='main'||mnCat==='all'?`<small>${escH(x.c)}</small>`:''}</td><td>${fmt0(x.q)}</td><td>${(x.q/tot*100).toFixed(1)}%</td><td>${(x.q/days).toFixed(1)}</td><td>${dTxt}</td><td>${mnSpark(T.map(t=>(t[x.n]||{q:0}).q))}</td></tr>`}).join('');
+}
+$('mnMonth').addEventListener('change',renderMenu);
+$('mnCats').addEventListener('click',e=>{const b=e.target.closest('button[data-c]');if(!b)return;mnCat=b.dataset.c;$('mnCats').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));renderMenu()});
+$('mnFile').addEventListener('change',async e=>{
+  const f=e.target.files&&e.target.files[0];e.target.value='';if(!f||!db||!owner)return;
+  try{
+    if(!window.XLSX)await loadScript('https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js');
+    const wb=window.XLSX.read(await f.arrayBuffer(),{type:'array'}),rows=[];
+    wb.SheetNames.forEach(sn=>{
+      const m=sn.replace(/[.\s]/g,'').match(/^(.+?)(\d{2}|\d{4})$/);if(!m||!MN_TH[m[1]])return;
+      let y=+m[2];y=y<100?y+2500:y;if(y>2400)y-=543;const ym=y+'-'+String(MN_TH[m[1]]).padStart(2,'0');
+      const A=window.XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,raw:true,defval:null}),items=[];
+      A.slice(1).forEach(r=>{const n=String(r[0]??'').trim();if(!n||/พนักงาน/.test(n))return;
+        let q=0;for(let k=1;k<=31;k++){const x=r[k];if(typeof x==='number'&&isFinite(x))q+=x}
+        if(q>0)items.push([mnClean(n),mnCatOf(n),q])});
+      if(items.length)rows.push({month:'menu:'+ym,data:{items,file:f.name,at:new Date().toISOString()},updated_at:new Date().toISOString()});
+    });
+    if(!rows.length){toast('ไม่พบชีตรายเดือนในไฟล์นี้ (ชื่อชีต เช่น "พ.ย69")');return}
+    const r=await db.from(MONTHLY).upsert(rows);if(r.error)throw r.error;
+    toast('นำเข้ายอดขายรายเมนู '+rows.length+' เดือนแล้ว');await loadMenu();
+  }catch(err){toast('นำเข้าไม่สำเร็จ ลองใหม่อีกครั้ง')}
+});
 /* ปุ่ม ± สำหรับช่องตัวเลข: แป้นตัวเลขบน iPhone ไม่มีเครื่องหมายลบ */
 (function(){
   const b=document.createElement('button');b.type='button';b.className='negBtn';b.textContent='±';b.setAttribute('aria-label','สลับเป็นค่าลบ/บวก');b.tabIndex=-1;
