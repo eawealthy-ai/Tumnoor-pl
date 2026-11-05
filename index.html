@@ -668,6 +668,31 @@ body.ro #plView input,body.ro #partnerView input,body.ro #partnerView select:not
 /* แถบเมนูล่าง */
 body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
 .toast{bottom:calc(96px + env(safe-area-inset-bottom,0px))!important}
+
+/* ---------- คอมพิวเตอร์: เมนูด้านซ้าย (มือถือใช้แถบล่างเหมือนเดิม) ---------- */
+.side{display:none}
+@media (min-width:1024px){
+  body{padding-left:256px;padding-bottom:0}
+  .bnav{display:none}
+  .side{display:flex;flex-direction:column;position:fixed;left:0;top:0;bottom:0;width:256px;z-index:20;background:#fff;border-right:1px solid var(--line);overflow-y:auto}
+  .side .s-brand{display:flex;align-items:center;gap:10px;padding:18px 18px 14px;font-family:var(--display);font-size:20px;font-weight:600;color:var(--bar)}
+  .side .s-brand small{display:block;font-family:var(--body);font-size:11px;font-weight:500;letter-spacing:.06em;color:var(--muted)}
+  .side .s-new{margin:4px 14px 12px;display:flex;align-items:center;justify-content:center;gap:8px;font:inherit;font-size:16px;font-weight:600;color:#fff;background:#e0661a;border:0;border-radius:6px;padding:14px 12px;cursor:pointer}
+  .side .s-new:hover{background:#c9560f}
+  .side .s-new svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round}
+  .side .s-sec{padding:14px 20px 6px;font-size:11px;font-weight:600;letter-spacing:.06em;color:var(--muted)}
+  .side .s-it{display:flex;align-items:center;gap:14px;width:100%;font:inherit;font-size:15px;color:#2a1d14;text-align:left;background:none;border:0;border-bottom:1px solid #f3ebe4;padding:13px 20px;cursor:pointer}
+  .side .s-it:hover{background:#fdf6f0}
+  .side .s-it svg{width:22px;height:22px;flex:none;fill:none;stroke:#8a7a6e;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+  .side .s-it svg .f{fill:none;stroke:none}.side .s-it svg .d{fill:#8a7a6e;stroke:none}
+  .side .s-it .lock{display:none}
+  .side .s-it[aria-current="page"]{color:#e0661a;font-weight:600}
+  .side .s-it[aria-current="page"] svg{stroke:#e0661a}.side .s-it[aria-current="page"] svg .d{fill:#e0661a}
+  .side .s-sp{flex:1}
+  .side .s-user{padding:12px 20px 18px;font-size:12px;color:var(--muted);word-break:break-all}
+  main,.bar-in{max-width:1180px}
+  #homeView .home-grid{grid-template-columns:repeat(6,1fr)}
+}
 .bnav{position:fixed;left:0;right:0;bottom:0;z-index:15;background:#fff;border-top:1px solid #f0e4da;border-radius:22px 22px 0 0;box-shadow:0 -6px 20px rgba(42,29,20,.07);padding:8px max(8px,env(safe-area-inset-left,0px)) calc(8px + env(safe-area-inset-bottom,0px))}
 .bnav-in{max-width:620px;margin:0 auto;display:grid;grid-template-columns:repeat(5,1fr);align-items:end}
 .bnav button{position:relative;font:inherit;background:none;border:0;display:flex;flex-direction:column;align-items:center;gap:3px;color:#8a7a6e;font-size:12px;font-weight:500;cursor:pointer;padding:4px 0;-webkit-tap-highlight-color:transparent}
@@ -1124,6 +1149,7 @@ body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
   </section>
 </main>
 <datalist id="dlPettyPayee"></datalist><datalist id="dlMktPayee"></datalist><datalist id="dlItem"></datalist>
+<aside class="side" id="side" aria-label="เมนูหลัก (คอมพิวเตอร์)"></aside>
 <nav class="bnav" aria-label="เมนูหลัก"><div class="bnav-in">
   <button type="button" data-nav="home"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 10.5L12 3.5l8.5 7"/><path d="M5.5 9v10.5h4.5v-6h4v6h4.5V9"/></svg>หน้าแรก</button>
   <button type="button" data-nav="hist"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.2 8.5A8.5 8.5 0 1 1 3.5 12"/><path d="M3.3 4.8v3.9h3.9"/><path d="M12 7.5V12l3 2"/></svg>ย้อนหลัง</button>
@@ -1818,6 +1844,7 @@ function showView(v){
   Object.values(VIEWS).forEach(id=>$(id).hidden=true);$('loginView').hidden=true;
   document.body.classList.toggle('homebg',curView==='home');
   document.querySelectorAll('.bnav button').forEach(b=>b.setAttribute('aria-current',b.dataset.nav===curView?'page':'false'));
+  try{sideSync()}catch(e){}
   if(curView==='home')loadHome();
   if(curView==='home'){$('homeView').hidden=false;return}
   if(curView==='daily'){$('dailyView').hidden=false;return}
@@ -1872,6 +1899,26 @@ document.querySelectorAll('.home-tile[data-go]').forEach(b=>b.onclick=()=>{const
   if(g==='reload'){location.replace(location.pathname+'?v='+Date.now());return}
   showView(g);window.scrollTo(0,0)});
 document.querySelectorAll('.bnav button').forEach(b=>b.onclick=()=>{showView(b.dataset.nav);window.scrollTo(0,0)});
+/* เมนูด้านซ้ายสำหรับคอมพิวเตอร์: สร้างจากไอคอนหน้าแรก (ใช้ปุ่มเดิม จึงทำงานเหมือนกัน) */
+(function(){
+  const side=$('side');if(!side)return;
+  const grids=[...document.querySelectorAll('#homeView .home-grid')],secs=['เมนูหลัก','บริการอื่น'];
+  let h=`<div class="s-brand"><div><small>TUMNOOR · P&amp;L</small>ร้านตำนัว</div></div>
+    <button type="button" class="s-new" data-go="daily"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>บันทึกยอดประจำวัน</button>
+    <button type="button" class="s-it" data-go="home"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 10.5L12 3.5l8.5 7"/><path d="M5.5 9v10.5h4.5v-6h4v6h4.5V9"/></svg>หน้าแรก</button>`;
+  grids.forEach((g,gi)=>{h+=`<div class="s-sec">${secs[gi]||''}</div>`;
+    g.querySelectorAll('.home-tile').forEach(t=>{const id=t.dataset.go||t.id,svg=t.querySelector('.home-ic svg'),lbl=t.querySelector('b');
+      h+=`<button type="button" class="s-it" data-ref="${id}"${t.dataset.go?` data-go="${t.dataset.go}"`:''}>${svg?svg.outerHTML:''}<span>${lbl?lbl.innerHTML:''}</span></button>`})});
+  h+=`<div class="s-sp"></div><div class="s-user" id="sideUser"></div>`;
+  side.innerHTML=h;
+  side.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+    if(b.dataset.go==='home'||b.dataset.go==='daily'){showView(b.dataset.go);window.scrollTo(0,0);return}
+    const t=b.dataset.go?document.querySelector(`#homeView .home-tile[data-go="${b.dataset.go}"]`):$(b.dataset.ref);if(t)t.click()});
+})();
+function sideSync(){const s=$('side');if(!s)return;
+  s.querySelectorAll('.s-it[data-go]').forEach(b=>b.setAttribute('aria-current',b.dataset.go===curView?'page':'false'));
+  const a=s.querySelector('[data-ref="authTile"] span');if(a&&$('authTileT'))a.textContent=$('authTileT').textContent;
+  const u=$('sideUser');if(u)u.textContent=typeof hmUser!=='undefined'&&hmUser?'เข้าสู่ระบบเป็น '+hmUser:'';}
 $('hmBell').onclick=()=>{showView('recent');window.scrollTo(0,0)};
 let hmUser=null;
 /* ผู้ดู: ปิดช่องกรอก/ปุ่มแก้ไขในหน้า P&L และหุ้นส่วนทุกครั้งที่หน้าวาดใหม่ */
@@ -1879,7 +1926,7 @@ function roLock(){if(!document.body.classList.contains('ro'))return;
   document.querySelectorAll('#plView input,#plView textarea,#partnerView input,#partnerView textarea,#partnerView select:not(#pcStart),#transferView .tPick,#transferView #tAll').forEach(el=>{if(!el.disabled){el.disabled=true;el.readOnly=true}});}
 try{const mo=new MutationObserver(()=>roLock());['plView','partnerView','transferView'].forEach(id=>mo.observe($(id),{childList:true,subtree:true}))}catch(e){}
 async function hmAuth(){let e=null;try{if(db){const {data}=await db.auth.getSession();e=data&&data.session&&data.session.user&&data.session.user.email}}catch(x){}
-  hmUser=e||null;$('authTileT').textContent=hmUser?'ออกจากระบบ':'เข้าสู่ระบบ';$('hmPower').title=hmUser?'ออกจากระบบ ('+hmUser+')':'เข้าสู่ระบบ'}
+  hmUser=e||null;$('authTileT').textContent=hmUser?'ออกจากระบบ':'เข้าสู่ระบบ';try{sideSync()}catch(_){};$('hmPower').title=hmUser?'ออกจากระบบ ('+hmUser+')':'เข้าสู่ระบบ'}
 $('hmPower').onclick=$('authTile').onclick=async()=>{
   if(!hmUser){showView('transfer');window.scrollTo(0,0);return}
   try{await db.auth.signOut()}catch(e){}owner=null;await hmAuth();toast('ออกจากระบบแล้ว')};
