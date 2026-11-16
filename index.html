@@ -2239,10 +2239,9 @@ async function renderFood(){
     {label:'เฉลี่ย 7 วัน',data:r7,borderColor:'#e0661a',backgroundColor:'#e0661a',borderWidth:2.5,pointRadius:0,tension:.3,order:1},
     {label:'รายวัน',data:daily.map(v=>v==null?null:Math.min(v,ymax)),showLine:false,pointRadius:3,pointBackgroundColor:'rgba(224,102,26,.28)',pointBorderColor:'rgba(224,102,26,.45)',order:2},
     {label:'เป้า '+tgt+'%',data:lab.map(()=>tgt),borderColor:'#22936a',borderDash:[6,5],borderWidth:1.5,pointRadius:0,order:0}]},
-    options:{maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+    options:{maintainAspectRatio:false,events:[],
       scales:{x:{grid:{display:false},ticks:{color:muted,maxRotation:0,autoSkip:true,maxTicksLimit:10}},y:{min:0,max:ymax,grid:{color:line},ticks:{color:muted,callback:v=>v+'%'}}},
-      plugins:{legend:{position:'bottom',labels:{boxWidth:12,color:fg}},tooltip:{callbacks:{title:c=>dmy(lab[c[0].dataIndex]),
-        label:c=>{const i=idx[c.dataIndex];if(c.datasetIndex===1)return`รายวัน: ${daily[c.dataIndex]}% (ต้นทุน ${fmt0(R[i].food)} / ขาย ${fmt0(R[i].sales)})`;return c.dataset.label+': '+c.parsed.y+'%'}}}}}});
+      plugins:{legend:{position:'bottom',labels:{boxWidth:12,color:fg}},tooltip:{enabled:false}}}});
 }
 $('fcRange').addEventListener('click',e=>{const b=e.target.closest('button[data-d]');if(!b)return;fcDays=+b.dataset.d;$('fcRange').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));renderFood()});
 $('fcTarget').addEventListener('change',renderFood);
