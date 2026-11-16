@@ -549,6 +549,9 @@ table.market:not(:has(#mktBody tr:not(.viewing))) tfoot tr{display:flex;justify-
 .mn-cats{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 4px}
 .mn-cats button{font:inherit;font-size:13px;padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--muted);cursor:pointer}
 .mn-cats button[aria-pressed="true"]{background:var(--leaf);border-color:var(--leaf);color:#fff;font-weight:600}
+.fc-ctl{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:4px 0 12px}
+.fc-tg{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
+.fc-tg input{width:64px;text-align:right;padding:6px 8px}
 .mn-by{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0 0;font-size:13px;color:var(--muted)}
 .mn-by .seg button:disabled{opacity:.45;cursor:not-allowed}
 .mn-top{display:grid;gap:8px}
@@ -1027,6 +1030,16 @@ body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
       <thead><tr><th>ช่วง</th><th class="r">ยอดขาย</th><th class="r">เฉลี่ย/วัน</th><th class="r">% เปลี่ยน</th><th class="r">บิล</th><th class="r">เฉลี่ย/บิล</th><th class="r">ต้นทุนอาหาร</th><th class="r">ค่าใช้จ่ายรวม</th></tr></thead>
       <tbody id="aBody"></tbody>
     </table></div>
+  </section>
+  <section>
+    <h2>เทรนด์ต้นทุนอาหารรายวัน</h2>
+    <p class="sub" id="fcNote">% ต้นทุนอาหารเทียบยอดขาย · เส้นหลัก = เฉลี่ย 7 วัน (ร้านไม่ได้ซื้อของทุกวัน ตัวเลขรายวันจึงแกว่ง) · จุด = รายวัน · เส้นประ = เป้าหมาย</p>
+    <div class="fc-ctl">
+      <div class="seg" id="fcRange" role="group" aria-label="ช่วงเวลา"><button type="button" data-d="30" aria-pressed="false">30 วัน</button><button type="button" data-d="60" aria-pressed="true">60 วัน</button><button type="button" data-d="90" aria-pressed="false">90 วัน</button></div>
+      <label class="fc-tg">เป้าหมาย<input id="fcTarget" class="n" inputmode="decimal" value="40" aria-label="เป้าหมายต้นทุนอาหาร %">%</label>
+    </div>
+    <div class="lfl" id="fcCards"></div>
+    <div class="chartbox tall"><canvas id="cFood" aria-label="เทรนด์ต้นทุนอาหารรายวัน"></canvas></div>
   </section>
   <section>
     <h2>วิเคราะห์ P&amp;L รายเดือน</h2>
@@ -2200,10 +2213,39 @@ async function loadAna(){
   const {data,error}=await db.from(TABLE).select('date,data').gte('date',from).lte('date',t).order('date').limit(400);
   if(error){$('aNote').textContent='โหลดข้อมูลไม่ได้ ลองใหม่อีกครั้ง';return}
   anaRows=(data||[]).filter(r=>r.data&&!r.data.deleted).map(anaDay);
-  loadAnaPL();
+  loadAnaPL();renderFood();
   $('aNote').textContent=`ข้อมูล ${anaRows.length} วัน · อัปเดต ${new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})}`;
   renderAna();
 }
+/* เทรนด์ต้นทุนอาหารรายวัน: รายวัน + เฉลี่ยเคลื่อนที่ 7 วัน (ผลรวมต้นทุน ÷ ผลรวมยอดขาย) */
+let fcDays=60;
+async function renderFood(){
+  const R=anaRows.filter(r=>r.sales>0||r.food>0);if(!R.length){$('fcCards').innerHTML='';return}
+  const tgt=num($('fcTarget').value)||40,t=today(),from=addDays(t,-(fcDays-1));
+  const idx=R.map((r,i)=>i).filter(i=>R[i].date>=from);if(!idx.length)return;
+  const roll=i=>{let s=0,f=0;for(let j=Math.max(0,i-6);j<=i;j++){s+=R[j].sales;f+=R[j].food}return s?f/s*100:null};
+  const lab=idx.map(i=>R[i].date),daily=idx.map(i=>R[i].sales?+(R[i].food/R[i].sales*100).toFixed(1):null),r7=idx.map(i=>{const v=roll(i);return v==null?null:+v.toFixed(1)});
+  const sum=(a,b)=>{const X=R.filter(r=>r.date>=a&&r.date<=b),S=X.reduce((x,r)=>x+r.sales,0),F=X.reduce((x,r)=>x+r.food,0);return{S,F,p:S?F/S*100:null}};
+  const m0=t.slice(0,8)+'01',mtd=sum(m0,t),pe=addDays(m0,-1),pm0=pe.slice(0,8)+'01',pm=sum(pm0,pe),last7=r7[r7.length-1],over=r7.filter(v=>v!=null&&v>tgt).length;
+  const pc=v=>v==null?'–':v.toFixed(1)+'%',cls=v=>v!=null&&v>tgt?'dl-dn':'';
+  $('fcCards').innerHTML=`<div><span>เดือนนี้ (สะสม)</span><strong class="${cls(mtd.p)}">${pc(mtd.p)}</strong><em>${fmt0(mtd.F)} / ${fmt0(mtd.S)} บาท</em></div>
+    <div><span>เฉลี่ย 7 วันล่าสุด</span><strong class="${cls(last7)}">${pc(last7)}</strong><em>เป้า ${tgt}%</em></div>
+    <div><span>เดือนก่อน (${TH_MON[+pm0.slice(5,7)-1]})</span><strong class="${cls(pm.p)}">${pc(pm.p)}</strong><em>${fmt0(pm.F)} บาท</em></div>
+    <div><span>วันที่เฉลี่ย 7 วันเกินเป้า</span><strong>${over}/${r7.length}</strong><em>ในช่วง ${fcDays} วัน</em></div>`;
+  try{if(!window.Chart)await loadScript('https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js')}catch(e){return}
+  const C=window.Chart,muted=tok('--muted'),line=tok('--line'),fg=tok('--fg'),ymax=Math.min(150,Math.max(80,Math.ceil(Math.max(...r7.filter(v=>v!=null),tgt)/10)*10+10));
+  if(charts.cFood)charts.cFood.destroy();
+  charts.cFood=new C($('cFood'),{type:'line',data:{labels:lab.map(d=>d.slice(8)+'/'+d.slice(5,7)),datasets:[
+    {label:'เฉลี่ย 7 วัน',data:r7,borderColor:'#e0661a',backgroundColor:'#e0661a',borderWidth:2.5,pointRadius:0,tension:.3,order:1},
+    {label:'รายวัน',data:daily.map(v=>v==null?null:Math.min(v,ymax)),showLine:false,pointRadius:3,pointBackgroundColor:'rgba(224,102,26,.28)',pointBorderColor:'rgba(224,102,26,.45)',order:2},
+    {label:'เป้า '+tgt+'%',data:lab.map(()=>tgt),borderColor:'#22936a',borderDash:[6,5],borderWidth:1.5,pointRadius:0,order:0}]},
+    options:{maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+      scales:{x:{grid:{display:false},ticks:{color:muted,maxRotation:0,autoSkip:true,maxTicksLimit:10}},y:{min:0,max:ymax,grid:{color:line},ticks:{color:muted,callback:v=>v+'%'}}},
+      plugins:{legend:{position:'bottom',labels:{boxWidth:12,color:fg}},tooltip:{callbacks:{title:c=>dmy(lab[c[0].dataIndex]),
+        label:c=>{const i=idx[c.dataIndex];if(c.datasetIndex===1)return`รายวัน: ${daily[c.dataIndex]}% (ต้นทุน ${fmt0(R[i].food)} / ขาย ${fmt0(R[i].sales)})`;return c.dataset.label+': '+c.parsed.y+'%'}}}}}});
+}
+$('fcRange').addEventListener('click',e=>{const b=e.target.closest('button[data-d]');if(!b)return;fcDays=+b.dataset.d;$('fcRange').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));renderFood()});
+$('fcTarget').addEventListener('change',renderFood);
 function aggr(rows){const o={n:rows.length,sales:0,bills:0,bs:0,exp:0,food:0};rows.forEach(r=>{o.sales+=r.sales;o.bills+=r.bills;if(r.bills)o.bs+=r.sales;o.exp+=r.exp;o.food+=r.food});o.avg=o.n?o.sales/o.n:0;o.tk=o.bills?o.bs/o.bills:0;return o}
 const dPct=(a,b)=>b?(a-b)/b*100:null;
 const dTag=v=>v==null?'<span class="dl-0">–</span>':`<span class="${Math.abs(v)<.05?'dl-0':v>0?'dl-up':'dl-dn'}">${v>0?'▲':v<0?'▼':''} ${Math.abs(v).toFixed(1)}%</span>`;
